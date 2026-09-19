@@ -1,0 +1,34 @@
+<ul class="nav-menu" [class.nav-menu--nested]="nested()">
+  @for (item of items(); track item.id) {
+    <li
+      class="nav-menu__item"
+      [class.nav-menu__item--active]="menuService.isBranchActive(item)"
+      [class.nav-menu__item--group]="!item.route && item.children?.length"
+    >
+      @if (item.route) {
+        <a
+          class="nav-menu__link"
+          [routerLink]="item.route"
+          routerLinkActive="nav-menu__link--active"
+          [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+        >
+          @if (item.icon) {
+            <i [class]="item.icon + ' nav-menu__icon'" aria-hidden="true"></i>
+          }
+          <span class="nav-menu__label">{{ item.title }}</span>
+        </a>
+      } @else {
+        <span class="nav-menu__group-label">
+          @if (item.icon) {
+            <i [class]="item.icon + ' nav-menu__icon'" aria-hidden="true"></i>
+          }
+          <span class="nav-menu__label">{{ item.title }}</span>
+        </span>
+      }
+
+      @if (item.children?.length) {
+        <app-nav-menu [items]="item.children!" [nested]="true" />
+      }
+    </li>
+  }
+</ul>
