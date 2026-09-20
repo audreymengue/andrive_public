@@ -3,9 +3,16 @@
     <div class="sidebar__brand">
       <h1>Pool Chauffeur</h1>
     </div>
+
     <nav class="sidebar__nav" aria-label="Navigation principale">
       <app-nav-menu [items]="menuService.visibleMenu()" />
     </nav>
+
+    <div class="sidebar__logout">
+      <button type="button" (click)="logout()">
+        Se déconnecter
+      </button>
+    </div>
   </aside>
 
   <div class="main-layout__body">

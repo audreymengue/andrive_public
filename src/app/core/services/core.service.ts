@@ -13,6 +13,8 @@ export interface User {
   email: string;
   roles?: string[];
   permissions?: string[];
+  /** true tant que la personne utilise le mot de passe fourni par défaut (1ère connexion). */
+  mustChangePassword?: boolean;
 }
 
 @Injectable({

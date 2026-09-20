@@ -11,7 +11,6 @@ export const AUTH_ROUTES: Routes = [
     {
         path: 'reinitialisation-mot-de-passe',
         loadComponent: () => import('./views/reset-password.page').then(m => m.ResetPasswordPage),
-        canActivate: [GuestGuard],
         title: 'Réinitialisation du mot de passe'
     }
 ];
