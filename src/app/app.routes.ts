@@ -79,7 +79,12 @@ export const routes: Routes = [
             }
         ]
     },
+    
     {
+        path: 'administration',
+        loadChildren: () => import('./features/administration/routes').then(m => m.ADMINISTRATION_ROUTES)
+    },
+{
         path: '**',
         title: 'Page introuvable',
         redirectTo: ''

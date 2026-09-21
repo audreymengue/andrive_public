@@ -1,0 +1,222 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Gestion des utilisateurs</h1>
+    <p class="muted">Créez les comptes, attribuez les rôles et contrôlez qui peut se connecter.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" class="tab" aria-selected="true">Utilisateurs</button>
+  </div>
+
+  <div class="card panel">
+    <div class="toolbar">
+      <label class="search">
+        <app-icon name="search" />
+        <span class="sr-only">Rechercher un utilisateur</span>
+        <input type="search" [formControl]="search" placeholder="Rechercher par login, nom ou prénom" />
+      </label>
+      <button type="button" class="btn btn-primary" (click)="create()">
+        <app-icon name="plus" />
+        Ajouter un utilisateur
+      </button>
+    </div>
+
+    @if (error(); as message) {
+      <div class="state" role="alert">
+        <p>{{ message }}</p>
+        <button type="button" class="btn btn-ghost" (click)="reload()">Réessayer</button>
+      </div>
+    } @else {
+      <div class="table-wrap" [attr.aria-busy]="loading()">
+        <table class="table" [class.is-loading]="loading()">
+          <caption class="sr-only">
+            Liste des utilisateurs
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Login</th>
+              <th scope="col">Nom</th>
+              <th scope="col">Prénom</th>
+              <th scope="col">Statut</th>
+              <th scope="col" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of users(); track u.id) {
+              <tr (contextmenu)="openMenu($event, u)" [class.is-inactive]="!u.actif">
+                <td class="login">{{ u.login }}</td>
+                <td>{{ u.nom }}</td>
+                <td>{{ u.prenom }}</td>
+                <td>
+                  <span class="badges">
+                    <span class="badge" [class.badge--ok]="u.actif" [class.badge--off]="!u.actif">
+                      {{ u.actif ? 'Actif' : 'Inactif' }}
+                    </span>
+                    @if (isAdmin(u)) {
+                      <span class="badge badge--admin">Admin</span>
+                    }
+                  </span>
+                </td>
+                <td class="col-actions">
+                  <span class="row-actions">
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      title="Consulter le détail"
+                      [attr.aria-label]="'Consulter le détail de ' + u.login"
+                      (click)="view(u)"
+                    >
+                      <app-icon name="eye" />
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      [class.icon-btn--danger]="u.actif"
+                      [class.icon-btn--ok]="!u.actif"
+                      [title]="u.actif ? 'Désactiver le compte' : 'Activer le compte'"
+                      [attr.aria-label]="(u.actif ? 'Désactiver le compte de ' : 'Activer le compte de ') + u.login"
+                      (click)="askToggle(u)"
+                    >
+                      <app-icon name="power" />
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      title="Attribuer des rôles"
+                      [attr.aria-label]="'Attribuer des rôles à ' + u.login"
+                      (click)="rolesTarget.set(u)"
+                    >
+                      <app-icon name="shield" />
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      title="Éditer l'utilisateur"
+                      [attr.aria-label]="'Éditer ' + u.login"
+                      (click)="edit(u)"
+                    >
+                      <app-icon name="pencil" />
+                    </button>
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      title="Réinitialiser le mot de passe"
+                      [attr.aria-label]="'Réinitialiser le mot de passe de ' + u.login"
+                      (click)="askReset(u)"
+                    >
+                      <app-icon name="reset" />
+                    </button>
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              @if (!loading()) {
+                <tr>
+                  <td colspan="5" class="empty">
+                    @if (search.value.trim()) {
+                      Aucun utilisateur ne correspond à « {{ search.value.trim() }} ». Modifiez la recherche.
+                    } @else {
+                      Aucun utilisateur pour le moment. Ajoutez le premier avec « Ajouter un utilisateur ».
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="pager">
+        <p class="pager-count" aria-live="polite">
+          @if (total() > 0) {
+            {{ from() }} à {{ to() }} sur {{ total() }} utilisateurs
+          }
+        </p>
+        <div class="pager-controls">
+          <button type="button" class="btn btn-ghost" [disabled]="page() <= 1 || loading()" (click)="goTo(page() - 1)">
+            <app-icon name="chevron-left" />
+            Précédent
+          </button>
+          <span class="pager-page">Page {{ page() }} sur {{ lastPage() }}</span>
+          <button
+            type="button"
+            class="btn btn-ghost"
+            [disabled]="page() >= lastPage() || loading()"
+            (click)="goTo(page() + 1)"
+          >
+            Suivant
+            <app-icon name="chevron-right" />
+          </button>
+        </div>
+      </footer>
+    }
+  </div>
+
+  <p class="tip">Clic droit sur une ligne pour ouvrir le menu des actions.</p>
+</section>
+
+@if (menu(); as m) {
+  <ul class="ctx" role="menu" aria-label="Actions sur l'utilisateur" [style.left.px]="m.x" [style.top.px]="m.y">
+    <li role="none">
+      <button type="button" role="menuitem" (click)="view(m.user)"><app-icon name="eye" />Consulter le détail</button>
+    </li>
+    <li role="none">
+      <button type="button" role="menuitem" (click)="edit(m.user)"><app-icon name="pencil" />Éditer l'utilisateur</button>
+    </li>
+    <li role="none">
+      <button type="button" role="menuitem" (click)="rolesTarget.set(m.user)">
+        <app-icon name="shield" />Attribuer des rôles
+      </button>
+    </li>
+    <li role="none">
+      <button type="button" role="menuitem" (click)="askToggle(m.user)">
+        <app-icon name="power" />{{ m.user.actif ? 'Désactiver le compte' : 'Activer le compte' }}
+      </button>
+    </li>
+    <li role="none">
+      <button type="button" role="menuitem" (click)="askReset(m.user)">
+        <app-icon name="reset" />Réinitialiser le mot de passe
+      </button>
+    </li>
+  </ul>
+}
+
+@if (rolesTarget(); as target) {
+  <app-role-assign-dialog [user]="target" (saved)="onRolesSaved($event)" (closed)="rolesTarget.set(null)" />
+}
+
+@if (confirm(); as c) {
+  <div class="overlay" (click)="closeConfirm()">
+    <div
+      class="modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      aria-describedby="confirm-msg"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="confirm-title">{{ c.title }}</h2>
+      <p class="modal-body" id="confirm-msg">{{ c.message }}</p>
+      @if (confirmError(); as message) {
+        <p class="field-error" role="alert">{{ message }}</p>
+      }
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="closeConfirm()">Annuler</button>
+        <button
+          type="button"
+          class="btn"
+          [class.btn-danger]="c.danger"
+          [class.btn-primary]="!c.danger"
+          [disabled]="busy()"
+          (click)="runConfirm()"
+        >
+          {{ c.confirmLabel }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (flash.message(); as message) {
+  <div class="toast" role="status">{{ message }}</div>
+}

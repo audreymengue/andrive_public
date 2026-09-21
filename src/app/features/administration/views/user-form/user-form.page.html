@@ -1,0 +1,167 @@
+<section class="page page--narrow">
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <a [routerLink]="listPath">Utilisateurs</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">{{ title }}</span>
+  </nav>
+
+  <header class="page-header">
+    <h1>{{ title }}</h1>
+  </header>
+
+  @if (loading()) {
+    <p class="muted" role="status">Chargement de l'utilisateur…</p>
+  } @else if (loadError()) {
+    <div class="notice notice--error" role="alert">
+      <p>Cet utilisateur est introuvable ou n'a pas pu être chargé.</p>
+      <button type="button" class="btn btn-ghost" (click)="load()">Réessayer</button>
+    </div>
+  } @else {
+    <form class="card form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (mode === 'detail' && user(); as u) {
+        <div class="identity">
+          <span class="avatar" aria-hidden="true">{{ initials(u) }}</span>
+          <div>
+            <p class="identity-name">{{ name(u) }}</p>
+            <p class="identity-login">{{ u.login }}</p>
+          </div>
+          <span class="badge" [class.badge--ok]="u.actif" [class.badge--off]="!u.actif">
+            {{ u.actif ? 'Actif' : 'Inactif' }}
+          </span>
+        </div>
+        @if (u.must_change_password) {
+          <div class="notice">
+            <p>
+              Cet utilisateur a encore son mot de passe par défaut. Il devra le modifier à sa première connexion.
+            </p>
+          </div>
+        }
+      }
+
+      @if (mode === 'create') {
+        <div class="notice notice--info">
+          <p>
+            Un mot de passe par défaut sera attribué au compte. L'utilisateur devra le modifier à sa première
+            connexion.
+          </p>
+        </div>
+      }
+
+      <div class="grid">
+        <div class="field">
+          <label for="nom">Nom <span aria-hidden="true">*</span></label>
+          <input id="nom" type="text" formControlName="nom" autocomplete="off" [class.is-invalid]="errorOf('nom')" />
+          @if (errorOf('nom'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="prenom">Prénom <span aria-hidden="true">*</span></label>
+          <input
+            id="prenom"
+            type="text"
+            formControlName="prenom"
+            autocomplete="off"
+            [class.is-invalid]="errorOf('prenom')"
+          />
+          @if (errorOf('prenom'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="login">Login <span aria-hidden="true">*</span></label>
+          <input
+            id="login"
+            type="text"
+            formControlName="login"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            [class.is-invalid]="errorOf('login')"
+          />
+          @if (errorOf('login'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          } @else if (mode === 'edit') {
+            <p class="hint">Le login ne peut plus être modifié après la création du compte.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="profil">Profil</label>
+          <select id="profil" formControlName="profil">
+            @for (p of profilOptions; track p.code) {
+              <option [value]="p.code">{{ p.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field field--full">
+          <span class="label" id="statut-label">Statut</span>
+          <label class="switch">
+            <input type="checkbox" role="switch" formControlName="actif" aria-labelledby="statut-label" />
+            <span class="switch-track"></span>
+            <span>
+              {{
+                form.controls.actif.value
+                  ? 'Actif : cet utilisateur peut se connecter'
+                  : "Inactif : l'accès à la plateforme est verrouillé"
+              }}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      @if (mode === 'detail') {
+        <div class="field">
+          <span class="label">Rôles</span>
+          @if (form.controls.roles.value.length) {
+            <ul class="chips">
+              @for (code of form.controls.roles.value; track code) {
+                <li class="badge badge--admin">{{ roleLabel(code) }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="hint">Aucun rôle attribué.</p>
+          }
+        </div>
+      } @else {
+        <fieldset class="field habilitation">
+          <legend class="label">Habilitation</legend>
+          <div class="role-list">
+            @for (role of roleOptions; track role.code) {
+              <label class="role-option" [class.is-selected]="hasRole(role.code)">
+                <input
+                  type="checkbox"
+                  [checked]="hasRole(role.code)"
+                  (change)="toggleRole(role.code, $any($event.target).checked)"
+                />
+                <span>
+                  <strong>{{ role.label }}</strong>
+                  <small>{{ role.description }}</small>
+                </span>
+              </label>
+            }
+          </div>
+          @if (errorOf('roles'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          }
+        </fieldset>
+      }
+
+      @if (error(); as message) {
+        <div class="notice notice--error" role="alert">
+          <p>{{ message }}</p>
+        </div>
+      }
+
+      <div class="form-actions" [class.form-actions--right]="mode === 'detail'">
+        <button type="button" class="btn btn-ghost" (click)="cancel()">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>
