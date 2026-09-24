@@ -72,6 +72,17 @@ export const APP_MENU: MenuItem[] = [
       { id: 'signalement', title: 'Signalement', route: '/dashboard/missions/signalement', icon: 'bi bi-exclamation-triangle' },
     ],
   },
+  {
+    id: 'administration',
+    title: 'Administration',
+    icon: 'bi bi-map',
+    roles: [],
+    children: [
+      { id: 'permission', title: 'Permissions', route: '/administration/list-permission', icon: 'bi bi-key' },
+      { id: 'role', title: 'Rôles', route: '/administration/list-role', icon: 'bi bi-person-badge' },
+      { id: 'utilisateurs', title: 'Utilisateurs', route: '/administration/list-users', icon: 'bi bi-person' },
+    ],
+  },
 ];
 
 /** Normalise l'URL courante (sans query ni hash). */
