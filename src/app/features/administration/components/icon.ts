@@ -9,7 +9,9 @@ export type IconName =
   | 'power'
   | 'reset'
   | 'chevron-left'
-  | 'chevron-right';
+  | 'chevron-right'
+  | 'key'
+  | 'lock';
 
 /** Icônes SVG légères (trait 1.75), décoratives : le libellé est porté par le bouton parent. */
 @Component({
@@ -61,6 +63,14 @@ export type IconName =
         }
         @case ('chevron-right') {
           <path d="m9 18 6-6-6-6" />
+        }
+        @case ('key') {
+          <circle cx="8" cy="15" r="4" />
+          <path d="m10.5 12.5 8-8M16 4l3 3M13 7l3 3" />
+        }
+        @case ('lock') {
+          <rect x="4" y="11" width="16" height="9" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
         }
       }
     </svg>

@@ -1,4 +1,4 @@
-import {
+﻿import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
@@ -23,7 +23,7 @@ import {
 
 import { IconComponent } from '../../components/icon';
 import { RoleAssignDialog } from '../../components/role-assign-dialog';
-import { USERS_BASE_PATH, User, fullName, isAdmin } from '../../models/user.model';
+import { USERS_BASE_PATH, User, fullName, isActif, roleNames } from '../../models/user.model';
 import { FlashService } from '../../services/flash.service';
 import { UserService } from '../../services/user.service';
 
@@ -72,7 +72,8 @@ export class ListUsersPage {
   protected readonly confirmError = signal<string | null>(null);
 
   protected readonly fullName = fullName;
-  protected readonly isAdmin = isAdmin;
+  protected readonly isActif = isActif;
+  protected readonly roleNames = roleNames;
 
   private readonly refresh$ = new Subject<void>();
 
@@ -110,7 +111,11 @@ export class ListUsersPage {
       });
   }
 
-  // ---------- Navigation ----------
+  protected profilOf(u: User): string {
+    const names = roleNames(u);
+    return names.length ? names.join(', ') : '-';
+  }
+
   protected create(): void {
     this.router.navigate([USERS_BASE_PATH, 'new']);
   }
@@ -121,7 +126,6 @@ export class ListUsersPage {
     this.router.navigate([USERS_BASE_PATH, u.id, 'edit']);
   }
 
-  // ---------- Liste ----------
   protected reload(): void {
     this.refresh$.next();
   }
@@ -130,12 +134,17 @@ export class ListUsersPage {
     this.page.set(page);
     this.reload();
   }
+  protected goToFirst(): void {
+    this.goTo(1);
+  }
+  protected goToLast(): void {
+    this.goTo(this.lastPage());
+  }
 
   private replace(updated: User): void {
     this.users.update((list) => list.map((u) => (u.id === updated.id ? updated : u)));
   }
 
-  // ---------- Menu contextuel (clic droit) ----------
   protected openMenu(event: MouseEvent, user: User): void {
     event.preventDefault();
     const x = Math.min(event.clientX, window.innerWidth - 280);
@@ -164,37 +173,28 @@ export class ListUsersPage {
     }
   }
 
-  // ---------- Actions avec confirmation ----------
-  protected askToggle(u: User): void {
-    const activate = !u.actif;
-    const name = fullName(u);
-    this.openConfirm({
-      title: activate ? 'Activer ce compte ?' : 'Désactiver ce compte ?',
-      message: activate
-        ? `${name} pourra de nouveau se connecter à la plateforme.`
-        : `${name} ne pourra plus se connecter tant que le compte n'est pas réactivé.`,
-      confirmLabel: activate ? 'Activer' : 'Désactiver',
-      danger: !activate,
-      run: () =>
-        this.api.setStatus(u.id, activate).pipe(
-          tap((updated) => {
-            this.replace(updated);
-            this.flash.show(activate ? 'Compte activé.' : 'Compte désactivé.');
-          }),
-        ),
+  protected toggleStatus(u: User): void {
+    const activate = !this.isActif(u);
+    (activate ? this.api.activate(u.id) : this.api.deactivate(u.id)).subscribe({
+      next: (updated) => {
+        this.replace(updated);
+        this.flash.show(activate ? 'Compte active.' : 'Compte desactive.');
+      },
+      error: () => {
+        this.flash.show("L'action a echoue. Verifiez votre connexion et reessayez.");
+      },
     });
   }
 
   protected askReset(u: User): void {
     this.openConfirm({
-      title: 'Réinitialiser le mot de passe ?',
-      message: `${fullName(u)} recevra le mot de passe par défaut et devra le modifier à sa prochaine connexion.`,
-      confirmLabel: 'Réinitialiser',
+      title: 'Reinitialiser le mot de passe ?',
+      message: `${fullName(u)} recevra le mot de passe par defaut et devra le modifier a sa prochaine connexion.`,
+      confirmLabel: 'Reinitialiser',
       run: () =>
         this.api.resetPassword(u.id).pipe(
-          tap((updated) => {
-            this.replace(updated);
-            this.flash.show('Mot de passe réinitialisé.');
+          tap(() => {
+            this.flash.show('Mot de passe reinitialise.');
           }),
         ),
     });
@@ -221,15 +221,14 @@ export class ListUsersPage {
       },
       error: () => {
         this.busy.set(false);
-        this.confirmError.set("L'action a échoué. Vérifiez votre connexion et réessayez.");
+        this.confirmError.set("L'action a echoue. Verifiez votre connexion et reessayez.");
       },
     });
   }
 
-  // ---------- Rôles ----------
   protected onRolesSaved(updated: User): void {
     this.replace(updated);
     this.rolesTarget.set(null);
-    this.flash.show('Rôles mis à jour.');
+    this.flash.show('Roles mis a jour.');
   }
 }

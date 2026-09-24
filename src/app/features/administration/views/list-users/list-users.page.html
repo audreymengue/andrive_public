@@ -1,11 +1,11 @@
-<section class="page">
+﻿<section class="page">
   <header class="page-header">
-    <h1>Gestion des utilisateurs</h1>
-    <p class="muted">Créez les comptes, attribuez les rôles et contrôlez qui peut se connecter.</p>
+    <h1>Bureau interne : gestion des utilisateurs</h1>
+    <p class="muted">Creez les comptes, attribuez les roles et controlez qui peut se connecter.</p>
   </header>
 
   <div class="tabs" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" class="tab" aria-selected="true">Utilisateurs</button>
+    <button type="button" role="tab" class="tab" aria-selected="true">Liste des utilisateurs</button>
   </div>
 
   <div class="card panel">
@@ -13,7 +13,7 @@
       <label class="search">
         <app-icon name="search" />
         <span class="sr-only">Rechercher un utilisateur</span>
-        <input type="search" [formControl]="search" placeholder="Rechercher par login, nom ou prénom" />
+        <input type="search" [formControl]="search" placeholder="Rechercher par login, nom, prenom..." />
       </label>
       <button type="button" class="btn btn-primary" (click)="create()">
         <app-icon name="plus" />
@@ -24,7 +24,7 @@
     @if (error(); as message) {
       <div class="state" role="alert">
         <p>{{ message }}</p>
-        <button type="button" class="btn btn-ghost" (click)="reload()">Réessayer</button>
+        <button type="button" class="btn btn-ghost" (click)="reload()">Reessayer</button>
       </div>
     } @else {
       <div class="table-wrap" [attr.aria-busy]="loading()">
@@ -36,87 +36,64 @@
             <tr>
               <th scope="col">Login</th>
               <th scope="col">Nom</th>
-              <th scope="col">Prénom</th>
+              <th scope="col">Prenom</th>
               <th scope="col">Statut</th>
-              <th scope="col" class="col-actions">Actions</th>
+              <th scope="col">Profil</th>
+              <th scope="col" class="col-actions">Action</th>
             </tr>
           </thead>
           <tbody>
             @for (u of users(); track u.id) {
-              <tr (contextmenu)="openMenu($event, u)" [class.is-inactive]="!u.actif">
-                <td class="login">{{ u.login }}</td>
+              <tr (contextmenu)="openMenu($event, u)" [class.is-inactive]="!isActif(u)">
+                <td class="login">{{ u.email }}</td>
                 <td>{{ u.nom }}</td>
                 <td>{{ u.prenom }}</td>
                 <td>
-                  <span class="badges">
-                    <span class="badge" [class.badge--ok]="u.actif" [class.badge--off]="!u.actif">
-                      {{ u.actif ? 'Actif' : 'Inactif' }}
-                    </span>
-                    @if (isAdmin(u)) {
-                      <span class="badge badge--admin">Admin</span>
-                    }
+                  <span class="badge" [class.badge--ok]="isActif(u)" [class.badge--off]="!isActif(u)">
+                    {{ isActif(u) ? 'ACTIF' : 'INACTIF' }}
                   </span>
                 </td>
+                <td>{{ profilOf(u) }}</td>
                 <td class="col-actions">
-                  <span class="row-actions">
+                  <div class="actions-grid">
                     <button
                       type="button"
-                      class="icon-btn"
-                      title="Consulter le détail"
-                      [attr.aria-label]="'Consulter le détail de ' + u.login"
+                      class="action-btn action-btn--info"
+                      [attr.aria-label]="'Consulter le detail de ' + u.email"
                       (click)="view(u)"
                     >
                       <app-icon name="eye" />
+                      <span>Consulter le detail</span>
                     </button>
                     <button
                       type="button"
-                      class="icon-btn"
-                      [class.icon-btn--danger]="u.actif"
-                      [class.icon-btn--ok]="!u.actif"
-                      [title]="u.actif ? 'Désactiver le compte' : 'Activer le compte'"
-                      [attr.aria-label]="(u.actif ? 'Désactiver le compte de ' : 'Activer le compte de ') + u.login"
-                      (click)="askToggle(u)"
+                      class="action-btn action-btn--toggle"
+                      [attr.aria-label]="(isActif(u) ? 'Desactiver le compte de ' : 'Activer le compte de ') + u.email"
+                      (click)="toggleStatus(u)"
                     >
-                      <app-icon name="power" />
+                      <span class="mini-switch" [class.is-on]="isActif(u)"><span class="mini-switch-thumb"></span></span>
+                      <span>Activer/Desactiver</span>
                     </button>
                     <button
                       type="button"
-                      class="icon-btn"
-                      title="Attribuer des rôles"
-                      [attr.aria-label]="'Attribuer des rôles à ' + u.login"
-                      (click)="rolesTarget.set(u)"
-                    >
-                      <app-icon name="shield" />
-                    </button>
-                    <button
-                      type="button"
-                      class="icon-btn"
-                      title="Éditer l'utilisateur"
-                      [attr.aria-label]="'Éditer ' + u.login"
+                      class="action-btn action-btn--violet"
+                      [attr.aria-label]="'Editer ' + u.email"
                       (click)="edit(u)"
                     >
                       <app-icon name="pencil" />
+                      <span>Editer</span>
                     </button>
-                    <button
-                      type="button"
-                      class="icon-btn"
-                      title="Réinitialiser le mot de passe"
-                      [attr.aria-label]="'Réinitialiser le mot de passe de ' + u.login"
-                      (click)="askReset(u)"
-                    >
-                      <app-icon name="reset" />
-                    </button>
-                  </span>
+                  </div>
                 </td>
               </tr>
             } @empty {
               @if (!loading()) {
                 <tr>
-                  <td colspan="5" class="empty">
+                  <td colspan="6" class="empty">
                     @if (search.value.trim()) {
-                      Aucun utilisateur ne correspond à « {{ search.value.trim() }} ». Modifiez la recherche.
+                      Aucun utilisateur ne correspond a la recherche. Modifiez la recherche.
                     } @else {
-                      Aucun utilisateur pour le moment. Ajoutez le premier avec « Ajouter un utilisateur ».
+                      Aucun utilisateur pour le moment. Ajoutez le premier avec Ajouter un utilisateur.
                     }
                   </td>
                 </tr>
@@ -129,24 +106,19 @@
       <footer class="pager">
         <p class="pager-count" aria-live="polite">
           @if (total() > 0) {
-            {{ from() }} à {{ to() }} sur {{ total() }} utilisateurs
+            Affichage de {{ from() }} a {{ to() }} sur {{ total() }} utilisateurs
           }
         </p>
         <div class="pager-controls">
-          <button type="button" class="btn btn-ghost" [disabled]="page() <= 1 || loading()" (click)="goTo(page() - 1)">
-            <app-icon name="chevron-left" />
-            Précédent
+          <button type="button" class="pager-btn" [disabled]="page() <= 1 || loading()" (click)="goToFirst()" aria-label="Premiere page">«</button>
+          <button type="button" class="pager-btn" [disabled]="page() <= 1 || loading()" (click)="goTo(page() - 1)" aria-label="Page precedente">
+            <app-icon name="chevron-left" [size]="16" />
           </button>
-          <span class="pager-page">Page {{ page() }} sur {{ lastPage() }}</span>
-          <button
-            type="button"
-            class="btn btn-ghost"
-            [disabled]="page() >= lastPage() || loading()"
-            (click)="goTo(page() + 1)"
-          >
-            Suivant
-            <app-icon name="chevron-right" />
+          <span class="pager-page">{{ page() }}</span>
+          <button type="button" class="pager-btn" [disabled]="page() >= lastPage() || loading()" (click)="goTo(page() + 1)" aria-label="Page suivante">
+            <app-icon name="chevron-right" [size]="16" />
           </button>
+          <button type="button" class="pager-btn" [disabled]="page() >= lastPage() || loading()" (click)="goToLast()" aria-label="Derniere page">»</button>
         </div>
       </footer>
     }
@@ -158,31 +130,17 @@
 @if (menu(); as m) {
   <ul class="ctx" role="menu" aria-label="Actions sur l'utilisateur" [style.left.px]="m.x" [style.top.px]="m.y">
     <li role="none">
-      <button type="button" role="menuitem" (click)="view(m.user)"><app-icon name="eye" />Consulter le détail</button>
+      <button type="button" role="menuitem" (click)="view(m.user)"><app-icon name="eye" />Consulter le detail</button>
     </li>
     <li role="none">
-      <button type="button" role="menuitem" (click)="edit(m.user)"><app-icon name="pencil" />Éditer l'utilisateur</button>
+      <button type="button" role="menuitem" (click)="edit(m.user)"><app-icon name="pencil" />Editer l'utilisateur</button>
     </li>
     <li role="none">
-      <button type="button" role="menuitem" (click)="rolesTarget.set(m.user)">
-        <app-icon name="shield" />Attribuer des rôles
-      </button>
-    </li>
-    <li role="none">
-      <button type="button" role="menuitem" (click)="askToggle(m.user)">
-        <app-icon name="power" />{{ m.user.actif ? 'Désactiver le compte' : 'Activer le compte' }}
-      </button>
-    </li>
-    <li role="none">
-      <button type="button" role="menuitem" (click)="askReset(m.user)">
-        <app-icon name="reset" />Réinitialiser le mot de passe
+      <button type="button" role="menuitem" (click)="toggleStatus(m.user)">
+        <app-icon name="power" />{{ isActif(m.user) ? 'Desactiver le compte' : 'Activer le compte' }}
       </button>
     </li>
   </ul>
-}
-
-@if (rolesTarget(); as target) {
-  <app-role-assign-dialog [user]="target" (saved)="onRolesSaved($event)" (closed)="rolesTarget.set(null)" />
 }
 
 @if (confirm(); as c) {

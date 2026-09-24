@@ -1,12 +1,15 @@
-<section class="page page--narrow">
+﻿<section class="page page--narrow">
   <nav class="breadcrumb" aria-label="Fil d'Ariane">
     <a [routerLink]="listPath">Utilisateurs</a>
     <span aria-hidden="true">/</span>
-    <span aria-current="page">{{ title }}</span>
+    <span aria-current="page">{{ title() }}</span>
   </nav>
 
-  <header class="page-header">
-    <h1>{{ title }}</h1>
+    <header class="page-header page-header--with-back">
+    <h1>{{ title() }}</h1>
+    <a class="btn btn-ghost btn-back" [routerLink]="listPath">
+      ← Retour
+    </a>
   </header>
 
   @if (loading()) {
@@ -23,12 +26,13 @@
           <span class="avatar" aria-hidden="true">{{ initials(u) }}</span>
           <div>
             <p class="identity-name">{{ name(u) }}</p>
-            <p class="identity-login">{{ u.login }}</p>
+            <p class="identity-login">{{ u.email }}</p>
           </div>
-          <span class="badge" [class.badge--ok]="u.actif" [class.badge--off]="!u.actif">
-            {{ u.actif ? 'Actif' : 'Inactif' }}
+          <span class="badge" [class.badge--ok]="u.statut === 'ACTIF'" [class.badge--off]="u.statut === 'INACTIF'">
+            {{ u.statut === 'ACTIF' ? 'Actif' : 'Inactif' }}
           </span>
         </div>
+        <p class="hint">Pour activer ou désactiver ce compte, utilisez l'action correspondante depuis la liste.</p>
         @if (u.must_change_password) {
           <div class="notice">
             <p>
@@ -44,6 +48,12 @@
             Un mot de passe par défaut sera attribué au compte. L'utilisateur devra le modifier à sa première
             connexion.
           </p>
+        </div>
+      }
+
+      @if (rolesError(); as message) {
+        <div class="notice notice--error" role="alert">
+          <p>{{ message }}</p>
         </div>
       }
 
@@ -71,45 +81,42 @@
         </div>
 
         <div class="field">
-          <label for="login">Login <span aria-hidden="true">*</span></label>
+          <label for="email">Email <span aria-hidden="true">*</span></label>
           <input
-            id="login"
+            id="email"
             type="text"
-            formControlName="login"
+            formControlName="email"
             autocomplete="off"
             autocapitalize="off"
             spellcheck="false"
-            [class.is-invalid]="errorOf('login')"
+            [class.is-invalid]="errorOf('email')"
           />
-          @if (errorOf('login'); as msg) {
+          @if (errorOf('email'); as msg) {
             <p class="field-error" role="alert">{{ msg }}</p>
           } @else if (mode === 'edit') {
-            <p class="hint">Le login ne peut plus être modifié après la création du compte.</p>
+            <p class="hint">L'email ne peut plus être modifié après la création du compte.</p>
           }
         </div>
 
         <div class="field">
-          <label for="profil">Profil</label>
-          <select id="profil" formControlName="profil">
-            @for (p of profilOptions; track p.code) {
-              <option [value]="p.code">{{ p.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="field field--full">
-          <span class="label" id="statut-label">Statut</span>
-          <label class="switch">
-            <input type="checkbox" role="switch" formControlName="actif" aria-labelledby="statut-label" />
-            <span class="switch-track"></span>
-            <span>
-              {{
-                form.controls.actif.value
-                  ? 'Actif : cet utilisateur peut se connecter'
-                  : "Inactif : l'accès à la plateforme est verrouillé"
-              }}
-            </span>
-          </label>
+          <label for="direction">Direction <span aria-hidden="true">*</span></label>
+          @if (mode === 'detail') {
+            <input id="direction" type="text" [value]="directionLabel(form.controls.departement_id.value)" disabled />
+          } @else {
+            <select
+              id="direction"
+              formControlName="departement_id"
+              [class.is-invalid]="errorOf('departement_id')"
+            >
+              <option [ngValue]="null">— Choisir une direction —</option>
+              @for (d of directions; track d.id) {
+                <option [ngValue]="d.id">{{ d.nom }} ({{ d.code }})</option>
+              }
+            </select>
+          }
+          @if (errorOf('departement_id'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          }
         </div>
       </div>
 
@@ -118,8 +125,8 @@
           <span class="label">Rôles</span>
           @if (form.controls.roles.value.length) {
             <ul class="chips">
-              @for (code of form.controls.roles.value; track code) {
-                <li class="badge badge--admin">{{ roleLabel(code) }}</li>
+              @for (id of form.controls.roles.value; track id) {
+                <li class="badge badge--admin">{{ roleLabel(id) }}</li>
               }
             </ul>
           } @else {
@@ -127,27 +134,21 @@
           }
         </div>
       } @else {
-        <fieldset class="field habilitation">
-          <legend class="label">Habilitation</legend>
-          <div class="role-list">
-            @for (role of roleOptions; track role.code) {
-              <label class="role-option" [class.is-selected]="hasRole(role.code)">
-                <input
-                  type="checkbox"
-                  [checked]="hasRole(role.code)"
-                  (change)="toggleRole(role.code, $any($event.target).checked)"
-                />
-                <span>
-                  <strong>{{ role.label }}</strong>
-                  <small>{{ role.description }}</small>
-                </span>
-              </label>
+        <div class="field">
+          <label for="roles">Habilitation</label>
+          <p class="hint">Maintenez Ctrl (ou Cmd sur Mac) enfoncé pour sélectionner plusieurs rôles.</p>
+          <select
+            id="roles"
+            multiple
+            class="role-select"
+            [size]="allRoles().length || 1"
+            (change)="onRolesSelectChange($any($event.target))"
+          >
+            @for (role of allRoles(); track role.id) {
+              <option [value]="role.id" [selected]="hasRole(role.id)">{{ role.nom }}</option>
             }
-          </div>
-          @if (errorOf('roles'); as msg) {
-            <p class="field-error" role="alert">{{ msg }}</p>
-          }
-        </fieldset>
+          </select>
+        </div>
       }
 
       @if (error(); as message) {

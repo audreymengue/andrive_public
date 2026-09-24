@@ -17,6 +17,12 @@ export const ADMINISTRATION_ROUTES: Routes = [
                 title: 'ListRole',
                 loadComponent: () => import('./views/list-role/list-role.page').then(m => m.ListRolePage)
             },
+            // Route optionnelle si vous préférez passer par une URL dynamique pour les permissions d'un rôle
+            {
+                path: 'list-role/:id/permissions',
+                title: 'Permissions du rôle',
+                loadComponent: () => import('./views/list-permission/list-permission.page').then(m => m.ListPermissionPage)
+            },
             {
                 path: 'list-users',
                 title: 'ListUsers',
