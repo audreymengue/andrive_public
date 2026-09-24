@@ -19,11 +19,12 @@ export class MenuService {
   /** Menu filtré selon les rôles et permissions de l'utilisateur connecté. */
   readonly visibleMenu = computed(() => {
     const user = this.coreService.currentUser();
-    return filterMenuByAccess(
-      APP_MENU,
-      user?.roles ?? [],
-      user?.permissions ?? []
-    );
+
+    const rolesNoms = user?.roles.map((r) => r.nom) ?? [];
+    const permissionsCodes =
+      user?.roles.flatMap((r) => r.permissions.map((p) => p.code)) ?? [];
+
+    return filterMenuByAccess(APP_MENU, rolesNoms, permissionsCodes);
   });
 
   /** Indique si l'item correspond à la route courante. */

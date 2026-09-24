@@ -7,12 +7,30 @@ import {
   signal,
 } from '@angular/core';
 
+export interface Permission {
+  id: number;
+  libelle: string;
+  code: string;
+  description: string;
+}
+
+export interface Role {
+  id: number;
+  nom: string;
+  description: string;
+  statut: 'ACTIF' | 'INACTIF';
+  permissions: Permission[];
+}
+
 export interface User {
   id: number;
-  name: string;
+  nom: string;
+  prenom: string;
   email: string;
-  roles?: string[];
-  permissions?: string[];
+  statut: 'ACTIF' | 'INACTIF';
+  mustChangePassword: boolean;
+  directionId: number;
+  roles: Role[];
 }
 
 @Injectable({
@@ -106,14 +124,16 @@ export class CoreService {
   /**
    * Vérifie si l'utilisateur possède un rôle.
    */
-  hasRole(role: string): boolean {
-    return this.currentUser()?.roles?.includes(role) ?? false;
-  }
+ hasRole(role: string): boolean {
+  return this.currentUser()?.roles?.some(r => r.nom === role) ?? false;
+}
 
   /**
    * Vérifie si l'utilisateur possède une permission.
    */
-  hasPermission(permission: string): boolean {
-    return this.currentUser()?.permissions?.includes(permission) ?? false;
-  }
+ hasPermission(permission: string): boolean {
+  return this.currentUser()?.roles?.some(r =>
+    r.permissions.some(p => p.code === permission)
+  ) ?? false;
+ }
 }

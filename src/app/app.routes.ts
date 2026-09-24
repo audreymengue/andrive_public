@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
+import { PasswordChangeGuard } from './core/guards/password-change.guard';
 
 export const routes: Routes = [
     {
@@ -12,10 +13,16 @@ export const routes: Routes = [
         path: '',
         loadChildren: () => import('./features/auth/routes').then(m => m.AUTH_ROUTES)
     },
+       {
+    path: 'premiere-connexion',
+    loadComponent: () => import('./features/auth/views/first-connexion/first-connexion.page').then(m => m.FirstConnexionPage),
+    canActivate: [AuthGuard],
+    title: 'Première connexion'
+},
     {
         path: 'dashboard',
         loadComponent: () => import('./layout/main-layout/main-layout').then(m => m.MainLayout),
-        canActivate: [AuthGuard],
+        canActivate: [AuthGuard, PasswordChangeGuard],
         children: [
             {
                 path: '',
@@ -79,7 +86,12 @@ export const routes: Routes = [
             }
         ]
     },
+    
     {
+        path: 'auth',
+        loadChildren: () => import('./features/auth/routes').then(m => m.AUTH_ROUTES)
+    },
+{
         path: '**',
         title: 'Page introuvable',
         redirectTo: ''

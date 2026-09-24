@@ -1,0 +1,84 @@
+<main class="container py-5" style="max-width: 460px">
+      <section class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <h1 class="h3 mb-2">Première connexion</h1>
+          <p class="text-secondary">
+            Pour des raisons de sécurité, veuillez définir un nouveau mot de
+            passe avant de continuer.
+          </p>
+
+          <label for="motDePasseActuel">Mot de passe actuel</label>
+<input id="motDePasseActuel" type="password" formControlName="motDePasseActuel" />
+@if (form.get('motDePasseActuel')?.touched && form.get('motDePasseActuel')?.hasError('required')) {
+  <p class="error">Le mot de passe actuel est requis.</p>
+}
+
+          <form [formGroup]="form" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+              <label class="form-label" for="nouveauMotDePasse">
+                Nouveau mot de passe
+              </label>
+              <input
+                class="form-control"
+                id="nouveauMotDePasse"
+                type="password"
+                formControlName="nouveauMotDePasse"
+                autocomplete="new-password"
+              />
+              <div
+                class="text-danger small mt-1"
+                *ngIf="
+                  form.controls.nouveauMotDePasse.touched &&
+                  form.controls.nouveauMotDePasse.errors?.['required']
+                "
+              >
+                Le nouveau mot de passe est requis.
+              </div>
+              <div
+                class="text-danger small mt-1"
+                *ngIf="
+                  form.controls.nouveauMotDePasse.touched &&
+                  form.controls.nouveauMotDePasse.errors?.['minlength']
+                "
+              >
+                Le mot de passe doit contenir au moins 8 caractères.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="confirmationMotDePasse">
+                Confirmation de mot de passe
+              </label>
+              <input
+                class="form-control"
+                id="confirmationMotDePasse"
+                type="password"
+                formControlName="confirmationMotDePasse"
+                autocomplete="new-password"
+              />
+              <div
+                class="text-danger small mt-1"
+                *ngIf="
+                  form.controls.confirmationMotDePasse.touched &&
+                  form.errors?.['passwordsMismatch']
+                "
+              >
+                Les mots de passe ne correspondent pas.
+              </div>
+            </div>
+
+            <div class="text-danger small mb-3" *ngIf="errorMessage">
+              {{ errorMessage }}
+            </div>
+
+            <button
+              class="btn btn-primary w-100"
+              type="submit"
+              [disabled]="form.invalid || isLoading"
+            >
+              {{ isLoading ? 'Validation en cours…' : 'Valider' }}
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
