@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
@@ -12,7 +12,7 @@ import {
 } from '@angular/forms';
 import { CoreService } from '@/core/services/core.service';
 import { AuthService } from '../../../../core/services/auth.service';
-// Validateur personnalisé : vérifie que les deux champs de mot de passe correspondent
+
 function passwordsMatchValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const nouveauMotDePasse = control.get('nouveauMotDePasse')?.value;
@@ -41,61 +41,73 @@ export class FirstConnexionPage {
   private authService = inject(AuthService);
   private coreService = inject(CoreService);
 
-  isLoading = false;
-  errorMessage = '';
+  isLoading = signal(false);
+  errorMessage = signal('');
+  showCurrentPassword = signal(false);
+  showNewPassword = signal(false);
+  showConfirmPassword = signal(false);
 
   form = this.fb.group(
-  {
-    motDePasseActuel: this.fb.control('', [Validators.required]),
-    nouveauMotDePasse: this.fb.control('', [
-      Validators.required,
-      Validators.minLength(8),
-    ]),
-    confirmationMotDePasse: this.fb.control('', [Validators.required]),
-  },
-  { validators: passwordsMatchValidator() }
-);
+    {
+      motDePasseActuel: this.fb.control('', [Validators.required]),
+      nouveauMotDePasse: this.fb.control('', [
+        Validators.required,
+        Validators.minLength(8),
+      ]),
+      confirmationMotDePasse: this.fb.control('', [Validators.required]),
+    },
+    { validators: passwordsMatchValidator() }
+  );
 
-onSubmit(): void {
-  if (this.form.invalid) {
-    this.form.markAllAsTouched();
-    return;
+  toggleNewPasswordVisibility(): void {
+    this.showNewPassword.update(value => !value);
   }
 
-  this.isLoading = true;
-  this.errorMessage = '';
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword.update(value => !value);
+  }
 
-  const { motDePasseActuel, nouveauMotDePasse } = this.form.getRawValue();
+  onSubmit(): void {
+    if (this.form.invalid || this.isLoading()) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
-  this.definirNouveauMotDePasse(motDePasseActuel!, nouveauMotDePasse!)
-    .then((success) => {
-      this.isLoading = false;
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
-      if (!success) {
-        this.errorMessage =
-          'Impossible de mettre à jour le mot de passe. Veuillez réessayer.';
-        return;
-      }
+    const { motDePasseActuel, nouveauMotDePasse } = this.form.getRawValue();
 
-      const user = this.coreService.currentUser();
-      if (user) {
-        this.coreService.setCurrentUser({ ...user, mustChangePassword: false });
-      }
+    this.definirNouveauMotDePasse(motDePasseActuel!, nouveauMotDePasse!)
+      .then((success) => {
+        this.isLoading.set(false);
 
-      this.router.navigate(['/dashboard']);
-    })
-    .catch(() => {
-      this.isLoading = false;
-      this.errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
-    });
-}
+        if (!success) {
+          this.errorMessage.set(
+            'Impossible de mettre à jour le mot de passe. Veuillez réessayer.'
+          );
+          return;
+        }
 
-private definirNouveauMotDePasse(
-  motDePasseActuel: string,
-  nouveauMotDePasse: string
-): Promise<boolean> {
-  return firstValueFrom(
-    this.authService.changePassword(motDePasseActuel, nouveauMotDePasse)
-  ).then(() => true).catch(() => false);
-}
+        const user = this.coreService.currentUser();
+        if (user) {
+          this.coreService.setCurrentUser({ ...user, mustChangePassword: false });
+        }
+
+        this.router.navigate(['/dashboard']);
+      })
+      .catch(() => {
+        this.isLoading.set(false);
+        this.errorMessage.set('Une erreur est survenue. Veuillez réessayer.');
+      });
+  }
+
+  private definirNouveauMotDePasse(
+    motDePasseActuel: string,
+    nouveauMotDePasse: string
+  ): Promise<boolean> {
+    return firstValueFrom(
+      this.authService.changePassword(motDePasseActuel, nouveauMotDePasse)
+    ).then(() => true).catch(() => false);
+  }
 }

@@ -73,8 +73,8 @@ export class AuthService {
     );
   }
 
-  changePassword(currentPassword: string, newPassword: string): Observable<void> {
-    return this.api.put<void>('/api/me/password', {
+ changePassword(currentPassword: string, newPassword: string): Observable<void> {
+  return this.api.put<void>('/me/password', {
       current_password: currentPassword,
       new_password: newPassword,
       new_password_confirmation: newPassword,
