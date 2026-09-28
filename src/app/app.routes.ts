@@ -88,13 +88,8 @@ export const routes: Routes = [
     },
     
     {
-<<<<<<< HEAD
-        path: 'auth',
-        loadChildren: () => import('./features/auth/routes').then(m => m.AUTH_ROUTES)
-=======
         path: 'administration',
         loadChildren: () => import('./features/administration/routes').then(m => m.ADMINISTRATION_ROUTES)
->>>>>>> origin/main
     },
 {
         path: '**',
