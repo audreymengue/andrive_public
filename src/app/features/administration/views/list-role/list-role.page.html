@@ -1,0 +1,155 @@
+<div class="role-container">
+  <!-- En-tête -->
+  <div class="header-section">
+    <div class="header-title-group">
+      <button class="btn btn-back" (click)="goBack()" title="Retour">
+        ⬅️ Retour
+      </button>
+      <div>
+        <h2>Gestion des Rôles</h2>
+        <p class="subtitle">Consultez et gérez les rôles d'accès de l'application ANINF</p>
+      </div>
+    </div>
+    
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <span class="icon">+</span> Ajouter rôle
+    </button>
+  </div>
+
+  <!-- Barre de recherche -->
+  <div class="search-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        placeholder="Rechercher par code ou libellé..."
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <!-- Tableau des Rôles -->
+  <div class="table-card">
+    <table class="role-table">
+      <thead>
+        <tr>
+          <th class="col-id">ID</th>
+          <th class="col-code">Code</th>
+          <th class="col-libelle">Libellé</th>
+          <th class="col-desc">Description</th>
+          <th class="col-actions text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let role of filteredRoles">
+          <td class="col-id text-muted">#{{ role.id }}</td>
+          <td class="col-code">
+            <span class="badge-code">{{ role.code }}</span>
+          </td>
+          <td class="col-libelle font-medium">{{ role.libelle }}</td>
+          <td class="col-desc text-muted">{{ role.description }}</td>
+          <td class="col-actions text-right">
+            
+            <!-- Actions directes avec icônes encadrées -->
+            <div class="action-buttons-group">
+              <!-- Consulter la liste des utilisateurs -->
+              <button class="btn-icon" (click)="viewUsers(role)" title="Consulter la liste des utilisateurs">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+
+              <!-- Associer de nouvelles permissions -->
+              <button class="btn-icon" (click)="assignPermissions(role)" title="Associer de nouvelles permissions">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 2l-2 2m-2-2l2 2m2 0l-3 3m0 0l-2 2M7 11a5 5 0 1 1 5 5 5 5 0 0 1-5-5z"></path>
+                </svg>
+              </button>
+
+              <!-- Modifier le rôle -->
+              <button class="btn-icon btn-icon-edit" (click)="openEditModal(role)" title="Modifier ce rôle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+
+              <!-- Supprimer le rôle -->
+              <button class="btn-icon btn-icon-danger" (click)="deleteRole(role.id)" title="Supprimer ce rôle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+
+          </td>
+        </tr>
+        <tr *ngIf="filteredRoles.length === 0">
+          <td colspan="5" class="empty-state">
+            Aucun rôle trouvé.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modale (Ajouter / Modifier) -->
+  <div class="modal-overlay" *ngIf="isModalOpen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>{{ isEditMode ? 'Modifier le Rôle' : 'Nouveau Rôle' }}</h3>
+        <button class="close-btn" (click)="closeAddModal()">✕</button>
+      </div>
+      <form (ngSubmit)="saveRole()">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="code">Code <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="code" 
+              [(ngModel)]="newRole.code" 
+              name="code" 
+              placeholder="ex: role-user" 
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="libelle">Libellé <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="libelle" 
+              [(ngModel)]="newRole.libelle" 
+              name="libelle" 
+              placeholder="ex: Utilisateur" 
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea 
+              id="description" 
+              [(ngModel)]="newRole.description" 
+              name="description" 
+              rows="3" 
+              placeholder="ex: Rôle d'un utilisateur normal"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeAddModal()">
+            ⬅️ Retour
+          </button>
+          <button type="submit" class="btn btn-primary">
+            {{ isEditMode ? 'Mettre à jour' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

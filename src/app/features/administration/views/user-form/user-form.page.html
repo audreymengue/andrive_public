@@ -1,0 +1,168 @@
+﻿<section class="page page--narrow">
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <a [routerLink]="listPath">Utilisateurs</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">{{ title() }}</span>
+  </nav>
+
+    <header class="page-header page-header--with-back">
+    <h1>{{ title() }}</h1>
+    <a class="btn btn-ghost btn-back" [routerLink]="listPath">
+      ← Retour
+    </a>
+  </header>
+
+  @if (loading()) {
+    <p class="muted" role="status">Chargement de l'utilisateur…</p>
+  } @else if (loadError()) {
+    <div class="notice notice--error" role="alert">
+      <p>Cet utilisateur est introuvable ou n'a pas pu être chargé.</p>
+      <button type="button" class="btn btn-ghost" (click)="load()">Réessayer</button>
+    </div>
+  } @else {
+    <form class="card form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (mode === 'detail' && user(); as u) {
+        <div class="identity">
+          <span class="avatar" aria-hidden="true">{{ initials(u) }}</span>
+          <div>
+            <p class="identity-name">{{ name(u) }}</p>
+            <p class="identity-login">{{ u.email }}</p>
+          </div>
+          <span class="badge" [class.badge--ok]="u.statut === 'ACTIF'" [class.badge--off]="u.statut === 'INACTIF'">
+            {{ u.statut === 'ACTIF' ? 'Actif' : 'Inactif' }}
+          </span>
+        </div>
+        <p class="hint">Pour activer ou désactiver ce compte, utilisez l'action correspondante depuis la liste.</p>
+        @if (u.must_change_password) {
+          <div class="notice">
+            <p>
+              Cet utilisateur a encore son mot de passe par défaut. Il devra le modifier à sa première connexion.
+            </p>
+          </div>
+        }
+      }
+
+      @if (mode === 'create') {
+        <div class="notice notice--info">
+          <p>
+            Un mot de passe par défaut sera attribué au compte. L'utilisateur devra le modifier à sa première
+            connexion.
+          </p>
+        </div>
+      }
+
+      @if (rolesError(); as message) {
+        <div class="notice notice--error" role="alert">
+          <p>{{ message }}</p>
+        </div>
+      }
+
+      <div class="grid">
+        <div class="field">
+          <label for="nom">Nom <span aria-hidden="true">*</span></label>
+          <input id="nom" type="text" formControlName="nom" autocomplete="off" [class.is-invalid]="errorOf('nom')" />
+          @if (errorOf('nom'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="prenom">Prénom <span aria-hidden="true">*</span></label>
+          <input
+            id="prenom"
+            type="text"
+            formControlName="prenom"
+            autocomplete="off"
+            [class.is-invalid]="errorOf('prenom')"
+          />
+          @if (errorOf('prenom'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="email">Email <span aria-hidden="true">*</span></label>
+          <input
+            id="email"
+            type="text"
+            formControlName="email"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            [class.is-invalid]="errorOf('email')"
+          />
+          @if (errorOf('email'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          } @else if (mode === 'edit') {
+            <p class="hint">L'email ne peut plus être modifié après la création du compte.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="direction">Direction <span aria-hidden="true">*</span></label>
+          @if (mode === 'detail') {
+            <input id="direction" type="text" [value]="directionLabel(form.controls.departement_id.value)" disabled />
+          } @else {
+            <select
+              id="direction"
+              formControlName="departement_id"
+              [class.is-invalid]="errorOf('departement_id')"
+            >
+              <option [ngValue]="null">— Choisir une direction —</option>
+              @for (d of directions; track d.id) {
+                <option [ngValue]="d.id">{{ d.nom }} ({{ d.code }})</option>
+              }
+            </select>
+          }
+          @if (errorOf('departement_id'); as msg) {
+            <p class="field-error" role="alert">{{ msg }}</p>
+          }
+        </div>
+      </div>
+
+      @if (mode === 'detail') {
+        <div class="field">
+          <span class="label">Rôles</span>
+          @if (form.controls.roles.value.length) {
+            <ul class="chips">
+              @for (id of form.controls.roles.value; track id) {
+                <li class="badge badge--admin">{{ roleLabel(id) }}</li>
+              }
+            </ul>
+          } @else {
+            <p class="hint">Aucun rôle attribué.</p>
+          }
+        </div>
+      } @else {
+        <div class="field">
+          <label for="roles">Habilitation</label>
+          <p class="hint">Maintenez Ctrl (ou Cmd sur Mac) enfoncé pour sélectionner plusieurs rôles.</p>
+          <select
+            id="roles"
+            multiple
+            class="role-select"
+            [size]="allRoles().length || 1"
+            (change)="onRolesSelectChange($any($event.target))"
+          >
+            @for (role of allRoles(); track role.id) {
+              <option [value]="role.id" [selected]="hasRole(role.id)">{{ role.nom }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      @if (error(); as message) {
+        <div class="notice notice--error" role="alert">
+          <p>{{ message }}</p>
+        </div>
+      }
+
+      <div class="form-actions" [class.form-actions--right]="mode === 'detail'">
+        <button type="button" class="btn btn-ghost" (click)="cancel()">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

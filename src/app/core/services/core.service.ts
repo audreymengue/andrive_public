@@ -27,10 +27,17 @@ export interface User {
   nom: string;
   prenom: string;
   email: string;
+<<<<<<< HEAD
   statut: 'ACTIF' | 'INACTIF';
   mustChangePassword: boolean;
   directionId: number;
   roles: Role[];
+=======
+  roles?: string[];
+  permissions?: string[];
+  /** true tant que la personne utilise le mot de passe fourni par défaut (1ère connexion). */
+  mustChangePassword?: boolean;
+>>>>>>> origin/main
 }
 
 @Injectable({

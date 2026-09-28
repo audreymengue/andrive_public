@@ -1,0 +1,122 @@
+<div class="permission-container">
+  <!-- En-tête -->
+  <div class="header-section">
+    <div class="header-title-group">
+      <button class="btn btn-back" (click)="goBack()" title="Retour">
+        ⬅️ Retour
+      </button>
+      <div>
+        <h2>Gestion des Permissions</h2>
+        <p class="subtitle">Consultez et gérez les droits d'accès de l'application ANINF</p>
+      </div>
+    </div>
+    
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <span class="icon">+</span> Ajouter permission
+    </button>
+  </div>
+
+  <!-- Recherche -->
+  <div class="search-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        placeholder="Rechercher par code ou libellé..."
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <!-- Tableau -->
+  <div class="table-card">
+    <table class="permission-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Code</th>
+          <th>Libellé</th>
+          <th>Description</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let perm of filteredPermissions">
+          <td class="text-muted">#{{ perm.id }}</td>
+          <td>
+            <span class="badge-code">{{ perm.code }}</span>
+          </td>
+          <td class="font-medium">{{ perm.libelle }}</td>
+          <td class="text-muted">{{ perm.description }}</td>
+          <td class="text-right actions-cell">
+            <button class="btn-icon" (click)="openEditModal(perm)" title="Éditer">✏️</button>
+            <button class="btn-icon btn-danger" (click)="deletePermission(perm.id)" title="Supprimer">🗑️</button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredPermissions.length === 0">
+          <td colspan="5" class="empty-state">
+            Aucune permission trouvée.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modale -->
+  <div class="modal-overlay" *ngIf="isModalOpen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>{{ isEditMode ? 'Modifier la Permission' : 'Nouvelle Permission' }}</h3>
+        <button class="close-btn" (click)="closeAddModal()">✕</button>
+      </div>
+      <form (ngSubmit)="savePermission()">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="code">Code <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="code" 
+              [(ngModel)]="newPermission.code" 
+              name="code" 
+              placeholder="ex: create_user" 
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="libelle">Libellé <span class="required">*</span></label>
+            <input 
+              type="text" 
+              id="libelle" 
+              [(ngModel)]="newPermission.libelle" 
+              name="libelle" 
+              placeholder="ex: Créer un utilisateur" 
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea 
+              id="description" 
+              [(ngModel)]="newPermission.description" 
+              name="description" 
+              rows="3" 
+              placeholder="ex: Permet de créer un utilisateur"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeAddModal()">
+            ⬅️ Retour
+          </button>
+          <button type="submit" class="btn btn-primary">
+            {{ isEditMode ? 'Mettre à jour' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
