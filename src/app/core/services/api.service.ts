@@ -118,19 +118,23 @@ export class ApiService {
     );
   }
 
-  private handleError(error: HttpErrorResponse, method: string, url: string): Observable<never> {
+    private handleError(error: HttpErrorResponse, method: string, url: string): Observable<never> {
     if (this.debugMode) {
       console.error(`[ERROR ${method}] ${url}`, error);
     }
+
+    const isLoginRequest = url.includes('/login');
 
     switch (error.status) {
       case 0:
         console.error('Connexion au serveur impossible. Vérifiez votre connexion internet.');
         break;
       case 401:
-        console.warn('Session expirée. Redirection vers la page de connexion...');
-        this.coreService.logout();
-        this.router.navigate(['/']);
+        if (!isLoginRequest) {
+          console.warn('Session expirée. Redirection vers la page de connexion...');
+          this.coreService.logout();
+          this.router.navigate(['/']);
+        }
         break;
       case 422:
         this._backendErrors.set(error.error?.errors || {});
