@@ -11,7 +11,7 @@ import { RoleService } from '../../services/role.service';
 import { UserService } from '../../services/user.service';
 
 type Mode = 'create' | 'edit' | 'detail';
-type FieldName = 'nom' | 'prenom' | 'email' | 'departement_id';
+type FieldName = 'nom' | 'prenom' | 'email' | 'direction_id';
 
 /**
  * Un seul composant pour les trois écrans :
@@ -58,7 +58,7 @@ export class UserFormPage {
     nom: ['', [Validators.required, Validators.maxLength(100)]],
     prenom: ['', [Validators.required, Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
-    departement_id: this.fb.control<number | null>(null, Validators.required),
+    direction_id: this.fb.control<number | null>(null, Validators.required),
     roles: [[] as number[]],
   });
 
@@ -90,7 +90,7 @@ export class UserFormPage {
           nom: u.nom,
           prenom: u.prenom,
           email: u.email,
-          departement_id: u.departement_id,
+          direction_id: u.direction_id,
           roles: u.roles.map((r) => r.id),
         });
         this.user.set(u);
@@ -112,7 +112,7 @@ export class UserFormPage {
       c.nom.disable();
       c.prenom.disable();
       c.email.disable();
-      c.departement_id.disable();
+      c.direction_id.disable();
       c.roles.disable();
     }
   }

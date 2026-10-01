@@ -101,12 +101,12 @@
         <div class="field">
           <label for="direction">Direction <span aria-hidden="true">*</span></label>
           @if (mode === 'detail') {
-            <input id="direction" type="text" [value]="directionLabel(form.controls.departement_id.value)" disabled />
+            <input id="direction" type="text" [value]="directionLabel(form.controls.direction_id.value)" disabled />
           } @else {
             <select
               id="direction"
-              formControlName="departement_id"
-              [class.is-invalid]="errorOf('departement_id')"
+              formControlName="direction_id"
+              [class.is-invalid]="errorOf('direction_id')"
             >
               <option [ngValue]="null">— Choisir une direction —</option>
               @for (d of directions; track d.id) {
@@ -114,7 +114,7 @@
               }
             </select>
           }
-          @if (errorOf('departement_id'); as msg) {
+          @if (errorOf('direction_id'); as msg) {
             <p class="field-error" role="alert">{{ msg }}</p>
           }
         </div>

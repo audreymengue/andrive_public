@@ -27,7 +27,7 @@ export interface Direction {
 }
 
 /**
- * Liste officielle des directions (departement_id) extraite de la documentation officielle.
+ * Liste officielle des directions (direction_id) extraite de la documentation officielle.
  */
 export const DIRECTIONS: readonly Direction[] = [
   { id: 1, code: 'DG', nom: 'Direction Générale' },
@@ -51,7 +51,7 @@ export interface User {
   email: string;
   statut: StatutCode;
   must_change_password: boolean;
-  departement_id: number | null;
+  direction_id: number | null;
   roles: Role[];
 }
 
@@ -60,7 +60,7 @@ export interface UserPayload {
   nom: string;
   prenom: string;
   email: string;
-  departement_id: number | null;
+  direction_id: number | null;
 }
 
 /** Format de pagination natif de Laravel (API Resources). */

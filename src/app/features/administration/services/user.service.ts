@@ -35,7 +35,7 @@ function buildMockUsers(): User[] {
       email: `${login}${i}@aninf.ga`,
       statut: i % 5 === 0 ? 'INACTIF' : 'ACTIF',
       must_change_password: i % 7 === 0,
-      departement_id: (i % 6) + 1,
+      direction_id: (i % 6) + 1,
       roles: [MOCK_ROLES[roleIndex]],
     });
   }
@@ -49,7 +49,7 @@ let nextId = MOCK_USERS.length + 1;
  * Accès à l'API Laravel. Endpoints confirmés par la documentation :
  *   GET    /users?search=&page=&per_page=
  *   GET    /users/{id}
- *   POST   /users                          { nom, prenom, email, departement_id }
+ *   POST   /users                          { nom, prenom, email, direction_id }
  *   PUT    /users/{id}                     idem, champs optionnels
  *   PATCH  /users/{id}/activate            sans corps
  *   PATCH  /users/{id}/deactivate          sans corps
@@ -122,7 +122,7 @@ export class UserService {
         email: payload.email,
         statut: 'ACTIF',
         must_change_password: true,
-        departement_id: payload.departement_id,
+        direction_id: payload.direction_id,
         roles: [],
       };
       MOCK_USERS = [created, ...MOCK_USERS];

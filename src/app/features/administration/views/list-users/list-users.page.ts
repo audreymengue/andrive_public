@@ -187,18 +187,23 @@ export class ListUsersPage {
   }
 
   protected askReset(u: User): void {
-    this.openConfirm({
-      title: 'Reinitialiser le mot de passe ?',
-      message: `${fullName(u)} recevra le mot de passe par defaut et devra le modifier a sa prochaine connexion.`,
-      confirmLabel: 'Reinitialiser',
-      run: () =>
-        this.api.resetPassword(u.id).pipe(
-          tap(() => {
-            this.flash.show('Mot de passe reinitialise.');
-          }),
-        ),
-    });
-  }
+  console.log('=== RESET MOT DE PASSE CLIQUE ===');
+  console.log('Utilisateur :', u);
+
+  this.confirm.set({
+    title: 'Reinitialiser le mot de passe ?',
+    message: `${fullName(u)} recevra le mot de passe par defaut et devra le modifier a sa prochaine connexion.`,
+    confirmLabel: 'Reinitialiser',
+    run: () =>
+      this.api.resetPassword(u.id).pipe(
+        tap(() => {
+          this.flash.show('Mot de passe reinitialise.');
+        }),
+      ),
+  });
+
+  console.log('Confirmation ouverte :', this.confirm());
+}
 
   private openConfirm(c: Confirmation): void {
     this.confirmError.set(null);
