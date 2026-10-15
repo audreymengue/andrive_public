@@ -126,6 +126,10 @@ export class ListUsersPage {
     this.router.navigate([USERS_BASE_PATH, u.id, 'edit']);
   }
 
+  protected manageRoles(u: User): void {
+    this.rolesTarget.set(u);
+  }
+
   protected reload(): void {
     this.refresh$.next();
   }
@@ -187,22 +191,22 @@ export class ListUsersPage {
   }
 
   protected askReset(u: User): void {
-  console.log('=== RESET MOT DE PASSE CLIQUE ===');
-  console.log('Utilisateur :', u);
-
   this.confirm.set({
     title: 'Reinitialiser le mot de passe ?',
-    message: `${fullName(u)} recevra le mot de passe par defaut et devra le modifier a sa prochaine connexion.`,
+    message: `Un nouveau mot de passe temporaire sera généré pour ${fullName(u)} et devra être changé à sa prochaine connexion.`,
     confirmLabel: 'Reinitialiser',
     run: () =>
       this.api.resetPassword(u.id).pipe(
-        tap(() => {
-          this.flash.show('Mot de passe reinitialise.');
+        tap((result) => {
+          this.flash.show(
+            result.temporary_password
+              ? `Mot de passe temporaire de ${u.email} : ${result.temporary_password}`
+              : 'Mot de passe reinitialise.',
+            15000,
+          );
         }),
       ),
   });
-
-  console.log('Confirmation ouverte :', this.confirm());
 }
 
   private openConfirm(c: Confirmation): void {

@@ -1,0 +1,105 @@
+<section class="detail-page">
+  <header class="detail-header">
+    <button type="button" class="back-button" (click)="retourHistorique()">
+      <span aria-hidden="true">←</span> Retour à l’historique
+    </button>
+    <p class="eyebrow">DEMANDE DE TRANSPORT</p>
+    <h1>Détail de la demande</h1>
+  </header>
+
+  @if (loading()) {
+    <div class="state" role="status">Chargement du détail de la demande…</div>
+  } @else if (error(); as message) {
+    <div class="state state--error" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="button button--secondary" (click)="charger()">Réessayer</button>
+      <button type="button" class="button button--primary" (click)="retourHistorique()">Retour à l’historique</button>
+    </div>
+  } @else if (demande(); as d) {
+    <article class="detail-card">
+      <div class="reference-row">
+        <div>
+          <span class="field-label">Référence</span>
+          <h2>{{ d.reference }}</h2>
+        </div>
+        <span class="status" [ngClass]="statutClass(d.statut)">{{ statutLabel(d.statut) }}</span>
+      </div>
+
+      <section class="detail-section">
+        <h3>Informations générales</h3>
+        <div class="detail-grid">
+          <div class="field"><span class="field-label">Demandeur</span><strong>{{ d.demandeur ? d.demandeur.prenom + ' ' + d.demandeur.nom : '—' }}</strong></div>
+          <div class="field"><span class="field-label">Créée le</span><strong>{{ d.created_at | date:"dd/MM/yyyy 'à' HH:mm" }}</strong></div>
+          <div class="field"><span class="field-label">Direction</span><strong>{{ d.direction?.nom || '—' }}</strong></div>
+          <div class="field"><span class="field-label">Type de sortie</span><strong>{{ d.type_sortie?.libelle || '—' }}</strong></div>
+          <div class="field field--wide"><span class="field-label">Motif</span><strong>{{ d.motif || '—' }}</strong></div>
+          <div class="field field--wide" *ngIf="d.commentaire"><span class="field-label">Commentaire</span><p>{{ d.commentaire }}</p></div>
+        </div>
+      </section>
+
+      <section class="detail-section">
+        <h3>Départ et retour</h3>
+        <div class="detail-grid">
+          <div class="field"><span class="field-label">Adresse de départ</span><strong>{{ d.adresse_depart?.adresse || '—' }}</strong></div>
+          <div class="field"><span class="field-label">Date de départ</span><strong>{{ d.date_depart | date:'dd/MM/yyyy' }}</strong></div>
+          <div class="field"><span class="field-label">Heure de départ</span><strong>{{ heure(d.heure_depart) }}</strong></div>
+          <div class="field"><span class="field-label">Adresse de retour</span><strong>{{ d.adresse_retour?.adresse || '—' }}</strong></div>
+          <div class="field"><span class="field-label">Heure de retour</span><strong>{{ heure(d.heure_retour) }}</strong></div>
+        </div>
+      </section>
+
+      <section class="detail-section">
+        <h3>Destinations</h3>
+        @if (d.destinations.length) {
+          <ol class="item-list">
+            @for (destination of d.destinations; track destination.ordre) {
+              <li>{{ destination.entite_geographique?.adresse || 'Adresse non renseignée' }}</li>
+            }
+          </ol>
+        } @else {
+          <p class="empty">Aucune destination renseignée.</p>
+        }
+      </section>
+
+      <section class="detail-section">
+        <h3>Employés concernés</h3>
+        @if (d.employes.length) {
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nom</th><th>Prénom</th><th>Fonction</th></tr></thead>
+              <tbody>
+                @for (employe of d.employes; track $index) {
+                  <tr><td>{{ employe.nom }}</td><td>{{ employe.prenom }}</td><td>{{ employe.fonction || '—' }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty">Aucun employé renseigné.</p>
+        }
+      </section>
+
+      <section class="detail-section detail-section--last">
+        <h3>Objets transportés</h3>
+        @if (d.objets.length) {
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Désignation</th><th>Quantité</th><th>Description</th></tr></thead>
+              <tbody>
+                @for (objet of d.objets; track $index) {
+                  <tr><td>{{ objet.designation }}</td><td>{{ objet.quantite ?? '—' }}</td><td>{{ objet.description || '—' }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty">Aucun objet renseigné.</p>
+        }
+      </section>
+
+      <footer class="detail-actions">
+        <button type="button" class="button button--primary" (click)="retourHistorique()">Retour à l’historique</button>
+      </footer>
+    </article>
+  }
+</section>

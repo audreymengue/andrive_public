@@ -13,11 +13,18 @@ export const routes: Routes = [
         path: '',
         loadChildren: () => import('./features/auth/routes').then(m => m.AUTH_ROUTES)
     },
-       {
+        {
     path: 'premiere-connexion',
     loadComponent: () => import('./features/auth/views/first-connexion/first-connexion.page').then(m => m.FirstConnexionPage),
     canActivate: [AuthGuard],
     title: 'Première connexion'
+},
+    {
+    path: 'reset-password',
+    loadComponent: () =>
+    import('./features/auth/views/reset-password.page') .then(m => m.ResetPasswordPage),
+    canActivate: [AuthGuard],
+    title: 'Renouveler mon mot de passe'
 },
     {
         path: 'dashboard',
@@ -32,63 +39,78 @@ export const routes: Routes = [
             },
             {
                 path: 'demandes/transport',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
+                loadComponent: () => import('./features/demandes/views/demande-sortie/demande-sortie.page') .then(m => m.DemandeSortiePage),
                 canActivate: [RoleGuard],
-                data: { roles: ['agent', 'administrateur'], title: 'Demande de transport', description: 'Créez et envoyez une demande de transport.' }
+                data: {roles: ['agent', 'super_admin'],title: 'Demande de transport',description: 'Créez et envoyez une demande de transport.'
+    }
+},
+            {
+                path: 'demandes/historique',
+                loadComponent: () => import('./features/demandes/views/historique-demandes/historique-demandes.page').then(m => m.HistoriqueDemandesPage),
+                canActivate: [RoleGuard],
+                data: { roles: ['agent', 'super_admin'], title: 'Historique des demandes' }
             },
             {
                 path: 'demandes/suivi',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['agent', 'administrateur'], title: 'Suivi des demandes', description: 'Consultez le statut de vos demandes de transport.' }
+                data: { roles: ['agent', 'super_admin'], title: 'Suivi des demandes', description: 'Consultez le statut de vos demandes de transport.' }
+            },
+            {
+                path: 'demandes/:id',
+                loadComponent: () => import('./features/demandes/views/detail-demande/detail-demande.page').then(m => m.DetailDemandePage),
+                canActivate: [RoleGuard],
+                data: { roles: ['agent', 'super_admin'], title: 'Détail de la demande' }
             },
             {
                 path: 'gestion/demandes',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['dag', 'administrateur'], title: 'Traitement des demandes', description: 'Examinez, validez ou planifiez les demandes de transport.' }
+                data: { roles: ['dag', 'super_admin'], title: 'Traitement des demandes', description: 'Examinez, validez ou planifiez les demandes de transport.' }
             },
             {
                 path: 'gestion/chauffeurs',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['dag', 'administrateur'], title: 'Registre des chauffeurs', description: 'Gérez les informations et la disponibilité des chauffeurs.' }
+                data: { roles: ['dag', 'super_admin'], title: 'Registre des chauffeurs', description: 'Gérez les informations et la disponibilité des chauffeurs.' }
             },
             {
                 path: 'gestion/parc-automobile',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['dag', 'administrateur'], title: 'Parc automobile', description: 'Gérez les véhicules du parc automobile.' }
+                data: { roles: ['dag', 'super_admin'], title: 'Parc automobile', description: 'Gérez les véhicules du parc automobile.' }
             },
             {
                 path: 'gestion/alertes',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['dag', 'administrateur'], title: 'Alertes', description: 'Suivez les alertes liées aux chauffeurs et aux véhicules.' }
+                data: { roles: ['dag', 'super_admin'], title: 'Alertes', description: 'Suivez les alertes liées aux chauffeurs et aux véhicules.' }
             },
             {
                 path: 'missions/planifiees',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['pool_chauffeur', 'administrateur'], title: 'Missions planifiées', description: 'Consultez les missions qui vous sont affectées.' }
+                data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Missions planifiées', description: 'Consultez les missions qui vous sont affectées.' }
             },
             {
                 path: 'missions/historique',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['pool_chauffeur', 'administrateur'], title: 'Historique des missions', description: 'Consultez les missions terminées.' }
+                data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Historique des missions', description: 'Consultez les missions terminées.' }
             },
             {
                 path: 'missions/signalement',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['pool_chauffeur', 'administrateur'], title: 'Signalement', description: 'Signalez un incident ou une anomalie.' }
+                data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Signalement', description: 'Signalez un incident ou une anomalie.' }
             }
         ]
     },
     
     {
         path: 'administration',
+        canActivate: [AuthGuard, PasswordChangeGuard, RoleGuard],
+        data: { roles: ['super_admin'] },
         loadChildren: () => import('./features/administration/routes').then(m => m.ADMINISTRATION_ROUTES)
     },
 {

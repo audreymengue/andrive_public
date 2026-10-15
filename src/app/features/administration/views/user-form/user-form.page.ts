@@ -168,17 +168,29 @@ export class UserFormPage {
     this.error.set(null);
 
     const { roles, ...payload } = this.form.getRawValue();
-    const save$ = this.mode === 'create' ? this.api.create(payload) : this.api.update(this.id, payload);
+    const save$ = this.mode === 'create'
+      ? this.api.create(payload).pipe(
+          switchMap((result) => roles.length
+            ? this.api.assignRoles(result.user.id, roles).pipe(
+                switchMap((saved) => of({ saved, temporaryPassword: result.temporary_password })),
+              )
+            : of({ saved: result.user, temporaryPassword: result.temporary_password }),
+          ),
+        )
+      : this.api.update(this.id, payload).pipe(
+          switchMap((saved) => roles.length
+            ? this.api.assignRoles(saved.id, roles).pipe(switchMap((updated) => of({ saved: updated, temporaryPassword: '' })))
+            : of({ saved, temporaryPassword: '' }),
+          ),
+        );
 
-    save$
-      .pipe(switchMap((saved) => (roles.length ? this.api.assignRoles(saved.id, roles) : of(saved))))
-      .subscribe({
-        next: (saved) => {
+    save$.subscribe({
+        next: ({ saved, temporaryPassword }) => {
           this.flash.show(
             this.mode === 'create'
-              ? `Utilisateur ${saved.email} créé. Son mot de passe par défaut est à changer à la première connexion.`
+              ? `Utilisateur ${saved.email} créé. Mot de passe temporaire : ${temporaryPassword || 'à communiquer par l’administrateur'}. À changer à la première connexion.`
               : 'Modifications enregistrées.',
-            5000,
+            15000,
           );
           this.cancel();
         },

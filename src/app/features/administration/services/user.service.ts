@@ -11,6 +11,23 @@ interface Item<T> {
   data: T;
 }
 
+interface CreatedUserItem {
+  data: {
+    user: User;
+    temporary_password: string;
+  };
+}
+
+export interface CreatedUserResult {
+  user: User;
+  temporary_password: string;
+}
+
+export interface ResetPasswordResult {
+  must_change_password: boolean;
+  temporary_password: string;
+}
+
 export interface UserQuery {
   search?: string;
   page?: number;
@@ -113,7 +130,7 @@ export class UserService {
     return this.http.get<Item<User>>(`${this.base}/${id}`).pipe(map((r) => r.data));
   }
 
-  create(payload: UserPayload): Observable<User> {
+  create(payload: UserPayload): Observable<CreatedUserResult> {
     if (environment.useMockData) {
       const created: User = {
         id: nextId++,
@@ -126,9 +143,9 @@ export class UserService {
         roles: [],
       };
       MOCK_USERS = [created, ...MOCK_USERS];
-      return of(created).pipe(delay(250));
+      return of({ user: created, temporary_password: '' }).pipe(delay(250));
     }
-    return this.http.post<Item<User>>(this.base, payload).pipe(map((r) => r.data));
+    return this.http.post<CreatedUserItem>(this.base, payload).pipe(map((r) => r.data));
   }
 
   update(id: number, payload: UserPayload): Observable<User> {
@@ -166,13 +183,13 @@ export class UserService {
       .pipe(map((r) => r.data));
   }
 
-  resetPassword(id: number): Observable<{ must_change_password: boolean }> {
+  resetPassword(id: number): Observable<ResetPasswordResult> {
     if (environment.useMockData) {
       MOCK_USERS = MOCK_USERS.map((u) => (u.id === id ? { ...u, must_change_password: true } : u));
-      return of({ must_change_password: true }).pipe(delay(200));
+      return of({ must_change_password: true, temporary_password: '' }).pipe(delay(200));
     }
     return this.http
-      .post<{ data: { must_change_password: boolean } }>(`${this.base}/${id}/reset-password`, {})
+      .post<{ data: ResetPasswordResult }>(`${this.base}/${id}/reset-password`, {})
       .pipe(map((r) => r.data));
   }
 }

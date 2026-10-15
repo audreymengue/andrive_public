@@ -1,0 +1,143 @@
+<section class="py-4">
+  <h2 class="mb-2">Tableau de bord</h2>
+
+  <p class="text-secondary mb-4">
+    Bienvenue{{ coreService.currentUser()?.nom
+      ? ', ' + coreService.currentUser()?.nom
+      : ''
+    }}. Sélectionnez une rubrique dans le menu.
+  </p>
+
+  @if (coreService.hasRole('super_admin')) {
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="renouvelerMotDePasse()"
+    >
+      Renouveler mon mot de passe
+    </button>
+
+    @if (succes()) {
+      <div class="alert alert-success mt-3" role="status">
+        {{ succes() }}
+      </div>
+    }
+
+    @if (afficherRenouvellement()) {
+      <div
+        class="modal d-block"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="renouvellementTitre"
+        style="background-color: rgba(0, 0, 0, 0.5);"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <form [formGroup]="formulaire" (ngSubmit)="enregistrerNouveauMotDePasse()">
+              <div class="modal-header">
+                <h5 class="modal-title" id="renouvellementTitre">
+                  Renouveler mon mot de passe
+                </h5>
+
+                <button
+                  type="button"
+                  class="btn-close"
+                  aria-label="Fermer"
+                  [disabled]="enCours()"
+                  (click)="fermerRenouvellement()"
+                ></button>
+              </div>
+
+              <div class="modal-body">
+                <p class="text-secondary">
+                  Modifiez votre mot de passe sans quitter le tableau de bord.
+                </p>
+
+                @if (erreur()) {
+                  <div class="alert alert-danger" role="alert">
+                    {{ erreur() }}
+                  </div>
+                }
+
+                <div class="mb-3">
+                  <label for="ancienMotDePasse" class="form-label">
+                    Mot de passe actuel
+                  </label>
+                  <input
+                    id="ancienMotDePasse"
+                    type="password"
+                    class="form-control"
+                    formControlName="currentPassword"
+                    autocomplete="current-password"
+                    required
+                  />
+                  @if (formulaire.controls.currentPassword.touched && formulaire.controls.currentPassword.invalid) {
+                    <small class="text-danger">Le mot de passe actuel est obligatoire.</small>
+                  }
+                </div>
+
+                <div class="mb-3">
+                  <label for="nouveauMotDePasse" class="form-label">
+                    Nouveau mot de passe
+                  </label>
+                  <input
+                    id="nouveauMotDePasse"
+                    type="password"
+                    class="form-control"
+                    formControlName="newPassword"
+                    autocomplete="new-password"
+                    required
+                  />
+                  @if (formulaire.controls.newPassword.touched && formulaire.controls.newPassword.invalid) {
+                    <small class="text-danger">Le nouveau mot de passe est obligatoire.</small>
+                  }
+                </div>
+
+                <div class="mb-3">
+                  <label for="confirmationMotDePasse" class="form-label">
+                    Confirmer le nouveau mot de passe
+                  </label>
+                  <input
+                    id="confirmationMotDePasse"
+                    type="password"
+                    class="form-control"
+                    formControlName="confirmationPassword"
+                    autocomplete="new-password"
+                    required
+                  />
+                  @if (formulaire.controls.confirmationPassword.touched && formulaire.controls.confirmationPassword.invalid) {
+                    <small class="text-danger">La confirmation est obligatoire.</small>
+                  }
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  [disabled]="enCours()"
+                  (click)="fermerRenouvellement()"
+                >
+                  Annuler
+                </button>
+
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  [disabled]="enCours()"
+                >
+                  @if (enCours()) {
+                    Enregistrement...
+                  } @else {
+                    Enregistrer
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    }
+  }
+</section>

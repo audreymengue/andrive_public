@@ -123,6 +123,15 @@
                       <span>Editer</span>
                     </button>
 
+                    <button
+                      type="button"
+                      class="action-btn action-btn--violet"
+                      [attr.aria-label]="'Gérer les rôles de ' + u.email"
+                      (click)="manageRoles(u)"
+                    >
+                      <span>Gérer les rôles</span>
+                    </button>
+
                     <!-- Réinitialiser le mot de passe -->
                     <button
                       type="button"
@@ -363,4 +372,12 @@
   >
     {{ message }}
   </div>
+}
+
+@if (rolesTarget(); as user) {
+  <app-role-assign-dialog
+    [user]="user"
+    (saved)="onRolesSaved($event)"
+    (closed)="rolesTarget.set(null)"
+  />
 }

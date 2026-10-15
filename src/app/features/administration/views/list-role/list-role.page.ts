@@ -1,25 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, map, switchMap } from 'rxjs';
 
-export interface Role {
-  id?: number;
-  code: string;
-  libelle: string;
-  description: string;
-}
+import { Role, User } from '../../models/user.model';
+import { Permission, PermissionService } from '../../services/permission.service';
+import { RoleService } from '../../services/role.service';
+import { UserService } from '../../services/user.service';
 
-export interface User {
-  id: number;
-  nom: string;
-  email: string;
-  roleCode: string;
-}
-
-export interface Permission {
-  id: number;
-  code: string;
-  libelle: string;
+interface SelectablePermission extends Permission {
   selected?: boolean;
 }
 
@@ -28,124 +17,151 @@ export interface Permission {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './list-role.page.html',
-  styleUrls: ['./list-role.page.scss']
+  styleUrls: ['./list-role.page.scss'],
 })
 export class ListRolePage implements OnInit {
-  searchTerm: string = '';
+  private readonly rolesApi = inject(RoleService);
+  private readonly permissionsApi = inject(PermissionService);
+  private readonly usersApi = inject(UserService);
+  private readonly location = inject(Location);
 
-  roles: Role[] = [
-    {
-      id: 1,
-      code: 'role-user',
-      libelle: 'Utilisateur',
-      description: 'Rôle d’un utilisateur normal'
-    },
-    {
-      id: 2,
-      code: 'role-admin',
-      libelle: 'Administrateur',
-      description: 'Gestion complète du système'
-    }
-  ];
+  searchTerm = '';
+  roles: Role[] = [];
+  loading = false;
+  errorMessage = '';
+  saving = false;
 
-  // Modale Ajouter / Modifier Rôle
-  isModalOpen: boolean = false;
-  isEditMode: boolean = false;
-  newRole: Role = {
-    code: '',
-    libelle: '',
-    description: ''
-  };
+  isModalOpen = false;
+  isEditMode = false;
+  newRole: { id?: number; nom: string; description: string } = { nom: '', description: '' };
 
-  // Modale Consultation des utilisateurs
-  isUsersModalOpen: boolean = false;
+  isUsersModalOpen = false;
   selectedRoleForUsers: Role | null = null;
   usersOfSelectedRole: User[] = [];
+  loadingUsers = false;
+  usersError = '';
 
-  // Données de démonstration pour les utilisateurs
-  allUsers: User[] = [
-    { id: 1, nom: 'Jean Dupont', email: 'jean.dupont@aninf.ga', roleCode: 'role-user' },
-    { id: 2, nom: 'Alice Martin', email: 'alice.martin@aninf.ga', roleCode: 'role-admin' },
-    { id: 3, nom: 'Marc Nzoghe', email: 'marc.nzoghe@aninf.ga', roleCode: 'role-user' }
-  ];
-
-  // Modale Association des permissions
-  isPermissionsModalOpen: boolean = false;
+  isPermissionsModalOpen = false;
   selectedRoleForPermissions: Role | null = null;
-  availablePermissions: Permission[] = [
-    { id: 1, code: 'perm_read', libelle: 'Consulter les éléments' },
-    { id: 2, code: 'perm_create', libelle: 'Créer de nouveaux enregistrements' },
-    { id: 3, code: 'perm_edit', libelle: 'Modifier les enregistrements existants' },
-    { id: 4, code: 'perm_delete', libelle: 'Supprimer des enregistrements' }
-  ];
+  availablePermissions: SelectablePermission[] = [];
+  permissionsError = '';
 
-  constructor(private location: Location) {}
-
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.loadRoles();
+  }
 
   goBack(): void {
     this.location.back();
   }
 
+  loadRoles(): void {
+    this.loading = true;
+    this.errorMessage = '';
+    this.rolesApi.list().subscribe({
+      next: (roles) => {
+        this.roles = roles;
+        this.loading = false;
+      },
+      error: (error) => {
+        this.loading = false;
+        this.errorMessage = error?.error?.message ?? 'Impossible de charger les rôles.';
+      },
+    });
+  }
+
   get filteredRoles(): Role[] {
-    if (!this.searchTerm.trim()) {
-      return this.roles;
-    }
-    const term = this.searchTerm.toLowerCase();
-    return this.roles.filter(r =>
-      r.code.toLowerCase().includes(term) ||
-      r.libelle.toLowerCase().includes(term) ||
-      (r.description && r.description.toLowerCase().includes(term))
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) return this.roles;
+    return this.roles.filter((role) =>
+      role.nom.toLowerCase().includes(term) || (role.description ?? '').toLowerCase().includes(term),
     );
   }
 
-  // --- ACTION 1: Afficher la liste des utilisateurs du rôle ---
   viewUsers(role: Role): void {
     this.selectedRoleForUsers = role;
-    this.usersOfSelectedRole = this.allUsers.filter(u => u.roleCode === role.code);
+    this.usersOfSelectedRole = [];
+    this.loadingUsers = true;
+    this.usersError = '';
     this.isUsersModalOpen = true;
+    this.usersApi.list({ page: 1, perPage: 100 }).pipe(
+      switchMap((firstPage) => firstPage.meta.last_page <= 1
+        ? [firstPage.data]
+        : forkJoin(Array.from({ length: firstPage.meta.last_page - 1 }, (_, index) =>
+            this.usersApi.list({ page: index + 2, perPage: 100 }).pipe(map((page) => page.data)),
+          )).pipe(map((otherPages) => [...firstPage.data, ...otherPages.flat()])),
+      ),
+    ).subscribe({
+      next: (users) => {
+        this.usersOfSelectedRole = users.filter((user) => user.roles.some((item) => item.id === role.id));
+        this.loadingUsers = false;
+      },
+      error: (error) => {
+        this.loadingUsers = false;
+        this.usersError = error?.error?.message ?? 'Impossible de charger les utilisateurs du rôle.';
+      },
+    });
   }
 
   closeUsersModal(): void {
     this.isUsersModalOpen = false;
     this.selectedRoleForUsers = null;
     this.usersOfSelectedRole = [];
+    this.usersError = '';
   }
 
-  // --- ACTION 2: Afficher la modale d'association des permissions ---
   assignPermissions(role: Role): void {
     this.selectedRoleForPermissions = role;
-    
-    // Exemple : réinitialisation / pré-cochage fictif selon le rôle
-    this.availablePermissions = this.availablePermissions.map(p => ({
-      ...p,
-      selected: role.code === 'role-admin' ? true : p.code === 'perm_read'
-    }));
-
+    this.permissionsError = '';
     this.isPermissionsModalOpen = true;
+    this.permissionsApi.list().subscribe({
+      next: (permissions) => {
+        const assigned = new Set((role.permissions ?? []).map((permission) => permission.id));
+        this.availablePermissions = permissions.map((permission) => ({
+          ...permission,
+          selected: assigned.has(permission.id),
+        }));
+      },
+      error: (error) => {
+        this.permissionsError = error?.error?.message ?? 'Impossible de charger les permissions.';
+      },
+    });
   }
 
   closePermissionsModal(): void {
     this.isPermissionsModalOpen = false;
     this.selectedRoleForPermissions = null;
+    this.permissionsError = '';
   }
 
   savePermissions(): void {
-    const selected = this.availablePermissions.filter(p => p.selected);
-    console.log(`Permissions enregistrées pour le rôle ${this.selectedRoleForPermissions?.code}:`, selected);
-    this.closePermissionsModal();
+    const role = this.selectedRoleForPermissions;
+    if (!role) return;
+    const ids = this.availablePermissions.filter((permission) => permission.selected).map((permission) => permission.id);
+    this.saving = true;
+    this.rolesApi.assignPermissions(role.id, ids).subscribe({
+      next: (updated) => {
+        this.roles = this.roles.map((item) => item.id === updated.id ? updated : item);
+        this.saving = false;
+        this.closePermissionsModal();
+      },
+      error: (error) => {
+        this.saving = false;
+        this.permissionsError = error?.error?.message ?? "Impossible d'enregistrer les permissions du rôle.";
+      },
+    });
   }
 
-  // --- Modale Ajouter / Modifier un Rôle ---
   openAddModal(): void {
     this.isEditMode = false;
-    this.newRole = { code: '', libelle: '', description: '' };
+    this.newRole = { nom: '', description: '' };
+    this.errorMessage = '';
     this.isModalOpen = true;
   }
 
   openEditModal(role: Role): void {
     this.isEditMode = true;
-    this.newRole = { ...role };
+    this.newRole = { id: role.id, nom: role.nom, description: role.description ?? '' };
+    this.errorMessage = '';
     this.isModalOpen = true;
   }
 
@@ -154,26 +170,39 @@ export class ListRolePage implements OnInit {
   }
 
   saveRole(): void {
-    if (this.newRole.code && this.newRole.libelle) {
-      if (this.isEditMode) {
-        const index = this.roles.findIndex(r => r.id === this.newRole.id);
-        if (index !== -1) {
-          this.roles[index] = { ...this.newRole };
-        }
-      } else {
-        this.roles.push({
-          ...this.newRole,
-          id: Date.now()
-        });
-      }
-      this.closeAddModal();
+    const nom = this.newRole.nom.trim();
+    if (!nom) {
+      this.errorMessage = 'Le nom du rôle est obligatoire.';
+      return;
     }
+    this.saving = true;
+    this.errorMessage = '';
+    const payload = { nom, description: this.newRole.description.trim() || undefined };
+    const request = this.isEditMode && this.newRole.id
+      ? this.rolesApi.update(this.newRole.id, payload)
+      : this.rolesApi.create(payload);
+    request.subscribe({
+      next: (role) => {
+        this.roles = this.isEditMode
+          ? this.roles.map((item) => item.id === role.id ? role : item)
+          : [...this.roles, role];
+        this.saving = false;
+        this.closeAddModal();
+      },
+      error: (error) => {
+        this.saving = false;
+        this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer le rôle.";
+      },
+    });
   }
 
-  // --- Action 3: Supprimer un rôle ---
   deleteRole(id?: number): void {
-    if (id && confirm('Êtes-vous sûr de vouloir supprimer ce rôle ?')) {
-      this.roles = this.roles.filter(r => r.id !== id);
-    }
+    if (!id || !confirm('Êtes-vous sûr de vouloir supprimer ce rôle ?')) return;
+    this.rolesApi.delete(id).subscribe({
+      next: () => this.roles = this.roles.filter((role) => role.id !== id),
+      error: (error) => {
+        this.errorMessage = error?.error?.message ?? 'Impossible de supprimer ce rôle.';
+      },
+    });
   }
 }

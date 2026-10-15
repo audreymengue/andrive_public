@@ -16,6 +16,8 @@
     </button>
   </div>
 
+  <p *ngIf="errorMessage" class="empty-state" role="alert">{{ errorMessage }}</p>
+
   <!-- Recherche -->
   <div class="search-section">
     <div class="search-box">
@@ -54,7 +56,10 @@
             <button class="btn-icon btn-danger" (click)="deletePermission(perm.id)" title="Supprimer">🗑️</button>
           </td>
         </tr>
-        <tr *ngIf="filteredPermissions.length === 0">
+        <tr *ngIf="isLoading && permissions.length === 0">
+          <td colspan="5" class="empty-state">Chargement des permissions…</td>
+        </tr>
+        <tr *ngIf="filteredPermissions.length === 0 && !isLoading">
           <td colspan="5" class="empty-state">
             Aucune permission trouvée.
           </td>
@@ -106,14 +111,15 @@
               placeholder="ex: Permet de créer un utilisateur"
             ></textarea>
           </div>
+          <p *ngIf="errorMessage" class="empty-state" role="alert">{{ errorMessage }}</p>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" (click)="closeAddModal()">
             ⬅️ Retour
           </button>
-          <button type="submit" class="btn btn-primary">
-            {{ isEditMode ? 'Mettre à jour' : 'Enregistrer' }}
+          <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+            {{ isLoading ? 'Enregistrement…' : (isEditMode ? 'Mettre à jour' : 'Enregistrer') }}
           </button>
         </div>
       </form>

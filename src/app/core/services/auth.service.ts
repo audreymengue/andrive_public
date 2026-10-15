@@ -43,6 +43,14 @@ export interface MeResponse {
   data: ApiUser;
 }
 
+export interface ChangePasswordResponse {
+  message: string;
+  data: {
+    token: string;
+    must_change_password: boolean;
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = inject(ApiService);
@@ -73,12 +81,14 @@ export class AuthService {
     );
   }
 
- changePassword(currentPassword: string, newPassword: string): Observable<void> {
-  return this.api.put<void>('/me/password', {
+ changePassword(currentPassword: string, newPassword: string): Observable<ChangePasswordResponse> {
+  return this.api.put<ChangePasswordResponse>('/me/password', {
       current_password: currentPassword,
       new_password: newPassword,
       new_password_confirmation: newPassword,
-    });
+    }).pipe(
+      tap((response) => this.coreService.setToken(response.data.token))
+    );
   }
 
   logout(): void {

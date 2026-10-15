@@ -33,7 +33,7 @@ export const APP_MENU: MenuItem[] = [
     id: 'demandes',
     title: 'Mes demandes',
     icon: 'bi bi-send',
-    roles: ['agent', 'administrateur'],
+    roles: ['agent', 'super_admin'],
     children: [
       {
         id: 'demande-transport',
@@ -53,7 +53,7 @@ export const APP_MENU: MenuItem[] = [
     id: 'gestion',
     title: 'Gestion',
     icon: 'bi bi-briefcase',
-    roles: ['dag', 'administrateur'],
+    roles: ['dag', 'super_admin'],
     children: [
       { id: 'traitement-demandes', title: 'Traitement des demandes', route: '/dashboard/gestion/demandes', icon: 'bi bi-inboxes' },
       { id: 'registre-chauffeurs', title: 'Registre des chauffeurs', route: '/dashboard/gestion/chauffeurs', icon: 'bi bi-people' },
@@ -65,7 +65,7 @@ export const APP_MENU: MenuItem[] = [
     id: 'missions',
     title: 'Missions',
     icon: 'bi bi-map',
-    roles: ['pool_chauffeur', 'administrateur'],
+    roles: ['pool_chauffeur', 'super_admin'],
     children: [
       { id: 'missions-planifiees', title: 'Missions planifiées', route: '/dashboard/missions/planifiees', icon: 'bi bi-calendar-check' },
       { id: 'historique-missions', title: 'Historique des missions', route: '/dashboard/missions/historique', icon: 'bi bi-clock-history' },
@@ -76,7 +76,7 @@ export const APP_MENU: MenuItem[] = [
     id: 'administration',
     title: 'Administration',
     icon: 'bi bi-map',
-    roles: [],
+    roles: ['super_admin'],
     children: [
       { id: 'permission', title: 'Permissions', route: '/administration/list-permission', icon: 'bi bi-key' },
       { id: 'role', title: 'Rôles', route: '/administration/list-role', icon: 'bi bi-person-badge' },

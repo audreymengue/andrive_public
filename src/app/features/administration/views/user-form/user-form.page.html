@@ -36,7 +36,7 @@
         @if (u.must_change_password) {
           <div class="notice">
             <p>
-              Cet utilisateur a encore son mot de passe par défaut. Il devra le modifier à sa première connexion.
+              Cet utilisateur doit encore modifier son mot de passe temporaire à sa première connexion.
             </p>
           </div>
         }
@@ -45,7 +45,7 @@
       @if (mode === 'create') {
         <div class="notice notice--info">
           <p>
-            Un mot de passe par défaut sera attribué au compte. L'utilisateur devra le modifier à sa première
+            Un mot de passe temporaire sera généré pour le compte. L'utilisateur devra le modifier à sa première
             connexion.
           </p>
         </div>

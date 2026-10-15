@@ -1,0 +1,120 @@
+<section class="page-historique">
+  <!-- En-tête avec le bouton de retour -->
+<header class="historique-header">
+  <div class="header-titles">
+    <button type="button" class="btn-retour-style" (click)="retourEnArriere()">
+      <span class="icon-box-blue"><i class="bi bi-arrow-left"></i></span>
+      <span>Retour</span>
+    </button>
+    <div class="icon-box">🕒</div>
+    <div>
+      <h1>Historique de mes demandes de transport</h1>
+      <p class="muted">Consultez l'ensemble de vos demandes de transport.</p>
+    </div>
+  </div>
+  <button type="button" class="btn-nouvelle-demande" (click)="nouvelleDemande()">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+    Nouvelle demande
+  </button>
+</header>
+
+  <!-- Barre de recherche unique -->
+  <div class="filters-card" [formGroup]="filterForm">
+    <div class="filter-item search-box w-100">
+      <div class="search-input-wrapper">
+        <i class="bi bi-search"></i>
+        <input 
+          type="search" 
+          formControlName="search" 
+          placeholder="Rechercher par référence, motif ou destination..." 
+        />
+      </div>
+    </div>
+  </div>
+
+  @if (error(); as message) {
+    <div class="state state--error" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="btn btn-ghost" (click)="chargerDemandes()">Réessayer</button>
+    </div>
+  } @else {
+    <!-- Tableau d'affichage -->
+    <div class="table-card" [attr.aria-busy]="loading()">
+      <div class="table-responsive">
+        <table class="table" [class.is-loading]="loading()">
+          <thead>
+            <tr>
+              <th scope="col">N° Demande</th>
+              <th scope="col">Objet</th>
+              <th scope="col">Destination <span class="th-sub">adresse</span></th>
+              <th scope="col">Date de départ</th>
+              <th scope="col">Statut</th>
+              <th scope="col" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of demandes(); track d.id) {
+              <tr>
+                <td>
+                  <div class="ref-text"><strong>{{ d.reference }}</strong></div>
+                </td>
+                <td>
+                  <div class="motif-text">{{ d.motif }}</div>
+                </td>
+                <td>
+                  <div class="cell-flex">
+                    <span>{{ getDestinationLabel(d) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="datetime-cell">
+                    {{ d.date_depart | date:'dd/MM/yyyy' }}
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getStatutBadgeClass(d.statut)">
+                    <span class="dot"></span> {{ getStatutLabel(d.statut) }}
+                  </span>
+                </td>
+                <td class="col-actions">
+                  <div class="actions-group">
+                    <button type="button" class="btn-action-detail" (click)="voirDetail(d)" title="Consulter les détails">
+                      <i class="bi bi-eye"></i> Détail
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              @if (!loading()) {
+                <tr>
+                  <td colspan="6" class="empty-row">Aucune demande trouvée.</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer / Pagination -->
+      <footer class="table-footer">
+        <span class="footer-count">
+          @if (total() > 0) {
+            {{ total() }} demande(s) au total
+          } @else {
+            Aucun résultat
+          }
+        </span>
+        <div class="pagination-controls">
+          <button type="button" class="page-btn" [disabled]="page() <= 1 || loading()" (click)="changerPage(page() - 1)">‹</button>
+          <button type="button" class="page-btn active">{{ page() }}</button>
+          <button type="button" class="page-btn" [disabled]="page() >= lastPage() || loading()" (click)="changerPage(page() + 1)">›</button>
+        </div>
+      </footer>
+    </div>
+  }
+
+  <!-- Bouton Retour en haut flottant -->
+  <button type="button" class="btn-scroll-top" (click)="retourEnHaut()" title="Retour en haut de page">
+    <i class="bi bi-arrow-up"></i>
+  </button>
+</section>

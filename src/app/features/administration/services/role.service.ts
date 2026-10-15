@@ -1,7 +1,7 @@
 ﻿import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { environment } from '../../../../environments/environment';
 import { Role } from '../models/user.model';
@@ -19,9 +19,24 @@ export class RoleService {
   private readonly base = `${environment.apiUrl}/roles`;
 
   list(): Observable<Role[]> {
-    if (environment.useMockData) {
-      return of(MOCK_ROLES).pipe(delay(150));
-    }
     return this.http.get<{ data: Role[] }>(this.base).pipe(map((r) => r.data));
+  }
+
+  create(payload: { nom: string; description?: string }): Observable<Role> {
+    return this.http.post<{ data: Role }>(this.base, payload).pipe(map((r) => r.data));
+  }
+
+  update(id: number, payload: { nom?: string; description?: string }): Observable<Role> {
+    return this.http.put<{ data: Role }>(`${this.base}/${id}`, payload).pipe(map((r) => r.data));
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  assignPermissions(id: number, permissionIds: number[]): Observable<Role> {
+    return this.http.put<{ data: Role }>(`${this.base}/${id}/permissions`, {
+      permission_ids: permissionIds,
+    }).pipe(map((r) => r.data));
   }
 }
