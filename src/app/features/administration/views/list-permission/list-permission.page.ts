@@ -1,330 +1,159 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
+import { PermissionService } from '../../services/permission.service';
 
-import {
-  PermissionService,
-  Permission
-} from '../../services/permission.service';
+export interface Permission {
+  id: number;
+  code: string;
+  libelle: string;
+  description?: string;
+}
 
 @Component({
-  selector: 'app-list-permission-page',
+  selector: 'app-list-permission',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule
-  ],
+  imports: [CommonModule, FormsModule],
   templateUrl: './list-permission.page.html',
   styleUrls: ['./list-permission.page.scss']
 })
 export class ListPermissionPage implements OnInit {
+  private permissionService = inject(PermissionService);
+  private location = inject(Location);
 
-  private readonly permissionService = inject(PermissionService);
-  private readonly location = inject(Location);
+  permissions = signal<Permission[]>([]);
+  searchTerm = signal<string>('');
+  isModalOpen = signal<boolean>(false);
+  isLoading = signal<boolean>(false);
+  isSaving = signal<boolean>(false);
+  errorMessage = signal<string | null>(null);
 
-  searchTerm = '';
-
-  permissions: Permission[] = [];
-
-  isLoading = false;
-  errorMessage = '';
-
-  isModalOpen = false;
-  isEditMode = false;
-
-  newPermission: Permission = {
+  editingPermission: Permission = {
     id: 0,
     code: '',
     libelle: '',
     description: ''
   };
 
+  filteredPermissions = computed(() => {
+    const list = this.permissions();
+    const term = this.searchTerm().toLowerCase().trim();
+
+    // Sécurité 1 : s'assurer que list est toujours un tableau
+    if (!Array.isArray(list)) return [];
+
+    if (!term) return list;
+
+    // Sécurité 2 : gestion des champs null ou undefined lors du filtrage
+    return list.filter(p => {
+      const codeMatch = p.code ? p.code.toLowerCase().includes(term) : false;
+      const libelleMatch = p.libelle ? p.libelle.toLowerCase().includes(term) : false;
+      return codeMatch || libelleMatch;
+    });
+  });
+
   ngOnInit(): void {
     this.loadPermissions();
   }
 
-  /**
-   * Retour à la page précédente
-   */
-  goBack(): void {
-    this.location.back();
-  }
-
-  /**
-   * Charger les permissions depuis Laravel
-   */
   loadPermissions(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
 
-    this.permissionService.list().subscribe({
-      next: (permissions) => {
-        this.permissions = permissions;
-        this.isLoading = false;
-
-        console.log('Permissions récupérées depuis API :', permissions);
+    this.permissionService.getPermissions().pipe(
+      finalize(() => this.isLoading.set(false))
+    ).subscribe({
+      next: (response: any) => {
+        // Extraction sécurisée selon le format renvoyé par Laravel
+        if (Array.isArray(response)) {
+          this.permissions.set(response);
+        } else if (response && Array.isArray(response.data)) {
+          // Cas de pagination ou de Laravel ApiResource
+          this.permissions.set(response.data);
+        } else {
+          console.warn('Format de réponse inattendu :', response);
+          this.permissions.set([]);
+        }
       },
-
-      error: (error) => {
-        this.isLoading = false;
-
-        console.error(
-          'Erreur lors du chargement des permissions :',
-          error
-        );
-
-        this.errorMessage =
-          error?.error?.message ??
-          'Impossible de charger les permissions.';
+      error: (err) => {
+        console.error('Erreur lors de la récupération des permissions :', err);
+        this.errorMessage.set('Impossible de charger la liste des permissions.');
+        this.permissions.set([]);
       }
     });
   }
 
-  /**
-   * Recherche
-   */
-  get filteredPermissions(): Permission[] {
-
-    if (!this.searchTerm.trim()) {
-      return this.permissions;
-    }
-
-    const term = this.searchTerm
-      .toLowerCase()
-      .trim();
-
-    return this.permissions.filter(permission =>
-      permission.code
-        ?.toLowerCase()
-        .includes(term) ||
-
-      permission.libelle
-        ?.toLowerCase()
-        .includes(term) ||
-
-      permission.description
-        ?.toLowerCase()
-        .includes(term)
-    );
+  goBack(): void {
+    this.location.back();
   }
 
-  /**
-   * Ouvrir la fenêtre d'ajout
-   */
   openAddModal(): void {
-
-    this.isEditMode = false;
-
-    this.newPermission = {
-      id: 0,
-      code: '',
-      libelle: '',
-      description: ''
-    };
-
-    this.errorMessage = '';
-    this.isModalOpen = true;
+    this.editingPermission = { id: 0, code: '', libelle: '', description: '' };
+    this.errorMessage.set(null);
+    this.isModalOpen.set(true);
   }
 
-  /**
-   * Ouvrir la fenêtre de modification
-   */
   openEditModal(permission: Permission): void {
-
-    this.isEditMode = true;
-
-    this.newPermission = {
-      ...permission
-    };
-
-    this.errorMessage = '';
-    this.isModalOpen = true;
+    this.editingPermission = { ...permission };
+    this.errorMessage.set(null);
+    this.isModalOpen.set(true);
   }
 
-  /**
-   * Fermer la fenêtre
-   */
   closeAddModal(): void {
-    this.isModalOpen = false;
-    this.errorMessage = '';
+    if (this.isSaving()) return;
+    this.isModalOpen.set(false);
   }
 
-  /**
-   * Ajouter ou modifier une permission
-   */
   savePermission(): void {
-
-    if (
-      !this.newPermission.code.trim() ||
-      !this.newPermission.libelle.trim()
-    ) {
-      this.errorMessage =
-        'Le code et le libellé sont obligatoires.';
+    if (!this.editingPermission.code || !this.editingPermission.libelle) {
+      this.errorMessage.set('Veuillez remplir tous les champs obligatoires.');
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isSaving.set(true);
+    this.errorMessage.set(null);
 
-    const payload = {
-      code: this.newPermission.code.trim(),
-      libelle: this.newPermission.libelle.trim(),
-      description:
-        this.newPermission.description?.trim() || ''
-    };
+    const save$ = this.editingPermission.id
+      ? this.permissionService.updatePermission(this.editingPermission.id, this.editingPermission)
+      : this.permissionService.createPermission(this.editingPermission);
 
-    /**
-     * MODIFICATION
-     */
-    if (this.isEditMode) {
+    save$.subscribe({
+      next: (response: any) => {
+        const savedPermission: Permission = response.data ?? response;
 
-      if (!this.newPermission.id) {
-        this.isLoading = false;
-        this.errorMessage =
-          'Identifiant de permission invalide.';
-        return;
-      }
-
-      this.permissionService
-        .update(this.newPermission.id, payload)
-        .subscribe({
-
-          next: (updatedPermission) => {
-
-            const index = this.permissions.findIndex(
-              permission =>
-                permission.id === updatedPermission.id
-            );
-
-            if (index !== -1) {
-              this.permissions[index] = updatedPermission;
-            }
-
-            this.isLoading = false;
-            this.closeAddModal();
-
-            console.log(
-              'Permission modifiée :',
-              updatedPermission
-            );
-          },
-
-          error: (error) => {
-
-            this.isLoading = false;
-
-            console.error(
-              'Erreur modification permission :',
-              error
-            );
-
-            this.errorMessage =
-              error?.error?.message ??
-              'Impossible de modifier la permission.';
-          }
+        this.permissions.update(list => {
+          const currentList = Array.isArray(list) ? list : [];
+          return this.editingPermission.id
+            ? currentList.map(p => (p.id === savedPermission.id ? savedPermission : p))
+            : [...currentList, savedPermission];
         });
 
-      return;
-    }
-
-    /**
-     * CRÉATION
-     */
-    this.permissionService
-      .create(payload)
-      .subscribe({
-
-        next: (createdPermission) => {
-
-          this.permissions = [
-            ...this.permissions,
-            createdPermission
-          ];
-
-          this.isLoading = false;
-          this.closeAddModal();
-
-          console.log(
-            'Permission créée :',
-            createdPermission
-          );
-        },
-
-        error: (error) => {
-
-          this.isLoading = false;
-
-          console.error(
-            'Erreur création permission :',
-            error
-          );
-
-          this.errorMessage =
-            error?.error?.message ??
-            'Impossible de créer la permission.';
-        }
-      });
+        this.isSaving.set(false);
+        this.closeAddModal();
+      },
+      error: (error) => {
+        this.errorMessage.set(error.error?.message ?? 'Erreur lors de l’enregistrement de la permission.');
+        this.isSaving.set(false);
+      }
+    });
   }
 
-  /**
-   * Supprimer une permission
-   */
-  deletePermission(id?: number): void {
+  deletePermission(id: number): void {
+    if (!confirm('Voulez-vous vraiment supprimer cette permission ?')) return;
 
-    if (!id) {
-      return;
-    }
+    this.errorMessage.set(null);
 
-    const permission = this.permissions.find(
-      item => item.id === id
-    );
-
-    if (!permission) {
-      return;
-    }
-
-    const confirmed = confirm(
-      `Êtes-vous sûr de vouloir supprimer la permission "${permission.code}" ?`
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    this.isLoading = true;
-    this.errorMessage = '';
-
-    this.permissionService
-      .delete(id)
-      .subscribe({
-
-        next: () => {
-
-          this.permissions = this.permissions.filter(
-            item => item.id !== id
-          );
-
-          this.isLoading = false;
-
-          console.log(
-            'Permission supprimée :',
-            id
-          );
-        },
-
-        error: (error) => {
-
-          this.isLoading = false;
-
-          console.error(
-            'Erreur suppression permission :',
-            error
-          );
-
-          this.errorMessage =
-            error?.error?.message ??
-            'Impossible de supprimer la permission.';
-        }
-      });
+    this.permissionService.deletePermission(id).subscribe({
+      next: () => {
+        this.permissions.update(list => {
+          const currentList = Array.isArray(list) ? list : [];
+          return currentList.filter(p => p.id !== id);
+        });
+      },
+      error: () => {
+        this.errorMessage.set('Erreur lors de la suppression de la permission.');
+      }
+    });
   }
 }

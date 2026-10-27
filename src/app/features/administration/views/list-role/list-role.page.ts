@@ -1,208 +1,223 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { forkJoin, map, switchMap } from 'rxjs';
-
-import { Role, User } from '../../models/user.model';
-import { Permission, PermissionService } from '../../services/permission.service';
-import { RoleService } from '../../services/role.service';
-import { UserService } from '../../services/user.service';
-
-interface SelectablePermission extends Permission {
-  selected?: boolean;
-}
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
+import { Location } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  CreateRoleDto,
+  Permission,
+  Role,
+  RoleService,
+  UpdateRoleDto,
+} from '../../services/role.service';
 
 @Component({
   selector: 'app-list-role-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, ReactiveFormsModule],
   templateUrl: './list-role.page.html',
   styleUrls: ['./list-role.page.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListRolePage implements OnInit {
-  private readonly rolesApi = inject(RoleService);
-  private readonly permissionsApi = inject(PermissionService);
-  private readonly usersApi = inject(UserService);
+  private readonly roleService = inject(RoleService);
   private readonly location = inject(Location);
 
-  searchTerm = '';
-  roles: Role[] = [];
-  loading = false;
-  errorMessage = '';
-  saving = false;
+  // État des données
+  protected readonly roles = signal<Role[]>([]);
+  protected readonly availablePermissions = signal<Permission[]>([]);
+  protected readonly selectedPermissions = signal<number[]>([]);
 
-  isModalOpen = false;
-  isEditMode = false;
-  newRole: { id?: number; nom: string; description: string } = { nom: '', description: '' };
+  // États de chargement et recherche
+  protected readonly isLoading = signal(false);
+  protected readonly isSaving = signal(false);
+  protected readonly searchTerm = signal('');
+  protected readonly filteredRoles = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    if (!term) return this.roles();
+    return this.roles().filter((role) =>
+      [role.nom, role.description].some((value) => value?.toLowerCase().includes(term))
+    );
+  });
 
-  isUsersModalOpen = false;
-  selectedRoleForUsers: Role | null = null;
-  usersOfSelectedRole: User[] = [];
-  loadingUsers = false;
-  usersError = '';
+  // Modale rôle (Ajouter / Modifier)
+  protected readonly isModalOpen = signal(false);
+  protected readonly isEditMode = signal(false);
+  protected readonly editingRole = signal<Role>({
+    id: 0,
+    nom: '',
+    statut: 'ACTIF',
+    description: '',
+  });
 
-  isPermissionsModalOpen = false;
-  selectedRoleForPermissions: Role | null = null;
-  availablePermissions: SelectablePermission[] = [];
-  permissionsError = '';
+  // Modale permissions
+  protected readonly isPermissionModalOpen = signal(false);
+  protected readonly selectedRoleForPermissions = signal<Role | null>(null);
+
+  // NOUVEAU : Modale consultation des permissions (lecture seule)
+  protected readonly viewedRole = signal<Role | null>(null);
 
   ngOnInit(): void {
     this.loadRoles();
   }
 
-  goBack(): void {
+  protected loadRoles(): void {
+    this.isLoading.set(true);
+    this.roleService.getRoles().subscribe({
+      next: (data: any) => {
+        this.roles.set(data.data ?? []);
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false),
+    });
+  }
+
+  protected goBack(): void {
     this.location.back();
   }
 
-  loadRoles(): void {
-    this.loading = true;
-    this.errorMessage = '';
-    this.rolesApi.list().subscribe({
-      next: (roles) => {
-        this.roles = roles;
-        this.loading = false;
-      },
-      error: (error) => {
-        this.loading = false;
-        this.errorMessage = error?.error?.message ?? 'Impossible de charger les rôles.';
-      },
+  // NOUVEAU : consultation des permissions d'un rôle (lecture seule)
+  protected viewRolePermissions(role: Role): void {
+    this.viewedRole.set(role);
+  }
+
+  protected closeViewPermissions(): void {
+    this.viewedRole.set(null);
+  }
+
+  // --- GESTION DU FORMULAIRE DE RÔLE ---
+
+  protected openAddModal(): void {
+    this.isEditMode.set(false);
+    this.editingRole.set({
+      id: 0,
+      nom: '',
+      statut: 'ACTIF',
+      description: '',
+    });
+    this.isModalOpen.set(true);
+  }
+
+  protected openEditModal(role: Role): void {
+    this.isEditMode.set(true);
+    this.editingRole.set({ ...role });
+    this.isModalOpen.set(true);
+  }
+
+  protected closeAddModal(): void {
+    this.isModalOpen.set(false);
+  }
+
+  protected updateEditingField(field: keyof Role, value: string): void {
+    this.editingRole.update((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  protected saveRole(): void {
+    const current = this.editingRole();
+    const nom = current.nom || '';
+    const description = current.description || '';
+    const statut = current.statut || '';
+
+    if (!nom) return;
+
+    this.isSaving.set(true);
+
+    if (this.isEditMode() && current.id > 0) {
+      const updateDto: UpdateRoleDto = {
+        nom: nom,
+        description: description,
+        statut: statut,
+      };
+
+      this.roleService.updateRole(current.id, updateDto).subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.closeAddModal();
+          this.loadRoles();
+        },
+        error: () => this.isSaving.set(false),
+      });
+    } else {
+      const createDto: CreateRoleDto = {
+        nom: nom,
+        description: description,
+        statut: statut,
+      };
+
+      this.roleService.createRole(createDto).subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.closeAddModal();
+          this.loadRoles();
+        },
+        error: () => this.isSaving.set(false),
+      });
+    }
+  }
+
+  protected deleteRole(id: number): void {
+    if (!confirm('Voulez-vous vraiment supprimer ce rôle ?')) return;
+
+    this.roleService.deleteRole(id).subscribe({
+      next: () => this.loadRoles(),
     });
   }
 
-  get filteredRoles(): Role[] {
-    const term = this.searchTerm.trim().toLowerCase();
-    if (!term) return this.roles;
-    return this.roles.filter((role) =>
-      role.nom.toLowerCase().includes(term) || (role.description ?? '').toLowerCase().includes(term),
+  // --- GESTION DES PERMISSIONS ---
+
+  protected openAssignPermissionsModal(role: Role): void {
+    this.selectedRoleForPermissions.set(role);
+    this.isPermissionModalOpen.set(true);
+    this.roleService.getPermissions().subscribe({
+      next: (reponse) => {
+        this.availablePermissions.set(reponse.data ?? []);
+        if (this.availablePermissions().length > 0 && (role.permissions && role.permissions.length > 0)) {
+          const selected = role.permissions.map(permission => permission.id);
+          this.selectedPermissions.set(selected);
+        } else {
+          this.selectedPermissions.set([]);
+        }
+      }
+    });
+  }
+
+  protected closePermissionModal(): void {
+    this.isPermissionModalOpen.set(false);
+    this.selectedRoleForPermissions.set(null);
+  }
+
+  protected isPermissionSelected(permId: number): boolean {
+    return this.selectedPermissions().includes(permId);
+  }
+
+  protected togglePermissionSelection(permId: number): void {
+    this.selectedPermissions.update((current) =>
+      current.includes(permId)
+        ? current.filter((id) => id !== permId)
+        : [...current, permId]
     );
   }
 
-  viewUsers(role: Role): void {
-    this.selectedRoleForUsers = role;
-    this.usersOfSelectedRole = [];
-    this.loadingUsers = true;
-    this.usersError = '';
-    this.isUsersModalOpen = true;
-    this.usersApi.list({ page: 1, perPage: 100 }).pipe(
-      switchMap((firstPage) => firstPage.meta.last_page <= 1
-        ? [firstPage.data]
-        : forkJoin(Array.from({ length: firstPage.meta.last_page - 1 }, (_, index) =>
-            this.usersApi.list({ page: index + 2, perPage: 100 }).pipe(map((page) => page.data)),
-          )).pipe(map((otherPages) => [...firstPage.data, ...otherPages.flat()])),
-      ),
-    ).subscribe({
-      next: (users) => {
-        this.usersOfSelectedRole = users.filter((user) => user.roles.some((item) => item.id === role.id));
-        this.loadingUsers = false;
-      },
-      error: (error) => {
-        this.loadingUsers = false;
-        this.usersError = error?.error?.message ?? 'Impossible de charger les utilisateurs du rôle.';
-      },
-    });
-  }
-
-  closeUsersModal(): void {
-    this.isUsersModalOpen = false;
-    this.selectedRoleForUsers = null;
-    this.usersOfSelectedRole = [];
-    this.usersError = '';
-  }
-
-  assignPermissions(role: Role): void {
-    this.selectedRoleForPermissions = role;
-    this.permissionsError = '';
-    this.isPermissionsModalOpen = true;
-    this.permissionsApi.list().subscribe({
-      next: (permissions) => {
-        const assigned = new Set((role.permissions ?? []).map((permission) => permission.id));
-        this.availablePermissions = permissions.map((permission) => ({
-          ...permission,
-          selected: assigned.has(permission.id),
-        }));
-      },
-      error: (error) => {
-        this.permissionsError = error?.error?.message ?? 'Impossible de charger les permissions.';
-      },
-    });
-  }
-
-  closePermissionsModal(): void {
-    this.isPermissionsModalOpen = false;
-    this.selectedRoleForPermissions = null;
-    this.permissionsError = '';
-  }
-
-  savePermissions(): void {
-    const role = this.selectedRoleForPermissions;
+  protected saveRolePermissions(): void {
+    const role = this.selectedRoleForPermissions();
     if (!role) return;
-    const ids = this.availablePermissions.filter((permission) => permission.selected).map((permission) => permission.id);
-    this.saving = true;
-    this.rolesApi.assignPermissions(role.id, ids).subscribe({
-      next: (updated) => {
-        this.roles = this.roles.map((item) => item.id === updated.id ? updated : item);
-        this.saving = false;
-        this.closePermissionsModal();
-      },
-      error: (error) => {
-        this.saving = false;
-        this.permissionsError = error?.error?.message ?? "Impossible d'enregistrer les permissions du rôle.";
-      },
-    });
-  }
 
-  openAddModal(): void {
-    this.isEditMode = false;
-    this.newRole = { nom: '', description: '' };
-    this.errorMessage = '';
-    this.isModalOpen = true;
-  }
-
-  openEditModal(role: Role): void {
-    this.isEditMode = true;
-    this.newRole = { id: role.id, nom: role.nom, description: role.description ?? '' };
-    this.errorMessage = '';
-    this.isModalOpen = true;
-  }
-
-  closeAddModal(): void {
-    this.isModalOpen = false;
-  }
-
-  saveRole(): void {
-    const nom = this.newRole.nom.trim();
-    if (!nom) {
-      this.errorMessage = 'Le nom du rôle est obligatoire.';
-      return;
-    }
-    this.saving = true;
-    this.errorMessage = '';
-    const payload = { nom, description: this.newRole.description.trim() || undefined };
-    const request = this.isEditMode && this.newRole.id
-      ? this.rolesApi.update(this.newRole.id, payload)
-      : this.rolesApi.create(payload);
-    request.subscribe({
-      next: (role) => {
-        this.roles = this.isEditMode
-          ? this.roles.map((item) => item.id === role.id ? role : item)
-          : [...this.roles, role];
-        this.saving = false;
-        this.closeAddModal();
-      },
-      error: (error) => {
-        this.saving = false;
-        this.errorMessage = error?.error?.message ?? "Impossible d'enregistrer le rôle.";
-      },
-    });
-  }
-
-  deleteRole(id?: number): void {
-    if (!id || !confirm('Êtes-vous sûr de vouloir supprimer ce rôle ?')) return;
-    this.rolesApi.delete(id).subscribe({
-      next: () => this.roles = this.roles.filter((role) => role.id !== id),
-      error: (error) => {
-        this.errorMessage = error?.error?.message ?? 'Impossible de supprimer ce rôle.';
-      },
-    });
+    this.roleService
+      .assignPermissionsToRole(role.id, this.selectedPermissions())
+      .subscribe({
+        next: (response) => {
+          this.selectedRoleForPermissions.set(response.data);
+          this.closePermissionModal();
+          this.loadRoles();
+        },
+      });
   }
 }

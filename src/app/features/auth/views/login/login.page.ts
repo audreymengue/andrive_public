@@ -44,6 +44,8 @@ export class LoginPage {
         this.isLoading.set(false);
         if (user.mustChangePassword) {
           this.router.navigate(['/premiere-connexion']);
+        } else if (user.roles?.some((role) => role.nom === 'demandeur')) {
+          this.router.navigate(['/dashboard/demandes/transport']);
         } else {
           this.router.navigate(['/dashboard']);
         }

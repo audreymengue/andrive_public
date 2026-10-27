@@ -43,13 +43,11 @@ export class FirstConnexionPage {
 
   isLoading = signal(false);
   errorMessage = signal('');
-  showCurrentPassword = signal(false);
   showNewPassword = signal(false);
   showConfirmPassword = signal(false);
 
   form = this.fb.group(
     {
-      motDePasseActuel: this.fb.control('', [Validators.required]),
       nouveauMotDePasse: this.fb.control('', [
         Validators.required,
         Validators.minLength(8),
@@ -76,9 +74,9 @@ export class FirstConnexionPage {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    const { motDePasseActuel, nouveauMotDePasse } = this.form.getRawValue();
+    const { nouveauMotDePasse } = this.form.getRawValue();
 
-    this.definirNouveauMotDePasse(motDePasseActuel!, nouveauMotDePasse!)
+    this.definirNouveauMotDePasse(nouveauMotDePasse!)
       .then((success) => {
         this.isLoading.set(false);
 
@@ -94,7 +92,11 @@ export class FirstConnexionPage {
           this.coreService.setCurrentUser({ ...user, mustChangePassword: false });
         }
 
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(
+          user?.roles?.some((role) => role.nom === 'demandeur')
+            ? ['/dashboard/demandes/transport']
+            : ['/dashboard']
+        );
       })
       .catch(() => {
         this.isLoading.set(false);
@@ -102,12 +104,9 @@ export class FirstConnexionPage {
       });
   }
 
-  private definirNouveauMotDePasse(
-    motDePasseActuel: string,
-    nouveauMotDePasse: string
-  ): Promise<boolean> {
+  private definirNouveauMotDePasse(nouveauMotDePasse: string): Promise<boolean> {
     return firstValueFrom(
-      this.authService.changePassword(motDePasseActuel, nouveauMotDePasse)
+      this.authService.changePassword(null, nouveauMotDePasse)
     ).then(() => true).catch(() => false);
   }
 }

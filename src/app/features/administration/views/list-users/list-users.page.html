@@ -1,13 +1,11 @@
-﻿<section class="page">
+<section class="page">
   <header class="page-header">
-    <h1>Bureau interne : gestion des utilisateurs</h1>
-    <p class="muted">Creez les comptes, attribuez les roles et controlez qui peut se connecter.</p>
+    <h1>Gestion des utilisateurs</h1>
+    <p class="muted">Créez les comptes, attribuez les profils et contrôlez qui peut se connecter.</p>
   </header>
 
   <div class="tabs" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" class="tab" aria-selected="true">
-      Liste des utilisateurs
-    </button>
+    <button type="button" role="tab" class="tab" aria-selected="true">Liste des utilisateurs</button>
   </div>
 
   <div class="card panel">
@@ -15,13 +13,8 @@
       <label class="search">
         <app-icon name="search" />
         <span class="sr-only">Rechercher un utilisateur</span>
-        <input
-          type="search"
-          [formControl]="search"
-          placeholder="Rechercher par login, nom, prenom..."
-        />
+        <input type="search" [formControl]="search" placeholder="Rechercher par login, nom, prénom..." />
       </label>
-
       <button type="button" class="btn btn-primary" (click)="create()">
         <app-icon name="plus" />
         Ajouter un utilisateur
@@ -31,9 +24,7 @@
     @if (error(); as message) {
       <div class="state" role="alert">
         <p>{{ message }}</p>
-        <button type="button" class="btn btn-ghost" (click)="reload()">
-          Reessayer
-        </button>
+        <button type="button" class="btn btn-ghost" (click)="reload()">Réessayer</button>
       </div>
     } @else {
       <div class="table-wrap" [attr.aria-busy]="loading()">
@@ -41,110 +32,81 @@
           <caption class="sr-only">
             Liste des utilisateurs
           </caption>
-
           <thead>
             <tr>
               <th scope="col">Login</th>
               <th scope="col">Nom</th>
-              <th scope="col">Prenom</th>
+              <th scope="col">Prénom</th>
               <th scope="col">Statut</th>
               <th scope="col">Profil</th>
               <th scope="col" class="col-actions">Action</th>
             </tr>
           </thead>
-
           <tbody>
             @for (u of users(); track u.id) {
-              <tr
-                (contextmenu)="openMenu($event, u)"
-                [class.is-inactive]="!isActif(u)"
-              >
+              <tr (contextmenu)="openMenu($event, u)" [class.is-inactive]="!isActif(u)">
                 <td class="login">{{ u.email }}</td>
-
                 <td>{{ u.nom }}</td>
-
                 <td>{{ u.prenom }}</td>
-
                 <td>
-                  <span
-                    class="badge"
-                    [class.badge--ok]="isActif(u)"
-                    [class.badge--off]="!isActif(u)"
-                  >
+                  <span class="badge" [class.badge--ok]="isActif(u)" [class.badge--off]="!isActif(u)">
                     {{ isActif(u) ? 'ACTIF' : 'INACTIF' }}
                   </span>
                 </td>
-
                 <td>{{ profilOf(u) }}</td>
-
                 <td class="col-actions">
-                  <div class="actions-grid">
-
-                    <!-- Consulter -->
+                  <div class="actions-cell">
+                    <!-- 1. Consulter le détail -->
                     <button
                       type="button"
-                      class="action-btn action-btn--info"
-                      [attr.aria-label]="'Consulter le detail de ' + u.email"
+                      class="btn-icon"
+                      title="Consulter le détail"
                       (click)="view(u)"
                     >
-                      <app-icon name="eye" />
-                      <span>Consulter le detail</span>
+                      <i class="bi bi-eye"></i>
                     </button>
 
-                    <!-- Activer / Désactiver -->
+                    <!-- 2. Attribuer des rôles -->
                     <button
                       type="button"
-                      class="action-btn action-btn--toggle"
-                      [attr.aria-label]="
-                        (isActif(u)
-                          ? 'Desactiver le compte de '
-                          : 'Activer le compte de ') + u.email
-                      "
-                      (click)="toggleStatus(u)"
+                      class="btn-icon"
+                      title="Attribuer des rôles"
+                      (click)="openRoles(u)"
                     >
-                      <span
-                        class="mini-switch"
-                        [class.is-on]="isActif(u)"
-                      >
-                        <span class="mini-switch-thumb"></span>
-                      </span>
-
-                      <span>Activer/Desactiver</span>
+                      👥
                     </button>
 
-                    <!-- Modifier -->
+                    <!-- 3. Réinitialiser le mot de passe -->
                     <button
                       type="button"
-                      class="action-btn action-btn--violet"
-                      [attr.aria-label]="'Editer ' + u.email"
-                      (click)="edit(u)"
-                    >
-                      <app-icon name="pencil" />
-                      <span>Editer</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      class="action-btn action-btn--violet"
-                      [attr.aria-label]="'Gérer les rôles de ' + u.email"
-                      (click)="manageRoles(u)"
-                    >
-                      <span>Gérer les rôles</span>
-                    </button>
-
-                    <!-- Réinitialiser le mot de passe -->
-                    <button
-                      type="button"
-                      class="action-btn action-btn--reset"
-                      [attr.aria-label]="
-                        'Réinitialiser le mot de passe de ' + u.email
-                      "
+                      class="btn-icon"
+                      title="Réinitialiser le mot de passe"
                       (click)="askReset(u)"
                     >
-                      <app-icon name="key" />
-                      <span>Réinitialiser le mot de passe</span>
+                      <i class="bi bi-key"></i>
                     </button>
 
+                    <!-- 4. Activer/Désactiver -->
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      [title]="isActif(u) ? 'Désactiver le compte' : 'Activer le compte'"
+                      (click)="toggleStatus(u)"
+                    >
+                      {{ isActif(u) ? '🔒' : '🔓' }}
+                    </button>
+
+                    <!-- 5. Éditer -->
+                    <button
+                      type="button"
+                      class="btn-icon"
+                      title="Éditer"
+                      (click)="edit(u)"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
+
+                    <!-- RETIRÉ : bouton « 6. Supprimer » -->
                   </div>
                 </td>
               </tr>
@@ -153,11 +115,9 @@
                 <tr>
                   <td colspan="6" class="empty">
                     @if (search.value.trim()) {
-                      Aucun utilisateur ne correspond a la recherche.
-                      Modifiez la recherche.
+                      Aucun utilisateur ne correspond à la recherche. Modifiez la recherche.
                     } @else {
-                      Aucun utilisateur pour le moment.
-                      Ajoutez le premier avec Ajouter un utilisateur.
+                      Aucun utilisateur pour le moment. Ajoutez le premier avec "Ajouter un utilisateur".
                     }
                   </td>
                 </tr>
@@ -170,67 +130,28 @@
       <footer class="pager">
         <p class="pager-count" aria-live="polite">
           @if (total() > 0) {
-            Affichage de {{ from() }} a {{ to() }} sur {{ total() }} utilisateurs
+            Affichage de {{ from() }} à {{ to() }} sur {{ total() }} utilisateurs
           }
         </p>
-
         <div class="pager-controls">
-          <button
-            type="button"
-            class="pager-btn"
-            [disabled]="page() <= 1 || loading()"
-            (click)="goToFirst()"
-            aria-label="Premiere page"
-          >
-            «
-          </button>
-
-          <button
-            type="button"
-            class="pager-btn"
-            [disabled]="page() <= 1 || loading()"
-            (click)="goTo(page() - 1)"
-            aria-label="Page precedente"
-          >
+          <button type="button" class="pager-btn" [disabled]="page() <= 1 || loading()" (click)="goToFirst()" aria-label="Première page">«</button>
+          <button type="button" class="pager-btn" [disabled]="page() <= 1 || loading()" (click)="goTo(page() - 1)" aria-label="Page précédente">
             <app-icon name="chevron-left" [size]="16" />
           </button>
-
           <span class="pager-page">{{ page() }}</span>
-
-          <button
-            type="button"
-            class="pager-btn"
-            [disabled]="page() >= lastPage() || loading()"
-            (click)="goTo(page() + 1)"
-            aria-label="Page suivante"
-          >
+          <button type="button" class="pager-btn" [disabled]="page() >= lastPage() || loading()" (click)="goTo(page() + 1)" aria-label="Page suivante">
             <app-icon name="chevron-right" [size]="16" />
           </button>
-
-          <button
-            type="button"
-            class="pager-btn"
-            [disabled]="page() >= lastPage() || loading()"
-            (click)="goToLast()"
-            aria-label="Derniere page"
-          >
-            »
-          </button>
+          <button type="button" class="pager-btn" [disabled]="page() >= lastPage() || loading()" (click)="goToLast()" aria-label="Dernière page">»</button>
         </div>
       </footer>
     }
   </div>
 
-  <p class="tip">
-    Clic droit sur une ligne pour ouvrir le menu des actions.
-  </p>
+  <p class="tip">Clic droit sur une ligne pour ouvrir le menu des actions.</p>
 </section>
 
-
-<!-- ========================================================= -->
-<!-- MENU CLIC DROIT                                           -->
-<!-- ========================================================= -->
-
+<!-- Menu Clic Droit -->
 @if (menu(); as m) {
   <ul
     class="ctx"
@@ -238,112 +159,123 @@
     aria-label="Actions sur l'utilisateur"
     [style.left.px]="m.x"
     [style.top.px]="m.y"
+    (click)="$event.stopPropagation()"
   >
-
-    <!-- Consulter -->
     <li role="none">
-      <button
-        type="button"
-        role="menuitem"
-        (click)="view(m.user)"
-      >
-        <app-icon name="eye" />
-        Consulter le detail
+      <button type="button" role="menuitem" (click)="view(m.user); menu.set(null)">
+        <i class="bi bi-eye"></i> Consulter le détail
       </button>
     </li>
-
-    <!-- Modifier -->
     <li role="none">
-      <button
-        type="button"
-        role="menuitem"
-        (click)="edit(m.user)"
-      >
-        <app-icon name="pencil" />
-        Editer l'utilisateur
+      <button type="button" role="menuitem" (click)="openRoles(m.user); menu.set(null)">
+        👥 Attribuer des rôles
       </button>
     </li>
-
-    <!-- Activer / Désactiver -->
     <li role="none">
-      <button
-        type="button"
-        role="menuitem"
-        (click)="toggleStatus(m.user)"
-      >
-        <app-icon name="power" />
-        {{ isActif(m.user)
-          ? 'Desactiver le compte'
-          : 'Activer le compte' }}
+      <button type="button" role="menuitem" (click)="askReset(m.user); menu.set(null)">
+        <i class="bi bi-key"></i> Réinitialiser le mot de passe
       </button>
     </li>
-
-    <!-- Réinitialiser le mot de passe -->
     <li role="none">
-      <button
-        type="button"
-        role="menuitem"
-        (click)="askReset(m.user)"
-      >
-        <app-icon name="key" />
-        Réinitialiser le mot de passe
+      <button type="button" role="menuitem" (click)="edit(m.user); menu.set(null)">
+        <i class="bi bi-pencil"></i> Éditer l'utilisateur
       </button>
     </li>
-
+    <li role="none">
+      <button type="button" role="menuitem" (click)="toggleStatus(m.user); menu.set(null)">
+        {{ isActif(m.user) ? '🔒 Désactiver le compte' : '🔓 Activer le compte' }}
+      </button>
+    </li>
+    <!-- RETIRÉ : entrée « Supprimer l'utilisateur » -->
   </ul>
 }
 
-
-<!-- ========================================================= -->
-<!-- FENÊTRE DE CONFIRMATION                                   -->
-<!-- ========================================================= -->
-
-@if (confirm(); as c) {
-  <div
-    class="overlay"
-    (click)="closeConfirm()"
-  >
-    <div
-      class="modal"
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="confirm-title"
-      aria-describedby="confirm-msg"
-      (click)="$event.stopPropagation()"
-    >
-      <h2 id="confirm-title">
-        {{ c.title }}
-      </h2>
-
-      <p
-        class="modal-body"
-        id="confirm-msg"
-      >
-        {{ c.message }}
+<!-- Modale d'attribution des rôles -->
+@if (rolesTarget(); as targetUser) {
+  <div class="overlay" (click)="closeRoles()">
+    <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2>Attribution des rôles</h2>
+      <p class="muted">
+        Utilisateur : <strong>{{ fullName(targetUser) }}</strong> ({{ targetUser.email }})
       </p>
 
-      @if (confirmError(); as message) {
-        <p
-          class="field-error"
-          role="alert"
+      <div class="modal-body">
+        <label for="roles-select" class="form-label">Habilitation</label>
+        <p class="text-sm muted">Choisissez un seul rôle pour cet utilisateur.</p>
+
+        <select
+          id="roles-select"
+          class="form-control role-select-list"
+          #roleSelect
+          (change)="onRolesSelectChange(roleSelect)"
         >
-          {{ message }}
-        </p>
+          <option value="">— Aucun rôle —</option>
+          @for (role of allRoles(); track role.id) {
+            <option [value]="role.id" [selected]="hasRole(role.id)">
+              {{ role.nom }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="closeRoles()">Annuler</button>
+        <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="saveUserRoles()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modale de réinitialisation du mot de passe (gère la confirmation et l'affichage du mot de passe généré) -->
+@if (resetPasswordTarget(); as target) {
+  <div class="overlay" (click)="closeResetPassword()">
+    <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2>Réinitialisation du mot de passe</h2>
+      <p class="muted">
+        Utilisateur : <strong>{{ fullName(target.user) }}</strong> ({{ target.user.email }})
+      </p>
+
+      <div class="modal-body">
+        @if (target.newPassword) {
+          <div class="alert alert-success" style="padding: 12px; background: #e6f4ea; border-radius: 6px; margin: 15px 0;">
+            <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 500; color: #137333;">Mot de passe par défaut généré :</p>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <code style="font-size: 18px; font-weight: bold; color: #137333;">{{ target.newPassword }}</code>
+              <button type="button" class="btn btn-ghost" (click)="copyPassword(target.newPassword)">Copier</button>
+            </div>
+          </div>
+        } @else {
+          <p>Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ? Un nouveau mot de passe temporaire sera généré.</p>
+        }
+      </div>
+
+      <div class="modal-actions">
+        @if (target.newPassword) {
+          <button type="button" class="btn btn-primary" (click)="closeResetPassword()">Fermer</button>
+        } @else {
+          <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="closeResetPassword()">Annuler</button>
+          <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirmResetPassword()">Confirmer</button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modale de Confirmation globale (pour la suppression) -->
+@if (confirm(); as c) {
+  <div class="overlay" (click)="closeConfirm()">
+    <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2>{{ c.title }}</h2>
+      <p class="muted">{{ c.message }}</p>
+
+      @if (confirmError(); as errMessage) {
+        <div class="state state--error" role="alert">
+          <p>{{ errMessage }}</p>
+        </div>
       }
 
       <div class="modal-actions">
-
-        <!-- Annuler -->
-        <button
-          type="button"
-          class="btn btn-ghost"
-          [disabled]="busy()"
-          (click)="closeConfirm()"
-        >
-          Annuler
-        </button>
-
-        <!-- Confirmer -->
+        <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="closeConfirm()">Annuler</button>
         <button
           type="button"
           class="btn"
@@ -354,30 +286,7 @@
         >
           {{ c.confirmLabel }}
         </button>
-
       </div>
     </div>
   </div>
-}
-
-
-<!-- ========================================================= -->
-<!-- MESSAGE DE NOTIFICATION                                   -->
-<!-- ========================================================= -->
-
-@if (flash.message(); as message) {
-  <div
-    class="toast"
-    role="status"
-  >
-    {{ message }}
-  </div>
-}
-
-@if (rolesTarget(); as user) {
-  <app-role-assign-dialog
-    [user]="user"
-    (saved)="onRolesSaved($event)"
-    (closed)="rolesTarget.set(null)"
-  />
 }

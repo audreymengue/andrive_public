@@ -2,20 +2,20 @@
 :host {
   --ink: #17232d;
   --muted: #5b6b78;
-  --canvas: #eef1f4;
+  --canvas: #f8fafc;
   --surface: #ffffff;
-  --line: #d5dce3;
-  --line-soft: #e6ebf0;
-  --primary: #1a56db;
-  --primary-strong: #1341a8;
-  --primary-soft: #dfeef0;
+  --line: #e2e8f0;
+  --line-soft: #edf1f6;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --primary-soft: #e8f0ff;
   --ok: #1f6f43;
   --ok-soft: #dff2e6;
   --danger: #a4262c;
   --danger-soft: #fbe4e5;
   --warn: #7a4b00;
   --warn-soft: #fdf0cf;
-  --focus: #1a73e8;
+  --focus: #2563eb;
 
   display: block;
   color: var(--ink);
@@ -74,7 +74,8 @@
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgb(23 38 56 / 5%);
 }
 
 /* ---------- Boutons ---------- */
@@ -86,7 +87,7 @@
   min-height: 2.5rem;
   padding: 0 1rem;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 12px;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -127,7 +128,7 @@
   height: 2.25rem;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 12px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -203,7 +204,7 @@
   min-height: 2.5rem;
   padding: 0 0.75rem;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 12px;
   background: var(--surface);
   color: var(--ink);
   font: inherit;
@@ -320,7 +321,7 @@
   width: min(28rem, 100%);
   padding: 1.5rem;
   background: var(--surface);
-  border-radius: 10px;
+  border-radius: 18px;
   box-shadow: 0 20px 50px rgb(23 35 45 / 0.3);
 }
 .modal h2 {

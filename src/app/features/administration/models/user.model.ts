@@ -1,5 +1,9 @@
 // src/app/features/administration/models/user.model.ts
 
+/** Délais de recherche et pagination globale */
+export const SEARCH_DELAY_MS = 300;
+export const PAGE_SIZE_SEARCH = 10;
+
 /** Préfixe d'URL du module. */
 export const USERS_BASE_PATH = '/administration/list-users';
 
@@ -7,14 +11,20 @@ export type StatutCode = 'ACTIF' | 'INACTIF';
 
 export interface Permission {
   id: number;
-  code: string;
-  libelle: string;
+  code?: string;       // ex: 'USER_READ'
+  libelle?: string;    // ex: 'Lecture des utilisateurs'
+  name?: string;       // Laravel Spatie standard
+  guard_name?: string;
   description?: string;
 }
 
 export interface Role {
   id: number;
-  nom: string;
+  code?: string;       // ex: 'ROLE_ADMIN'
+  libelle?: string;    // ex: 'Administrateur'
+  nom?: string;        // Alias optionnel
+  name?: string;       // Laravel Spatie standard
+  guard_name?: string;
   description?: string;
   statut?: StatutCode;
   permissions?: Permission[];
@@ -27,7 +37,7 @@ export interface Direction {
 }
 
 /**
- * Liste officielle des directions (direction_id) extraite de la documentation officielle.
+ * Liste des directions référencées par l’API (direction_id).
  */
 export const DIRECTIONS: readonly Direction[] = [
   { id: 1, code: 'DG', nom: 'Direction Générale' },
@@ -75,8 +85,15 @@ export interface Paginated<T> {
 }
 
 export const fullName = (u: Pick<User, 'prenom' | 'nom'>): string => `${u.prenom} ${u.nom}`.trim();
+
 export const isActif = (u: Pick<User, 'statut'>): boolean => u.statut === 'ACTIF';
-export const roleNames = (u: Pick<User, 'roles'>): string[] => u.roles.map((r) => r.nom);
+
+export const getRoleNames = (u: Pick<User, 'roles'>): string[] =>
+  (u.roles ?? []).map((r) => r.nom ?? r.libelle ?? r.name ?? r.code ?? '').filter(Boolean);
+
+/** Alias pour éviter l'erreur d'import dans list-users.page.ts */
+export const roleNames = getRoleNames;
+
 export const directionLabel = (id: number | null): string => {
   if (id === null) return '—';
   const found = DIRECTIONS.find((d) => d.id === id);

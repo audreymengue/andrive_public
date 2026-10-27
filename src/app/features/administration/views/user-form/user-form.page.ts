@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 
 import { DIRECTIONS, Role, USERS_BASE_PATH, User, fullName } from '../../models/user.model';
 import { FlashService } from '../../services/flash.service';
@@ -13,19 +13,9 @@ import { UserService } from '../../services/user.service';
 type Mode = 'create' | 'edit' | 'detail';
 type FieldName = 'nom' | 'prenom' | 'email' | 'direction_id';
 
-/**
- * Un seul composant pour les trois écrans :
- *  - create : ajout (boutons en bas à gauche). Crée l'utilisateur puis, si des rôles
- *    sont sélectionnés, les assigne dans un second appel (POST /users n'accepte pas les rôles).
- *  - edit   : édition (boutons en bas à gauche, email verrouillé)
- *  - detail : consultation (boutons en bas à droite). Le statut se change depuis la liste,
- *    pas ici : l'API ne l'accepte pas dans PUT /users/{id}.
- *
- * La page affiche une barre d'onglets identique à celle de la liste : un premier onglet
- * ramène vers « Liste des utilisateurs », le second, actif, affiche le contexte courant.
- */
 @Component({
   selector: 'app-user-form-page',
+  standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './user-form.page.html',
   styleUrls: ['../../styles/admin.shared.scss', './user-form.page.scss'],
@@ -40,7 +30,10 @@ export class UserFormPage {
   private readonly flash = inject(FlashService);
 
   protected readonly mode: Mode = this.route.snapshot.data['mode'] ?? 'create';
-  private readonly id = Number(this.route.snapshot.paramMap.get('id'));
+
+  // Sécurisation de la récupération de l'ID (on gère le cas où il est absent)
+  private readonly rawId = this.route.snapshot.paramMap.get('id');
+  private readonly id = this.rawId ? Number(this.rawId) : null;
 
   protected readonly listPath = USERS_BASE_PATH;
   protected readonly directions = DIRECTIONS;
@@ -62,7 +55,6 @@ export class UserFormPage {
     roles: [[] as number[]],
   });
 
-  /** Titre affiché dans l'en-tête et dans l'onglet actif : inclut l'email une fois chargé. */
   protected readonly title = computed(() => {
     const u = this.user();
     if (this.mode === 'create') return 'Nouvel utilisateur';
@@ -72,27 +64,41 @@ export class UserFormPage {
 
   constructor() {
     this.applyModeRestrictions();
+
     this.rolesApi.list().subscribe({
-      next: (roles) => this.allRoles.set(roles),
+      next: (roles) => this.allRoles.set(Array.isArray(roles) ? roles : []),
       error: () => this.rolesError.set('La liste des rôles est indisponible.'),
     });
+
     if (this.mode !== 'create') {
+      if (!this.id || isNaN(this.id)) {
+        this.error.set("Identifiant d'utilisateur invalide.");
+        this.loading.set(false);
+        return;
+      }
+
       this.load();
     }
   }
 
   protected load(): void {
+    if (!this.id) return;
+
     this.loading.set(true);
     this.loadError.set(false);
+
     this.api.get(this.id).subscribe({
-      next: (u) => {
+      next: (rep: any) => {
+        const u = rep?.data ?? rep;
+
         this.form.patchValue({
           nom: u.nom,
           prenom: u.prenom,
           email: u.email,
           direction_id: u.direction_id,
-          roles: u.roles.map((r) => r.id),
+          roles: Array.isArray(u.roles) ? u.roles.map((r: any) => r.id) : [],
         });
+
         this.user.set(u);
         this.loading.set(false);
       },
@@ -106,7 +112,7 @@ export class UserFormPage {
   private applyModeRestrictions(): void {
     const c = this.form.controls;
     if (this.mode === 'edit') {
-      c.email.disable(); // l'identifiant de connexion ne change pas après création
+      c.email.disable();
     }
     if (this.mode === 'detail') {
       c.nom.disable();
@@ -122,7 +128,7 @@ export class UserFormPage {
   }
 
   protected initials(u: User): string {
-    return `${u.prenom.charAt(0)}${u.nom.charAt(0)}`.toUpperCase();
+    return `${u.prenom?.charAt(0) ?? ''}${u.nom?.charAt(0) ?? ''}`.toUpperCase();
   }
 
   protected hasRole(id: number): boolean {
@@ -139,9 +145,8 @@ export class UserFormPage {
     return found ? `${found.nom} (${found.code})` : `Direction #${id}`;
   }
 
-  /** Lecture de la sélection multiple du <select> Habilitation. */
   protected onRolesSelectChange(select: HTMLSelectElement): void {
-    const ids = Array.from(select.selectedOptions).map((o) => Number(o.value));
+    const ids = select.value ? [Number(select.value)] : [];
     this.form.controls.roles.setValue(ids);
     this.form.controls.roles.markAsDirty();
   }
@@ -168,29 +173,20 @@ export class UserFormPage {
     this.error.set(null);
 
     const { roles, ...payload } = this.form.getRawValue();
-    const save$ = this.mode === 'create'
-      ? this.api.create(payload).pipe(
-          switchMap((result) => roles.length
-            ? this.api.assignRoles(result.user.id, roles).pipe(
-                switchMap((saved) => of({ saved, temporaryPassword: result.temporary_password })),
-              )
-            : of({ saved: result.user, temporaryPassword: result.temporary_password }),
-          ),
-        )
-      : this.api.update(this.id, payload).pipe(
-          switchMap((saved) => roles.length
-            ? this.api.assignRoles(saved.id, roles).pipe(switchMap((updated) => of({ saved: updated, temporaryPassword: '' })))
-            : of({ saved, temporaryPassword: '' }),
-          ),
-        );
 
-    save$.subscribe({
-        next: ({ saved, temporaryPassword }) => {
+    if (this.mode === 'create') {
+      this.api.create(payload).pipe(
+        switchMap((created) => {
+          const assignRoles$ = roles.length
+            ? this.api.assignRoles(created.user.id, roles)
+            : of(created.user);
+          return assignRoles$.pipe(map(() => created));
+        })
+      ).subscribe({
+        next: (created) => {
           this.flash.show(
-            this.mode === 'create'
-              ? `Utilisateur ${saved.email} créé. Mot de passe temporaire : ${temporaryPassword || 'à communiquer par l’administrateur'}. À changer à la première connexion.`
-              : 'Modifications enregistrées.',
-            15000,
+            `Utilisateur ${created.user.email} créé. Mot de passe temporaire : ${created.temporary_password}. À changer à la première connexion.`,
+            15000
           );
           this.cancel();
         },
@@ -199,9 +195,38 @@ export class UserFormPage {
           this.handleError(err);
         },
       });
+    } else {
+      if (!this.id) {
+        this.saving.set(false);
+        this.error.set("Impossible de mettre à jour : ID utilisateur manquant.");
+        return;
+      }
+
+      this.api.update(this.id, payload)
+        .pipe(
+          switchMap((savedResponse: any) => {
+            // Extraction sécurisée de l'ID utilisateur au cas où l'API renvoie { data: { id: ... } }
+            const updatedUser = savedResponse?.data ?? savedResponse;
+            const targetId = updatedUser?.id ?? this.id;
+
+            return this.form.controls.roles.dirty
+              ? this.api.assignRoles(targetId, roles)
+              : of(savedResponse);
+          })
+        )
+        .subscribe({
+          next: () => {
+            this.flash.show('Modifications enregistrées.', 5000);
+            this.cancel();
+          },
+          error: (err: HttpErrorResponse) => {
+            this.saving.set(false);
+            this.handleError(err);
+          },
+        });
+    }
   }
 
-  /** Réponse 422 de Laravel : { message, errors: { champ: [messages] } } */
   private handleError(err: HttpErrorResponse): void {
     const fieldErrors = err.status === 422 ? err.error?.errors : null;
     if (fieldErrors) {

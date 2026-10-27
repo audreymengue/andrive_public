@@ -81,12 +81,21 @@ export class AuthService {
     );
   }
 
- changePassword(currentPassword: string, newPassword: string): Observable<ChangePasswordResponse> {
-  return this.api.put<ChangePasswordResponse>('/me/password', {
-      current_password: currentPassword,
-      new_password: newPassword,
-      new_password_confirmation: newPassword,
-    }).pipe(
+ changePassword(currentPassword: string | null, newPassword: string): Observable<ChangePasswordResponse> {
+  const payload: {
+    current_password?: string;
+    new_password: string;
+    new_password_confirmation: string;
+  } = {
+    new_password: newPassword,
+    new_password_confirmation: newPassword,
+  };
+
+  if (currentPassword !== null) {
+    payload.current_password = currentPassword;
+  }
+
+  return this.api.put<ChangePasswordResponse>('/me/password', payload).pipe(
       tap((response) => this.coreService.setToken(response.data.token))
     );
   }

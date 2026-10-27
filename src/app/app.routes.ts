@@ -41,26 +41,26 @@ export const routes: Routes = [
                 path: 'demandes/transport',
                 loadComponent: () => import('./features/demandes/views/demande-sortie/demande-sortie.page') .then(m => m.DemandeSortiePage),
                 canActivate: [RoleGuard],
-                data: {roles: ['agent', 'super_admin'],title: 'Demande de transport',description: 'Créez et envoyez une demande de transport.'
+                data: {roles: ['agent', 'demandeur', 'super_admin'],title: 'Demande de transport',description: 'Créez et envoyez une demande de transport.'
     }
 },
             {
                 path: 'demandes/historique',
                 loadComponent: () => import('./features/demandes/views/historique-demandes/historique-demandes.page').then(m => m.HistoriqueDemandesPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['agent', 'super_admin'], title: 'Historique des demandes' }
+                data: { roles: ['agent', 'demandeur', 'super_admin'], title: 'Historique des demandes' }
             },
             {
                 path: 'demandes/suivi',
                 loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['agent', 'super_admin'], title: 'Suivi des demandes', description: 'Consultez le statut de vos demandes de transport.' }
+                data: { roles: ['agent', 'demandeur', 'super_admin'], title: 'Suivi des demandes', description: 'Consultez le statut de vos demandes de transport.' }
             },
             {
                 path: 'demandes/:id',
                 loadComponent: () => import('./features/demandes/views/detail-demande/detail-demande.page').then(m => m.DetailDemandePage),
                 canActivate: [RoleGuard],
-                data: { roles: ['agent', 'super_admin'], title: 'Détail de la demande' }
+                data: { roles: ['agent', 'demandeur', 'super_admin'], title: 'Détail de la demande' }
             },
             {
                 path: 'gestion/demandes',

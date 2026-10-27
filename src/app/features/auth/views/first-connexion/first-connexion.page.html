@@ -9,23 +9,6 @@
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
         <div class="mb-3">
-          <label class="form-label" for="motDePasseActuel">Mot de passe actuel</label>
-          <input
-            class="form-control"
-            id="motDePasseActuel"
-            type="password"
-            formControlName="motDePasseActuel"
-            autocomplete="current-password"
-          />
-          <div
-            class="text-danger small mt-1"
-            *ngIf="form.controls.motDePasseActuel.touched && form.controls.motDePasseActuel.errors?.['required']"
-          >
-            Le mot de passe actuel est requis.
-          </div>
-        </div>
-
-        <div class="mb-3">
           <label class="form-label" for="nouveauMotDePasse">
             Nouveau mot de passe
           </label>

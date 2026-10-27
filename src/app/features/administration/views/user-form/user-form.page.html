@@ -1,11 +1,11 @@
-﻿<section class="page page--narrow">
+<section class="page page--narrow">
   <nav class="breadcrumb" aria-label="Fil d'Ariane">
     <a [routerLink]="listPath">Utilisateurs</a>
     <span aria-hidden="true">/</span>
     <span aria-current="page">{{ title() }}</span>
   </nav>
 
-    <header class="page-header page-header--with-back">
+  <header class="page-header page-header--with-back">
     <h1>{{ title() }}</h1>
     <a class="btn btn-ghost btn-back" [routerLink]="listPath">
       ← Retour
@@ -21,7 +21,7 @@
     </div>
   } @else {
     <form class="card form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      @if (mode === 'detail' && user(); as u) {
+      @if (user(); as u) {
         <div class="identity">
           <span class="avatar" aria-hidden="true">{{ initials(u) }}</span>
           <div>
@@ -36,7 +36,7 @@
         @if (u.must_change_password) {
           <div class="notice">
             <p>
-              Cet utilisateur doit encore modifier son mot de passe temporaire à sa première connexion.
+              Cet utilisateur a encore son mot de passe par défaut. Il devra le modifier à sa première connexion.
             </p>
           </div>
         }
@@ -45,8 +45,7 @@
       @if (mode === 'create') {
         <div class="notice notice--info">
           <p>
-            Un mot de passe temporaire sera généré pour le compte. L'utilisateur devra le modifier à sa première
-            connexion.
+            Un mot de passe par défaut sera attribué au compte. L'utilisateur devra le modifier à sa première connexion.
           </p>
         </div>
       }
@@ -120,6 +119,7 @@
         </div>
       </div>
 
+      <!-- Affichage conditionnel des rôles selon le mode -->
       @if (mode === 'detail') {
         <div class="field">
           <span class="label">Rôles</span>
@@ -136,16 +136,16 @@
       } @else {
         <div class="field">
           <label for="roles">Habilitation</label>
-          <p class="hint">Maintenez Ctrl (ou Cmd sur Mac) enfoncé pour sélectionner plusieurs rôles.</p>
+          <p class="hint">Choisissez un seul rôle pour cet utilisateur.</p>
           <select
             id="roles"
-            multiple
             class="role-select"
-            [size]="allRoles().length || 1"
+            [value]="form.controls.roles.value[0] ?? ''"
             (change)="onRolesSelectChange($any($event.target))"
           >
+            <option value="">— Aucun rôle —</option>
             @for (role of allRoles(); track role.id) {
-              <option [value]="role.id" [selected]="hasRole(role.id)">{{ role.nom }}</option>
+              <option [value]="role.id">{{ role.nom }}</option>
             }
           </select>
         </div>
@@ -159,9 +159,11 @@
 
       <div class="form-actions" [class.form-actions--right]="mode === 'detail'">
         <button type="button" class="btn btn-ghost" (click)="cancel()">Annuler</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()">
-          {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
-        </button>
+        @if (mode !== 'detail') {
+          <button type="submit" class="btn btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+        }
       </div>
     </form>
   }

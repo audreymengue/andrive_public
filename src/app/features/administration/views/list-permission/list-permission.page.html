@@ -2,127 +2,138 @@
   <!-- En-tête -->
   <div class="header-section">
     <div class="header-title-group">
-      <button class="btn btn-back" (click)="goBack()" title="Retour">
-        ⬅️ Retour
-      </button>
+
       <div>
-        <h2>Gestion des Permissions</h2>
+        <h2>Gestion des permissions</h2>
         <p class="subtitle">Consultez et gérez les droits d'accès de l'application ANINF</p>
       </div>
     </div>
-    
-    <button class="btn btn-primary" (click)="openAddModal()">
-      <span class="icon">+</span> Ajouter permission
+    <button type="button" class="btn btn-primary" (click)="openAddModal()">
+      + Ajouter une permission
     </button>
   </div>
-
-  <p *ngIf="errorMessage" class="empty-state" role="alert">{{ errorMessage }}</p>
 
   <!-- Recherche -->
   <div class="search-section">
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input 
-        type="text" 
-        [(ngModel)]="searchTerm" 
+      <input
+        type="text"
+        [value]="searchTerm()"
+        (input)="searchTerm.set($any($event.target).value)"
         placeholder="Rechercher par code ou libellé..."
         class="search-input"
+        [disabled]="isLoading()"
       />
     </div>
   </div>
 
   <!-- Tableau -->
   <div class="table-card">
-    <table class="permission-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Code</th>
-          <th>Libellé</th>
-          <th>Description</th>
-          <th class="text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let perm of filteredPermissions">
-          <td class="text-muted">#{{ perm.id }}</td>
-          <td>
-            <span class="badge-code">{{ perm.code }}</span>
-          </td>
-          <td class="font-medium">{{ perm.libelle }}</td>
-          <td class="text-muted">{{ perm.description }}</td>
-          <td class="text-right actions-cell">
-            <button class="btn-icon" (click)="openEditModal(perm)" title="Éditer">✏️</button>
-            <button class="btn-icon btn-danger" (click)="deletePermission(perm.id)" title="Supprimer">🗑️</button>
-          </td>
-        </tr>
-        <tr *ngIf="isLoading && permissions.length === 0">
-          <td colspan="5" class="empty-state">Chargement des permissions…</td>
-        </tr>
-        <tr *ngIf="filteredPermissions.length === 0 && !isLoading">
-          <td colspan="5" class="empty-state">
-            Aucune permission trouvée.
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Modale -->
-  <div class="modal-overlay" *ngIf="isModalOpen">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>{{ isEditMode ? 'Modifier la Permission' : 'Nouvelle Permission' }}</h3>
-        <button class="close-btn" (click)="closeAddModal()">✕</button>
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Chargement des permissions en cours...</p>
       </div>
-      <form (ngSubmit)="savePermission()">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="code">Code <span class="required">*</span></label>
-            <input 
-              type="text" 
-              id="code" 
-              [(ngModel)]="newPermission.code" 
-              name="code" 
-              placeholder="ex: create_user" 
-              required
-            />
-          </div>
+    } @else {
+      <table class="permission-table">
+        <thead>
+          <tr>
 
-          <div class="form-group">
-            <label for="libelle">Libellé <span class="required">*</span></label>
-            <input 
-              type="text" 
-              id="libelle" 
-              [(ngModel)]="newPermission.libelle" 
-              name="libelle" 
-              placeholder="ex: Créer un utilisateur" 
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="description">Description</label>
-            <textarea 
-              id="description" 
-              [(ngModel)]="newPermission.description" 
-              name="description" 
-              rows="3" 
-              placeholder="ex: Permet de créer un utilisateur"
-            ></textarea>
-          </div>
-          <p *ngIf="errorMessage" class="empty-state" role="alert">{{ errorMessage }}</p>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeAddModal()">
-            ⬅️ Retour
-          </button>
-          <button type="submit" class="btn btn-primary" [disabled]="isLoading">
-            {{ isLoading ? 'Enregistrement…' : (isEditMode ? 'Mettre à jour' : 'Enregistrer') }}
-          </button>
-        </div>
-      </form>
-    </div>
+            <th>CODE</th>
+            <th>LIBELLÉ</th>
+            <th>DESCRIPTION</th>
+            <th class="text-right">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (perm of filteredPermissions(); track perm.id) {
+            <tr>
+              <td>
+                <span class="badge-code">{{ perm.code }}</span>
+              </td>
+              <td class="font-medium">{{ perm.libelle }}</td>
+              <td class="text-muted">{{ perm.description }}</td>
+              <td class="text-right actions-cell">
+                <button type="button" class="btn-icon" (click)="openEditModal(perm)" title="Éditer"><i class="bi bi-pencil"></i></button>
+                <button type="button" class="btn-icon btn-danger" (click)="deletePermission(perm.id)" title="Supprimer"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="empty-state">
+                Aucune permission trouvée.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
   </div>
+
+  <!-- Modale d'édition -->
+  @if (isModalOpen()) {
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>{{ editingPermission.id ? 'Modifier la permission' : 'Ajouter une permission' }}</h3>
+          <button type="button" class="close-btn" (click)="closeAddModal()" [disabled]="isSaving()">✕</button>
+        </div>
+        <form (ngSubmit)="savePermission()">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="code">Code <span class="required">*</span></label>
+              <input
+                type="text"
+                id="code"
+                [(ngModel)]="editingPermission.code"
+                name="code"
+                placeholder="ex: créer_utilisateur"
+                required
+                [disabled]="isSaving()"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="libelle">Libellé <span class="required">*</span></label>
+              <input
+                type="text"
+                id="libelle"
+                [(ngModel)]="editingPermission.libelle"
+                name="libelle"
+                placeholder="ex: Créer un utilisateur"
+                required
+                [disabled]="isSaving()"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="description">Description</label>
+              <textarea
+                id="description"
+                [(ngModel)]="editingPermission.description"
+                name="description"
+                rows="3"
+                placeholder="ex: Permet de créer un utilisateur"
+                [disabled]="isSaving()"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()" [disabled]="isSaving()">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="isSaving()">
+              @if (isSaving()) {
+                <span class="spinner-sm"></span> Enregistrement...
+              } @else {
+                {{ editingPermission.id ? 'Mettre à jour' : 'Créer' }}
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
 </div>

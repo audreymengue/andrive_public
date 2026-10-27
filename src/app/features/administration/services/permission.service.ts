@@ -12,6 +12,7 @@ export interface Permission {
 }
 
 interface ApiResponse<T> {
+  message?: string;
   data: T;
 }
 
@@ -30,6 +31,11 @@ export class PermissionService {
       .pipe(
         map(response => response.data)
       );
+  }
+
+  /** Méthode compatible avec l’écran d’administration de feature/role-api. */
+  getPermissions(): Observable<ApiResponse<Permission[]>> {
+    return this.http.get<ApiResponse<Permission[]>>(this.baseUrl);
   }
 
   // GET /api/permissions/{id}
@@ -54,6 +60,10 @@ export class PermissionService {
       );
   }
 
+  createPermission(payload: { code: string; libelle: string; description?: string }): Observable<ApiResponse<Permission>> {
+    return this.http.post<ApiResponse<Permission>>(this.baseUrl, payload);
+  }
+
   // PUT /api/permissions/{id}
   update(
     id: number,
@@ -73,10 +83,18 @@ export class PermissionService {
       );
   }
 
+  updatePermission(id: number, payload: Partial<Permission>): Observable<ApiResponse<Permission>> {
+    return this.http.put<ApiResponse<Permission>>(`${this.baseUrl}/${id}`, payload);
+  }
+
   // DELETE /api/permissions/{id}
   delete(id: number): Observable<void> {
     return this.http.delete<void>(
       `${this.baseUrl}/${id}`
     );
+  }
+
+  deletePermission(id: number): Observable<void> {
+    return this.delete(id);
   }
 }

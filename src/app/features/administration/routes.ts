@@ -5,7 +5,7 @@ export const ADMINISTRATION_ROUTES: Routes = [
     {
         path: '',
         loadComponent: () => import('../../layout/main-layout/main-layout').then(m => m.MainLayout),
-        
+
         children: [
             {
                 path: 'list-permission',
@@ -46,6 +46,8 @@ export const ADMINISTRATION_ROUTES: Routes = [
                 data: { mode: 'detail' },
                 loadComponent: () => import('./views/user-form/user-form.page').then(m => m.UserFormPage)
             }
+
         ]
+
     }
 ];

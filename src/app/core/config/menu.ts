@@ -33,7 +33,7 @@ export const APP_MENU: MenuItem[] = [
     id: 'demandes',
     title: 'Mes demandes',
     icon: 'bi bi-send',
-    roles: ['agent', 'super_admin'],
+    roles: ['agent', 'demandeur', 'super_admin'],
     children: [
       {
         id: 'demande-transport',

@@ -1,27 +1,30 @@
-<section class="py-4">
-  <h2 class="mb-2">Tableau de bord</h2>
-
-  <p class="text-secondary mb-4">
-    Bienvenue{{ coreService.currentUser()?.nom
-      ? ', ' + coreService.currentUser()?.nom
-      : ''
-    }}. Sélectionnez une rubrique dans le menu.
-  </p>
+<section class="dashboard-home">
+  <header class="dashboard-hero">
+    <h2>Tableau de bord</h2>
+    <p>
+      Bienvenue{{ coreService.currentUser()?.nom
+        ? ', ' + coreService.currentUser()?.nom
+        : ''
+      }}. Sélectionnez une rubrique dans le menu.
+    </p>
+  </header>
 
   @if (coreService.hasRole('super_admin')) {
-    <button
-      type="button"
-      class="btn btn-primary"
-      (click)="renouvelerMotDePasse()"
-    >
-      Renouveler mon mot de passe
-    </button>
+    <div class="dashboard-panel">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="renouvelerMotDePasse()"
+      >
+        Renouveler mon mot de passe
+      </button>
 
-    @if (succes()) {
-      <div class="alert alert-success mt-3" role="status">
-        {{ succes() }}
-      </div>
-    }
+      @if (succes()) {
+        <div class="alert alert-success mt-3 mb-0" role="status">
+          {{ succes() }}
+        </div>
+      }
+    </div>
 
     @if (afficherRenouvellement()) {
       <div

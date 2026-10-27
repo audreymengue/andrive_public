@@ -1,3 +1,4 @@
+/* Tabs & Panel Structure */
 .tabs {
   display: flex;
   gap: 0.25rem;
@@ -5,6 +6,7 @@
   position: relative;
   z-index: 1;
 }
+
 .tab {
   padding: 0.625rem 1.25rem;
   border: 1px solid var(--line);
@@ -18,26 +20,310 @@
   box-shadow: inset 0 3px 0 var(--primary);
   white-space: nowrap;
 }
+
 .tab--link {
   color: var(--muted);
   text-decoration: none;
   cursor: pointer;
   box-shadow: none;
   border-bottom-color: var(--line);
-}
-.tab--link:hover {
-  color: var(--primary);
-  background: var(--canvas);
+
+  &:hover {
+    color: var(--primary);
+    background: var(--canvas);
+  }
 }
 
 .panel {
   border-top-left-radius: 0;
   overflow: hidden;
 }
+
 .panel-pad {
   padding: 1.5rem;
 }
 
+/* Toolbar & Search */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--line-soft);
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    width: 100%;
+    max-width: 380px;
+
+    input {
+      border: none;
+      outline: none;
+      background: transparent;
+      width: 100%;
+      font: inherit;
+      color: var(--ink);
+    }
+  }
+}
+
+/* Table Wrappers & Layout */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+
+  th {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--canvas);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: middle;
+  }
+
+  tr.is-inactive {
+    opacity: 0.65;
+  }
+
+  .col-actions {
+    width: 1%;
+    white-space: nowrap;
+  }
+}
+
+/* Grille d'actions pour les icônes */
+.actions-grid {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* Style unifié des boutons d'action */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+
+  &:hover {
+    background: var(--primary-soft, #eff6ff);
+    border-color: var(--primary);
+  }
+
+  &--warn {
+    color: #f59e0b;
+    &:hover {
+      background: #fef3c7;
+      border-color: #f59e0b;
+    }
+  }
+
+  &--edit {
+    color: #a855f7;
+    &:hover {
+      background: #f3e8ff;
+      border-color: #a855f7;
+    }
+  }
+
+  &--toggle {
+    color: var(--muted);
+    padding: 0 0.25rem;
+    &:hover {
+      background: var(--canvas);
+    }
+  }
+}
+
+/* Mini Switch Toggle */
+.mini-switch {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 16px;
+  background-color: #cbd5e1;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+
+  &.is-on {
+    background-color: #10b981;
+    .mini-switch-thumb {
+      transform: translateX(12px);
+    }
+  }
+
+  &-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background-color: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+}
+
+/* Badges Statut */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 650;
+
+  &--ok {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  &--off {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+}
+
+/* Menu Contextuel Clic Droit */
+.ctx {
+  position: fixed;
+  z-index: 100;
+  min-width: 200px;
+  margin: 0;
+  padding: 0.375rem 0;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.5rem 0.875rem;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--primary-soft, #f1f5f9);
+      color: var(--primary);
+    }
+  }
+}
+
+/* Overlays & Modales de Confirmation */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1rem;
+}
+
+.modal {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.5rem;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  h2 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.125rem;
+    font-weight: 650;
+  }
+
+  .modal-body {
+    margin: 0 0 1.25rem 0;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+}
+
+/* Pagination Footer */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.875rem;
+
+  &-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  &-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 0.375rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &-page {
+    padding: 0 0.5rem;
+    font-weight: 600;
+  }
+}
+
+/* Formulaires & Grid */
 .form {
   display: grid;
   gap: 1.25rem;
@@ -49,6 +335,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
+
 .field--full {
   grid-column: 1 / -1;
 }
@@ -61,13 +348,15 @@
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-}
-.role-select option {
-  padding: 0.375rem 0.5rem;
-}
-.role-select option:checked {
-  background: var(--primary-soft);
-  color: var(--primary-strong);
+
+  option {
+    padding: 0.375rem 0.5rem;
+
+    &:checked {
+      background: var(--primary-soft);
+      color: var(--primary-strong);
+    }
+  }
 }
 
 /* Bloc d'identité (détail) */
@@ -77,10 +366,12 @@
   gap: 1rem;
   padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--line-soft);
+
+  .badge {
+    margin-left: auto;
+  }
 }
-.identity .badge {
-  margin-left: auto;
-}
+
 .avatar {
   display: grid;
   place-items: center;
@@ -91,11 +382,13 @@
   color: #fff;
   font-weight: 650;
 }
+
 .identity-name {
   margin: 0;
   font-size: 1.0625rem;
   font-weight: 650;
 }
+
 .identity-login {
   margin: 0;
   color: var(--muted);
@@ -110,16 +403,31 @@
   list-style: none;
 }
 
-/* Boutons : à gauche (création / édition), à droite (détail) */
+/* Actions Formulaire */
 .form-actions {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-start;
   padding-top: 1.25rem;
   border-top: 1px solid var(--line-soft);
+
+  &--right {
+    justify-content: flex-end;
+  }
 }
-.form-actions--right {
-  justify-content: flex-end;
+
+/* Header & Responsive */
+.page-header--with-back {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-back {
+  text-decoration: none;
+  flex: none;
 }
 
 @media (max-width: 40rem) {
@@ -132,15 +440,8 @@
   .form-actions .btn {
     flex: 1;
   }
-}
-.page-header--with-back {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.btn-back {
-  text-decoration: none;
-  flex: none;
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
