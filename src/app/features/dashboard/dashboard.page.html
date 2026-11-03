@@ -10,6 +10,18 @@
   </header>
 
   @if (coreService.hasRole('super_admin')) {
+    <section class="dashboard-panel settings-panel" aria-labelledby="parametrage-title">
+      <div>
+        <span class="settings-panel__eyebrow">ESPACE SUPER ADMIN</span>
+        <h3 id="parametrage-title">Paramétrage</h3>
+        <p>Gérez les accès et consultez les rubriques de configuration prévues par l’API ANINF.</p>
+      </div>
+      <a class="settings-panel__link" routerLink="/administration/parametrage">
+        Ouvrir le paramétrage
+        <span aria-hidden="true">→</span>
+      </a>
+    </section>
+
     <div class="dashboard-panel">
       <button
         type="button"

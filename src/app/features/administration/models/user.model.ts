@@ -63,6 +63,9 @@ export interface User {
   must_change_password: boolean;
   direction_id: number | null;
   roles: Role[];
+  service_id?: number | null;
+  lock_version?: number;
+  password_generation?: number;
 }
 
 /** Envoyé à la création et à la modification. Le statut se change via activate/deactivate, pas ici. */
@@ -71,6 +74,7 @@ export interface UserPayload {
   prenom: string;
   email: string;
   direction_id: number | null;
+  role?: 'demandeur' | 'chauffeur';
 }
 
 /** Format de pagination natif de Laravel (API Resources). */

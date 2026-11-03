@@ -78,6 +78,7 @@ export const APP_MENU: MenuItem[] = [
     icon: 'bi bi-map',
     roles: ['super_admin'],
     children: [
+      { id: 'parametrage', title: 'Paramétrage', route: '/administration/parametrage', icon: 'bi bi-sliders' },
       { id: 'permission', title: 'Permissions', route: '/administration/list-permission', icon: 'bi bi-key' },
       { id: 'role', title: 'Rôles', route: '/administration/list-role', icon: 'bi bi-person-badge' },
       { id: 'utilisateurs', title: 'Utilisateurs', route: '/administration/list-users', icon: 'bi bi-person' },

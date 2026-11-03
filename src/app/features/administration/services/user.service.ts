@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
@@ -32,6 +32,13 @@ export interface UserQuery {
   search?: string;
   page?: number;
   perPage?: number;
+  role?: string;
+  statut?: 'ACTIF' | 'INACTIF';
+}
+
+export interface RevealedTemporaryPassword {
+  temporary_password: string;
+  password_generation: number;
 }
 
 // ---------- Données fictives ----------
@@ -91,15 +98,17 @@ export class UserService {
             `${u.nom} ${u.prenom} ${u.email}`.toLowerCase().includes(search),
           )
         : MOCK_USERS;
+      const roleFiltered = query.role ? filtered.filter((user) => user.roles.some((role) => (role.nom ?? role.name) === query.role)) : filtered;
+      const statusFiltered = query.statut ? roleFiltered.filter((user) => user.statut === query.statut) : roleFiltered;
       const start = (page - 1) * perPage;
-      const data = filtered.slice(start, start + perPage);
+      const data = statusFiltered.slice(start, start + perPage);
       return of({
         data,
         meta: {
           current_page: page,
           per_page: perPage,
-          total: filtered.length,
-          last_page: Math.max(1, Math.ceil(filtered.length / perPage)),
+          total: statusFiltered.length,
+          last_page: Math.max(1, Math.ceil(statusFiltered.length / perPage)),
         },
       }).pipe(delay(200));
     }
@@ -111,6 +120,8 @@ export class UserService {
     if (search) {
       params = params.set('search', search);
     }
+    if (query.role) params = params.set('role', query.role);
+    if (query.statut) params = params.set('statut', query.statut);
     return this.http.get<Paginated<User>>(this.base, { params });
   }
 
@@ -140,12 +151,12 @@ export class UserService {
         statut: 'ACTIF',
         must_change_password: true,
         direction_id: payload.direction_id,
-        roles: [],
+        roles: payload.role === 'chauffeur' ? [MOCK_ROLES.find((role) => (role.nom ?? role.name) === 'chauffeur')!] : [],
       };
       MOCK_USERS = [created, ...MOCK_USERS];
       return of({ user: created, temporary_password: '' }).pipe(delay(250));
     }
-    return this.http.post<CreatedUserItem>(this.base, payload).pipe(map((r) => r.data));
+    return this.http.post<CreatedUserItem>(this.base, payload, { headers: this.commandHeaders() }).pipe(map((r) => r.data));
   }
 
   update(id: number, payload: UserPayload): Observable<User> {
@@ -164,23 +175,37 @@ export class UserService {
     return this.http.patch<Item<User>>(`${this.base}/${id}/activate`, {}).pipe(map((r) => r.data));
   }
 
-  deactivate(id: number): Observable<User> {
+  deactivate(id: number, options?: { version?: number; motif?: string }): Observable<User> {
     if (environment.useMockData) {
       MOCK_USERS = MOCK_USERS.map((u) => (u.id === id ? { ...u, statut: 'INACTIF' } : u));
       return of(MOCK_USERS.find((u) => u.id === id)!).pipe(delay(200));
     }
-    return this.http.patch<Item<User>>(`${this.base}/${id}/deactivate`, {}).pipe(map((r) => r.data));
+    const body = options ? { version_attendue: options.version, motif: options.motif } : {};
+    return this.http.patch<Item<User>>(`${this.base}/${id}/deactivate`, body, { headers: options ? this.commandHeaders() : undefined }).pipe(map((r) => r.data));
   }
 
-  assignRoles(id: number, roleIds: number[]): Observable<User> {
+  assignRoles(id: number, roleIds: number[], options?: { version?: number; motif?: string }): Observable<User> {
     if (environment.useMockData) {
       const roles: Role[] = MOCK_ROLES.filter((r) => roleIds.includes(r.id));
       MOCK_USERS = MOCK_USERS.map((u) => (u.id === id ? { ...u, roles } : u));
       return of(MOCK_USERS.find((u) => u.id === id)!).pipe(delay(200));
     }
     return this.http
-      .put<Item<User>>(`${this.base}/${id}/roles`, { role_ids: roleIds })
+      .put<Item<User>>(`${this.base}/${id}/roles`, { role_ids: roleIds, ...(options ? { version_attendue: options.version, motif: options.motif } : {}) }, { headers: options ? this.commandHeaders() : undefined })
       .pipe(map((r) => r.data));
+  }
+
+  revealTemporaryPassword(id: number, passwordGeneration: number, lockVersion: number, currentPassword: string, motif: string): Observable<RevealedTemporaryPassword> {
+    return this.http.post<{ data: RevealedTemporaryPassword }>(`${this.base}/${id}/temporary-password/reveal`, {
+      version_attendue: lockVersion,
+      password_generation: passwordGeneration,
+      current_password: currentPassword,
+      motif,
+    }).pipe(map((response) => response.data));
+  }
+
+  private commandHeaders(): HttpHeaders {
+    return new HttpHeaders({ 'Idempotency-Key': globalThis.crypto.randomUUID() });
   }
 
   resetPassword(id: number): Observable<ResetPasswordResult> {

@@ -8,6 +8,11 @@ export const ADMINISTRATION_ROUTES: Routes = [
 
         children: [
             {
+                path: 'parametrage',
+                title: 'Paramétrage',
+                loadComponent: () => import('./views/parametrage/parametrage.page').then(m => m.ParametragePage)
+            },
+            {
                 path: 'list-permission',
                 title: 'ListPermission',
                 loadComponent: () => import('./views/list-permission/list-permission.page').then(m => m.ListPermissionPage)

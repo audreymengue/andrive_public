@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CoreService } from '@/core/services/core.service';
 import { AuthService } from '@/core/services/auth.service';
@@ -7,7 +8,7 @@ import { AuthService } from '@/core/services/auth.service';
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: '../dashboard.page.html',
 })
 export class DashboardPage {

@@ -1,0 +1,293 @@
+<section class="page">
+  @if (selectedSection(); as selected) {
+    <header class="page-header page-header--list">
+      <button type="button" class="back-button" (click)="backToSections()" aria-label="Retour au paramétrage">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+      </button>
+      <div class="page-header__icon" aria-hidden="true">
+        <i [class]="sectionInfo()?.icon"></i>
+      </div>
+      <div class="page-header__title">
+        <span class="eyebrow">ESPACE SUPER ADMIN</span>
+        <h1>{{ currentTitle() }}</h1>
+      </div>
+      @if (createAllowed()) {
+        <button type="button" class="primary-button" (click)="openCreate()">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i>
+          Ajouter
+        </button>
+      }
+    </header>
+
+    @if (successMessage()) {
+      <div class="notice notice--success" role="status">{{ successMessage() }}</div>
+      @if (temporaryPassword()) { <div class="temporary-password" role="status"><strong>{{ temporaryPassword() }}</strong></div> }
+    }
+    @if (errorMessage() && !editor()) {
+      <div class="notice notice--error" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <div class="toolbar">
+      <label class="search-field">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <span class="sr-only">Rechercher dans {{ currentTitle() }}</span>
+        <input
+          type="search"
+          [(ngModel)]="searchText"
+          (keyup.enter)="search()"
+          placeholder="Rechercher..."
+        />
+      </label>
+      <button type="button" class="secondary-button" (click)="search()">Rechercher</button>
+      <button type="button" class="secondary-button" (click)="reload()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+        Actualiser
+      </button>
+      <span class="record-count">{{ records().length }} résultat(s)</span>
+    </div>
+
+    @if (selected === 'directions') {
+      <p class="contract-note">
+        Le contrat autorise la modification et le changement de statut des directions. Il ne prévoit ni création ni suppression.
+      </p>
+    } @else if (selected === 'services') {
+      <p class="contract-note">
+        Le contrat autorise l’ajout, la modification et le changement de statut des services, sans suppression.
+      </p>
+    } @else if (selected === 'chauffeurs') {
+      <p class="contract-note">Les comptes sont créés avec le rôle chauffeur. Le retrait désactive le compte et révoque ses sessions.</p>
+    } @else if (selected === 'vehicules') {
+      <p class="contract-note">Le retrait désactive le véhicule pour conserver la trace des données du parc.</p>
+    } @else {
+      <p class="contract-note">
+        Le contrat prévoit l’ajout, la modification et la suppression. Il ne définit pas d’action d’activation pour cette rubrique.
+      </p>
+    }
+
+    <div class="table-card" [attr.aria-busy]="loading()">
+      @if (loading()) {
+        <div class="loading-state" role="status"><span class="spinner"></span> Chargement...</div>
+      } @else if (records().length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-inbox" aria-hidden="true"></i>
+          <p>{{ emptyMessage() }}</p>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">{{ currentTitle() }}</caption>
+            <thead>
+              <tr>
+                @if (selected === 'vehicules') {
+                  <th scope="col">Immatriculation</th><th scope="col">Marque / modèle</th>
+                } @else if (selected === 'chauffeurs') {
+                  <th scope="col">Chauffeur</th><th scope="col">E-mail</th><th scope="col">Direction</th>
+                } @else {
+                  <th scope="col">Nom / Libellé</th><th scope="col">Code</th>
+                  @if (selected === 'services') { <th scope="col">Direction</th> }
+                }
+                <th scope="col">Statut</th>
+                <th scope="col" class="actions-heading">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of records(); track item.id) {
+                <tr>
+                  @if (selected === 'chauffeurs') {
+                    <td><strong>{{ nameOf(item) }}</strong></td><td>{{ codeOf(item) }}</td><td>{{ directionOf(item) }}</td>
+                  } @else if (selected === 'vehicules') {
+                    <td><strong>{{ nameOf(item) }}</strong></td><td>{{ codeOf(item) }}</td>
+                  } @else {
+                    <td>
+                      <strong>{{ nameOf(item) }}</strong>
+                      @if (descriptionOf(item)) { <small>{{ descriptionOf(item) }}</small> }
+                    </td>
+                    <td><code>{{ codeOf(item) }}</code></td>
+                    @if (selected === 'services') { <td>{{ directionOf(item) }}</td> }
+                  }
+                  <td>
+                    @if (statusOf(item); as status) {
+                      <span class="status-pill" [class.status-pill--off]="status === 'INACTIF'">{{ status }}</span>
+                    } @else {
+                      <span class="muted">—</span>
+                    }
+                  </td>
+                  <td class="row-actions">
+                    @if (selected === 'chauffeurs') {
+                      @if (statusOf(item) === 'ACTIF') {
+                        <button type="button" class="icon-button icon-button--danger" (click)="openDelete(item)" [attr.aria-label]="'Désactiver ' + nameOf(item)" title="Désactiver le compte">
+                          <i class="bi bi-person-dash" aria-hidden="true"></i>
+                        </button>
+                      }
+                    } @else if (selected === 'vehicules') {
+                      @if (statusOf(item) === 'ACTIF') {
+                        <button type="button" class="icon-button icon-button--danger" (click)="openDelete(item)" [attr.aria-label]="'Retirer ' + nameOf(item)" title="Retirer du parc">
+                          <i class="bi bi-trash3" aria-hidden="true"></i>
+                        </button>
+                      }
+                    } @else if (selected === 'directions' || selected === 'services') {
+                      <button type="button" class="icon-button" (click)="openEdit(item)" [attr.aria-label]="'Modifier ' + nameOf(item)" title="Modifier">
+                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                      </button>
+                      @if (statusOf(item); as status) {
+                        <button
+                          type="button"
+                          class="icon-button"
+                          [class.icon-button--danger]="status === 'ACTIF'"
+                          (click)="openStatus(item, status === 'ACTIF' ? 'INACTIF' : 'ACTIF')"
+                          [attr.aria-label]="(status === 'ACTIF' ? 'Désactiver ' : 'Activer ') + nameOf(item)"
+                          [title]="status === 'ACTIF' ? 'Désactiver' : 'Activer'"
+                        >
+                          <i [class]="status === 'ACTIF' ? 'bi bi-toggle-on' : 'bi bi-toggle-off'" aria-hidden="true"></i>
+                        </button>
+                      }
+                    } @else {
+                      <button type="button" class="icon-button" (click)="openEdit(item)" [attr.aria-label]="'Modifier ' + nameOf(item)" title="Modifier">
+                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                      </button>
+                      <button type="button" class="icon-button icon-button--danger" (click)="openDelete(item)" [attr.aria-label]="'Supprimer ' + nameOf(item)" title="Supprimer">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+    @if (lastPage() > 1) {
+      <nav class="pagination" aria-label="Pagination du référentiel">
+        <button type="button" class="secondary-button" (click)="changePage(currentPage() - 1)" [disabled]="currentPage() === 1 || loading()">Précédent</button>
+        <span>Page {{ currentPage() }} sur {{ lastPage() }}</span>
+        <button type="button" class="secondary-button" (click)="changePage(currentPage() + 1)" [disabled]="currentPage() === lastPage() || loading()">Suivant</button>
+      </nav>
+    }
+  } @else {
+    <header class="page-header">
+      <div class="page-header__icon" aria-hidden="true"><i class="bi bi-sliders"></i></div>
+      <div>
+        <span class="eyebrow">ESPACE SUPER ADMIN</span>
+        <h1>Paramétrage</h1>
+      </div>
+    </header>
+
+    @if (errorMessage()) { <div class="notice notice--error" role="alert">{{ errorMessage() }}</div> }
+
+    <div class="settings-grid">
+      @for (section of sections; track section.key) {
+        <button type="button" class="settings-card" (click)="openSection(section.key)">
+          <span class="settings-card__icon"><i [class]="section.icon" aria-hidden="true"></i></span>
+          <span class="settings-card__content">
+            <strong>{{ section.title }}</strong>
+          </span>
+          <i class="bi bi-arrow-up-right card-arrow" aria-hidden="true"></i>
+        </button>
+      }
+    </div>
+
+  }
+</section>
+
+@if (editor(); as state) {
+  <div class="overlay" (click)="closeEditor()">
+    <section class="modal" role="dialog" aria-modal="true" [attr.aria-label]="editorTitle()" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div>
+          <span class="eyebrow">{{ currentTitle() }}</span>
+          <h2>{{ editorTitle() }}</h2>
+        </div>
+        <button type="button" class="close-button" (click)="closeEditor()" [disabled]="saving()" aria-label="Fermer">×</button>
+      </header>
+
+      @if (errorMessage()) { <div class="notice notice--error" role="alert">{{ errorMessage() }}</div> }
+
+      @if (state.mode === 'delete') {
+        <p class="modal-copy">
+          @if (isUser(state.item)) { Désactiver le compte chauffeur <strong>{{ nameOf(state.item!) }}</strong> ? Ses sessions seront révoquées. }
+          @else if (isVehicule(state.item)) { Retirer le véhicule <strong>{{ nameOf(state.item!) }}</strong> du parc ? Il sera désactivé et conservé dans l’historique. }
+          @else { Confirmer la suppression de <strong>{{ nameOf(state.item!) }}</strong> ? Si cette référence est utilisée par une demande, le serveur refusera la suppression. }
+        </p>
+      } @else if (state.mode === 'status') {
+        <p class="modal-copy">Cette action rendra la référence {{ state.targetStatus === 'ACTIF' ? 'sélectionnable' : 'indisponible' }} dans les nouvelles demandes.</p>
+        <label class="field">
+          Motif de l’action
+          <textarea [(ngModel)]="draft.motif" name="motif" required maxlength="1000" rows="3"></textarea>
+        </label>
+      } @else {
+        <form (ngSubmit)="submitEditor()">
+          @if (selectedSection() === 'chauffeurs') {
+            <div class="field-row">
+              <label class="field">Prénom<input [(ngModel)]="draft.prenom" name="prenom" required maxlength="255" /></label>
+              <label class="field">Nom<input [(ngModel)]="draft.nom" name="nom" required maxlength="255" /></label>
+            </div>
+            <label class="field">E-mail<input type="email" [(ngModel)]="draft.email" name="email" required maxlength="255" /></label>
+            <label class="field">Direction
+              <select [(ngModel)]="draft.direction_id" name="direction_id" required>
+                <option [ngValue]="null" disabled>Choisir une direction</option>
+                @for (direction of directions(); track direction.id) { @if (direction.statut === 'ACTIF') { <option [ngValue]="direction.id">{{ direction.nom }}</option> } }
+              </select>
+            </label>
+            <label class="field">Votre mot de passe administrateur
+              <input type="password" [(ngModel)]="draft.current_password" name="current_password" required autocomplete="current-password" />
+            </label>
+          } @else if (selectedSection() === 'vehicules') {
+            <label class="field">Immatriculation<input [(ngModel)]="draft.immatriculation" name="immatriculation" required maxlength="30" /></label>
+            <div class="field-row">
+              <label class="field">Marque<input [(ngModel)]="draft.marque" name="marque" required maxlength="100" /></label>
+              <label class="field">Modèle<input [(ngModel)]="draft.modele" name="modele" required maxlength="100" /></label>
+            </div>
+            <label class="field">Statut<select [(ngModel)]="draft.statut" name="statut"><option value="ACTIF">Actif</option><option value="INACTIF">Inactif</option></select></label>
+          } @else if (selectedSection() === 'directions') {
+            <label class="field">Nom de la direction<input [(ngModel)]="draft.nom" name="nom" required maxlength="255" /></label>
+            @if (state.item; as item) { <label class="field">Code<input [value]="codeOf(item)" disabled /></label> }
+            <label class="field">Description<textarea [(ngModel)]="draft.description" name="description" rows="3"></textarea></label>
+          } @else if (selectedSection() === 'services') {
+            @if (state.mode === 'create') {
+              <label class="field">Direction
+                <select [(ngModel)]="draft.direction_id" name="direction_id" required>
+                  <option [ngValue]="null" disabled>Choisir une direction</option>
+                  @for (direction of directions(); track direction.id) {
+                    @if (direction.statut === 'ACTIF') { <option [ngValue]="direction.id">{{ direction.nom }}</option> }
+                  }
+                </select>
+              </label>
+            } @else if (state.item; as item) { <label class="field">Direction<input [value]="directionOf(item)" disabled /></label> }
+            <label class="field">Nom du service<input [(ngModel)]="draft.nom" name="nom" required maxlength="255" /></label>
+            @if (state.mode === 'create') {
+              <label class="field">Code<input [(ngModel)]="draft.code" name="code" required maxlength="255" /></label>
+            } @else if (state.item; as item) { <label class="field">Code<input [value]="codeOf(item)" disabled /></label> }
+            <label class="field">Description<textarea [(ngModel)]="draft.description" name="description" rows="3" maxlength="1000"></textarea></label>
+          } @else if (selectedSection() === 'types-sortie') {
+            <label class="field">Libellé<input [(ngModel)]="draft.libelle" name="libelle" required maxlength="255" /></label>
+            <label class="field">Code<input [(ngModel)]="draft.code" name="code" required maxlength="255" /></label>
+          } @else {
+            <label class="field">Adresse<input [(ngModel)]="draft.adresse" name="adresse" required maxlength="255" /></label>
+            <div class="field-row">
+              <label class="field">Latitude<input type="number" step="any" [(ngModel)]="draft.latitude" name="latitude" /></label>
+              <label class="field">Longitude<input type="number" step="any" [(ngModel)]="draft.longitude" name="longitude" /></label>
+            </div>
+            <label class="field">Description<textarea [(ngModel)]="draft.description" name="description" rows="3"></textarea></label>
+          }
+          @if (state.mode === 'edit' && (selectedSection() === 'directions' || selectedSection() === 'services')) {
+            <label class="field">Motif (facultatif)<textarea [(ngModel)]="draft.motif" name="motif" rows="2" maxlength="1000"></textarea></label>
+          }
+          <footer class="modal-actions">
+            <button type="button" class="secondary-button" (click)="closeEditor()" [disabled]="saving()">Annuler</button>
+            <button type="submit" class="primary-button" [disabled]="saving()">{{ saving() ? 'Enregistrement...' : 'Enregistrer' }}</button>
+          </footer>
+        </form>
+      }
+
+      @if (state.mode === 'delete' || state.mode === 'status') {
+        <footer class="modal-actions">
+          <button type="button" class="secondary-button" (click)="closeEditor()" [disabled]="saving()">Annuler</button>
+          <button type="button" class="primary-button" [class.primary-button--danger]="state.mode === 'delete'" (click)="submitEditor()" [disabled]="saving()">
+            {{ saving() ? 'Traitement...' : state.mode === 'delete' && isUser(state.item) ? 'Désactiver le compte' : state.mode === 'delete' && isVehicule(state.item) ? 'Retirer du parc' : state.mode === 'delete' ? 'Confirmer la suppression' : 'Confirmer' }}
+          </button>
+        </footer>
+      }
+    </section>
+  </div>
+}
