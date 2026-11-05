@@ -11,276 +11,345 @@
       </button>
     </div>
   </header>
-  
-<div *ngIf="messageSucces" class="message-succes" role="status">
-  {{ messageSucces }}
-  <button type="button" class="btn-nouvelle-demande" (click)="nouvelleDemande()">
-    <span aria-hidden="true">＋</span>
-    Nouvelle demande
-  </button>
-  <button type="button" class="btn-historique" (click)="ouvrirHistorique()">
-    Historique de mes demandes
-  </button>
-</div>
 
-<div *ngIf="messageErreur" class="message-erreur" role="alert">
-  {{ messageErreur }}
-</div>
-<!-- FICHE DÉTAILLÉE -->
-<section class="fiche" *ngIf="modeFiche">
-
-  <header class="fiche__header">
-    <div>
-      <span class="fiche__sur-titre">ANINF · POOL CHAUFFEUR</span>
-      <h1>Fiche détaillée de demande de sortie</h1>
-      <p>Vérifiez les informations avant de valider votre demande.</p>
-    </div>
-
-    <span class="fiche__statut">À valider</span>
-  </header>
-
-  <div class="fiche__section">
-    <h2>01. Informations générales</h2>
-
-    <div class="fiche__grille">
-      <div class="fiche__champ">
-        <span>Direction</span>
-        <strong>{{ libelleDirection(form.get('direction_id')?.value) }}</strong>
-      </div>
-
-      <div class="fiche__champ">
-        <span>Type de sortie</span>
-        <strong>{{ libelleTypeSortie(form.get('type_sortie_id')?.value) }}</strong>
-      </div>
-
-      <div class="fiche__champ fiche__champ--large">
-        <span>Motif de la sortie</span>
-        <strong>{{ form.get('motif')?.value || 'Non renseigné' }}</strong>
-      </div>
-
-      <div class="fiche__champ fiche__champ--large">
-        <span>Commentaire</span>
-        <p>{{ form.get('commentaire')?.value || 'Aucun commentaire' }}</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="fiche__section">
-    <h2>02. Départ et retour</h2>
-
-    <div class="fiche__grille">
-      <div class="fiche__champ">
-        <span>Adresse de départ</span>
-        <strong>{{ libelleAdresse(form.get('adresse_depart_id')?.value) }}</strong>
-      </div>
-
-      <div class="fiche__champ">
-        <span>Date de départ</span>
-        <strong>{{ form.get('date_depart')?.value | date:'dd/MM/yyyy' }}</strong>
-      </div>
-
-      <div class="fiche__champ">
-        <span>Heure de départ</span>
-        <strong>{{ form.get('heure_depart')?.value }}</strong>
-      </div>
-
-      <div class="fiche__champ">
-        <span>Adresse de retour</span>
-        <strong>{{ libelleAdresse(form.get('adresse_retour_id')?.value) }}</strong>
-      </div>
-
-      <div class="fiche__champ">
-        <span>Heure de retour</span>
-        <strong>{{ form.get('heure_retour')?.value || 'Non précisée' }}</strong>
-      </div>
-    </div>
-  </div>
-
-  <div class="fiche__section">
-    <h2>03. Itinéraire</h2>
-
-    <ol class="fiche__destinations">
-      <li *ngFor="let dest of destinations.controls; let i = index">
-        <span>Étape {{ i + 1 }}</span>
-        <strong>
-          {{ libelleDestination(dest.get('entite_geographique_id')?.value) }}
-        </strong>
-      </li>
-    </ol>
-  </div>
-
-  <div class="fiche__section">
-    <h2>04. Employés concernés</h2>
-
-    <div class="fiche__table-conteneur">
-      <table class="fiche__table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Nom</th>
-            <th>Prénom</th>
-            <th>Fonction</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr *ngFor="let emp of employes.controls; let i = index">
-            <td>{{ i + 1 }}</td>
-            <td>{{ emp.get('nom')?.value }}</td>
-            <td>{{ emp.get('prenom')?.value }}</td>
-            <td>{{ emp.get('fonction')?.value || 'Non précisée' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="fiche__section">
-    <h2>05. Objets transportés</h2>
-
-    <p class="fiche__vide" *ngIf="objets.length === 0">
-      Aucun objet déclaré pour cette sortie.
-    </p>
-
-    <div class="fiche__table-conteneur" *ngIf="objets.length > 0">
-      <table class="fiche__table">
-        <thead>
-          <tr>
-            <th>Désignation</th>
-            <th>Quantité</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr *ngFor="let obj of objets.controls">
-            <td>{{ obj.get('designation')?.value }}</td>
-            <td>{{ obj.get('quantite')?.value }}</td>
-            <td>{{ obj.get('description')?.value || '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <footer class="fiche__actions">
-    <button type="button"
-            class="btn btn--neutre"
-            (click)="modifierDemande()">
-      Modifier
+  <div *ngIf="messageSucces" class="message-succes" role="status">
+    {{ messageSucces }}
+    <button type="button" class="btn-nouvelle-demande" (click)="nouvelleDemande()">
+      <span aria-hidden="true">＋</span> Nouvelle demande
     </button>
-
-    <button type="button"
-            class="btn btn--primaire"
-            [disabled]="envoiEnCours"
-            (click)="validerDemande()">
-      {{ envoiEnCours ? 'Envoi en cours...' : 'Valider la demande' }}
+    <button type="button" class="btn-historique" (click)="ouvrirHistorique()">
+      Historique de mes demandes
     </button>
-  </footer>
-</section>
+  </div>
 
-  <form class="card"
-      *ngIf="!modeFiche"
-      [formGroup]="form"
-      (ngSubmit)="afficherFiche()"
-      novalidate>
-        
+  <div *ngIf="messageErreur" class="message-erreur" role="alert">
+    {{ messageErreur }}
+  </div>
 
+  <!-- ═════════ FICHE DÉTAILLÉE ═════════ -->
+  <section class="fiche" *ngIf="modeFiche">
+    <header class="fiche__header">
+      <div>
+        <h1>Récapitulatif de votre demande</h1>
+        <p>Vérifiez les informations avant de valider votre demande.</p>
+      </div>
+      <span class="fiche__statut">À valider</span>
+    </header>
+
+    <div class="fiche__section">
+      <h2>Informations personnelles</h2>
+      <div class="fiche__grille">
+        <div class="fiche__champ">
+          <span>Nom et prénom</span>
+          <strong>{{ form.get('nom')?.value }} {{ form.get('prenom')?.value }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Fonction</span>
+          <strong>{{ form.get('fonction')?.value }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Direction</span>
+          <strong>{{ libelleDirection(form.get('direction_id')?.value) }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Service</span>
+          <strong>{{ libelleService(form.get('service_id')?.value) }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Type de sortie</span>
+          <strong>{{ libelleTypeSortie(form.get('type_sortie_id')?.value) }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Employés concernés</span>
+          <strong>{{ form.get('nombre_employes')?.value }}</strong>
+        </div>
+        <div class="fiche__champ fiche__champ--large">
+          <span>Motif de la sortie</span>
+          <strong>{{ form.get('motif')?.value }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="fiche__section">
+      <h2>Départ et retour</h2>
+      <div class="fiche__grille">
+        <div class="fiche__champ">
+          <span>Date de départ</span>
+          <strong>{{ form.get('date_depart')?.value | date:'dd/MM/yyyy' }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Heure de départ</span>
+          <strong>{{ form.get('heure_depart')?.value }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Adresse de départ</span>
+          <strong>{{ libelleAdresseSaisie(form.get('adresse_depart_id')?.value, form.get('adresse_depart')?.value) }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Adresse de retour</span>
+          <strong>{{ libelleAdresseSaisie(form.get('adresse_retour_id')?.value, form.get('adresse_retour')?.value) }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Heure de retour</span>
+          <strong>{{ form.get('heure_retour')?.value || 'Non précisée' }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="fiche__section">
+      <h2>Itinéraire</h2>
+      <ol class="fiche__destinations">
+        <li *ngFor="let dest of destinations.controls; let i = index">
+          <span>Étape {{ i + 1 }}</span>
+          <strong>{{ libelleDestinationSaisie(dest) }}</strong>
+        </li>
+      </ol>
+    </div>
+
+    <div class="fiche__section">
+      <h2>Objets transportés</h2>
+      <p class="fiche__vide" *ngIf="objets.length === 0">
+        Aucun objet déclaré pour cette sortie.
+      </p>
+      <div class="fiche__table-conteneur" *ngIf="objets.length > 0">
+        <table class="fiche__table">
+          <thead>
+            <tr><th>Désignation</th><th>Quantité</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let obj of objets.controls">
+              <td>{{ obj.get('designation')?.value }}</td>
+              <td>{{ obj.get('quantite')?.value }}</td>
+              <td>{{ obj.get('description')?.value || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="fiche__section" *ngIf="form.get('commentaire')?.value">
+      <h2>Commentaire</h2>
+      <p>{{ form.get('commentaire')?.value }}</p>
+    </div>
+
+    <footer class="fiche__actions">
+      <button type="button" class="btn btn--neutre" (click)="modifierDemande()">Modifier</button>
+      <button type="button" class="btn btn--primaire" [disabled]="envoiEnCours" (click)="validerDemande()">
+        {{ envoiEnCours ? 'Envoi en cours...' : 'Envoyer la demande' }}
+      </button>
+    </footer>
+  </section>
+
+  <!-- ═════════ FORMULAIRE ═════════ -->
+  <form class="card" *ngIf="!modeFiche" [formGroup]="form" (ngSubmit)="afficherFiche()" novalidate>
+
+    <!-- Informations personnelles -->
     <section class="etape">
-      <h2 class="card__titre">Informations générales</h2>
+      <h2 class="card__titre">Informations personnelles</h2>
+
+      <div class="grille grille--3">
+        <div class="champ" [class.champ--erreur]="invalide('nom')">
+          <label for="nom">Nom</label>
+          <input id="nom" type="text" formControlName="nom" maxlength="255" autocomplete="family-name"
+                 placeholder="Saisir votre nom">
+          <small class="erreur" *ngIf="invalide('nom')">Le nom est obligatoire.</small>
+        </div>
+
+        <div class="champ" [class.champ--erreur]="invalide('prenom')">
+          <label for="prenom">Prénom</label>
+          <input id="prenom" type="text" formControlName="prenom" maxlength="255" autocomplete="given-name"
+                 placeholder="Saisir votre prénom">
+          <small class="erreur" *ngIf="invalide('prenom')">Le prénom est obligatoire.</small>
+        </div>
+
+        <div class="champ" [class.champ--erreur]="invalide('fonction')">
+          <label for="fonction">Fonction</label>
+          <input id="fonction" type="text" formControlName="fonction" maxlength="255"
+                 placeholder="Saisir votre fonction">
+          <small class="erreur" *ngIf="invalide('fonction')">La fonction est obligatoire.</small>
+        </div>
+      </div>
 
       <div class="grille">
         <div class="champ" [class.champ--erreur]="invalide('direction_id')">
-          <label for="direction_id">Direction <b class="req">*</b></label>
-          <select id="direction_id" formControlName="direction_id">
-            <option [ngValue]="null">Sélectionner une direction</option>
-            <option *ngFor="let d of directions" [ngValue]="d.id">
-              {{ d.libelle }}
-            </option>
-          </select>
-          <small class="erreur" *ngIf="invalide('direction_id')">
-            Choisissez une direction.
-          </small>
+          <label for="direction-search">Direction</label>
+          <div class="direction-picker">
+            <input type="hidden" formControlName="direction_id">
+            <input
+              #directionInput
+              id="direction-search"
+              type="search"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="direction-options"
+              [attr.aria-expanded]="directionsOuvertes"
+              [attr.aria-activedescendant]="directionActiveId"
+              [attr.aria-invalid]="invalide('direction_id')"
+              [value]="directionRecherche || libelleDirectionBrut(form.get('direction_id')?.value)"
+              placeholder="Rechercher ou sélectionner une direction"
+              autocomplete="off"
+              (focus)="ouvrirListeDirections(directionInput)"
+              (input)="rechercherDirection($event)"
+              (keydown)="gererClavierDirections($event)"
+              (blur)="fermerListeDirections()"
+            >
+            <div id="direction-options" class="direction-picker__options" role="listbox" *ngIf="directionsOuvertes">
+              <p class="direction-picker__state" *ngIf="chargementDirections">Chargement des directions…</p>
+              <button
+                type="button"
+                class="direction-picker__option"
+                [id]="'direction-option-' + d.id"
+                role="option"
+                *ngFor="let d of directionsFiltrees"
+                [class.direction-picker__option--selected]="d.id === form.get('direction_id')?.value"
+                [class.direction-picker__option--active]="directionsFiltrees[directionActiveIndex]?.id === d.id"
+                [attr.aria-selected]="d.id === form.get('direction_id')?.value"
+                (mousedown)="$event.preventDefault()"
+                (click)="choisirDirection(d)"
+              >
+                <span>{{ d.libelle }}</span>
+              </button>
+              <p class="direction-picker__state" *ngIf="!chargementDirections && directionsFiltrees.length === 0">
+                Aucune direction ne correspond à cette recherche.
+              </p>
+            </div>
+          </div>
+          <small class="erreur" *ngIf="invalide('direction_id')">Choisissez une direction.</small>
         </div>
 
         <div class="champ" [class.champ--erreur]="invalide('type_sortie_id')">
-          <label for="type_sortie_id">Type de sortie <b class="req">*</b></label>
+          <label for="type_sortie_id">Type de sortie</label>
           <select id="type_sortie_id" formControlName="type_sortie_id">
             <option [ngValue]="null">Sélectionner un type</option>
-            <option *ngFor="let t of typesSortie" [ngValue]="t.id">
-              {{ t.label }}
-            </option>
+            <option *ngFor="let t of typesSortie" [ngValue]="t.id">{{ t.label }}</option>
           </select>
-          <small class="erreur" *ngIf="invalide('type_sortie_id')">
-            Choisissez un type de sortie.
-          </small>
+          <small class="erreur" *ngIf="invalide('type_sortie_id')">Choisissez un type de sortie.</small>
         </div>
       </div>
 
-      <div class="champ" [class.champ--erreur]="invalide('motif')">
-        <label for="motif">Motif de la sortie <b class="req">*</b></label>
-        <input id="motif" type="text" formControlName="motif"
-               placeholder="Saisir le motif de la sortie">
-        <small class="erreur" *ngIf="invalide('motif')">
-          Le motif est obligatoire.
-        </small>
+      <!-- Services de la direction choisie -->
+      <div class="champ services" *ngIf="form.get('direction_id')?.value"
+           [class.champ--erreur]="invalide('service_id')">
+        <span class="services__titre" id="services_label">
+          Service de « {{ libelleDirection(form.get('direction_id')?.value) }} »
+        </span>
+
+        <p class="services__etat" *ngIf="chargementServices">Chargement des services…</p>
+        <p class="services__etat" *ngIf="!chargementServices && services.length === 0">
+          Aucun service rattaché à cette direction.
+        </p>
+
+        <div class="services__grille" role="radiogroup" aria-labelledby="services_label"
+             *ngIf="!chargementServices && services.length > 0">
+          <button type="button" class="service-carte" role="radio"
+                  *ngFor="let sv of services"
+                  [class.service-carte--active]="sv.id === form.get('service_id')?.value"
+                  [attr.aria-checked]="sv.id === form.get('service_id')?.value"
+                  (click)="choisirService(sv)">
+            <strong class="service-carte__sigle" *ngIf="sv.sigle">{{ sv.sigle }}</strong>
+            <span class="service-carte__nom">{{ sv.libelle }}</span>
+          </button>
+        </div>
+
+        <small class="erreur" *ngIf="invalide('service_id')">Choisissez un service.</small>
       </div>
 
-      <div class="champ">
-        <label for="commentaire">Commentaire</label>
-        <textarea id="commentaire" rows="3"
-                  formControlName="commentaire"
-                  placeholder="Précisions utiles..."></textarea>
+      <div class="grille grille--motif">
+        <div class="champ" [class.champ--erreur]="invalide('motif')">
+          <label for="motif">Motif de la sortie</label>
+          <input id="motif" type="text" formControlName="motif" placeholder="Saisir le motif de la sortie">
+          <small class="erreur" *ngIf="invalide('motif')">Le motif est obligatoire.</small>
+        </div>
+
+        <div class="champ" [class.champ--erreur]="invalide('nombre_employes')">
+          <label for="nombre_employes">Nombre d’employés concernés</label>
+          <input id="nombre_employes" type="number" min="1" max="100" step="1"
+                 formControlName="nombre_employes">
+          <small class="erreur" *ngIf="invalide('nombre_employes')">
+            Indiquez un nombre entier entre 1 et 100.
+          </small>
+        </div>
       </div>
     </section>
 
+    <!-- Départ et retour -->
     <section class="etape">
-      <h2 class="card__titre">Départ et retour</h2>
+      <h2 class="card__titre">Départ, destinations et retour</h2>
 
+      <h3 class="sous-titre">Départ</h3>
       <div class="grille grille--depart">
-        <div class="champ" [class.champ--erreur]="invalide('adresse_depart_id')">
-          <label for="adresse_depart_id">Adresse de départ <b class="req">*</b></label>
-          <select id="adresse_depart_id" formControlName="adresse_depart_id">
-            <option [ngValue]="null">Sélectionner une adresse</option>
-            <option *ngFor="let a of adresses" [ngValue]="a.id">
-              {{ a.libelle }}
-            </option>
-          </select>
-          <small class="erreur" *ngIf="invalide('adresse_depart_id')">
-            Choisissez l'adresse de départ.
-          </small>
+        <div class="champ" [class.champ--erreur]="invalide('adresse_depart')">
+          <label for="adresse_depart_search">Adresse de départ</label>
+          <input id="adresse_depart_search" type="text" list="adresses-reference" formControlName="adresse_depart"
+                 (input)="saisirAdresseDepart($event)"
+                 placeholder="Saisir une adresse ou choisir une suggestion" autocomplete="off">
+          <input type="hidden" formControlName="adresse_depart_id">
+          <small class="erreur" *ngIf="invalide('adresse_depart')">Saisissez l'adresse de départ.</small>
         </div>
 
         <div class="champ" [class.champ--erreur]="invalide('date_depart')">
-          <label for="date_depart">Date de départ <b class="req">*</b></label>
-          <input id="date_depart" type="date" formControlName="date_depart">
-          <small class="erreur" *ngIf="invalide('date_depart')">
+          <label for="date_depart">Date de départ</label>
+          <input id="date_depart" type="date" formControlName="date_depart" [min]="aujourdhui">
+          <small class="erreur" *ngIf="invalide('date_depart') && form.get('date_depart')?.hasError('required')">
             La date est obligatoire.
+          </small>
+          <small class="erreur" *ngIf="invalide('date_depart') && form.get('date_depart')?.hasError('datePassee')">
+            La date ne peut pas être passée.
           </small>
         </div>
 
         <div class="champ" [class.champ--erreur]="invalide('heure_depart')">
-          <label for="heure_depart">Heure de départ <b class="req">*</b></label>
+          <label for="heure_depart">Heure de départ</label>
           <input id="heure_depart" type="time" formControlName="heure_depart">
-          <small class="erreur" *ngIf="invalide('heure_depart')">
-            L'heure est obligatoire.
-          </small>
+          <small class="erreur" *ngIf="invalide('heure_depart')">L'heure est obligatoire.</small>
         </div>
       </div>
 
-      <div class="grille">
+      <h3 class="sous-titre">Destinations</h3>
+      <p class="description">Indiquez les destinations dans l'ordre du trajet. Utilisez les flèches pour réorganiser les étapes.</p>
+
+      <div formArrayName="destinations" class="destinations">
+        <div class="destination" *ngFor="let dest of destinations.controls; let i = index" [formGroupName]="i">
+          <span class="destination__num" aria-hidden="true">{{ i + 1 }}</span>
+
+          <div class="champ destination__champ" [class.champ--erreur]="invalideItem(dest, 'adresse')">
+            <label [for]="'destination-' + i">Destination {{ i + 1 }}</label>
+            <input [id]="'destination-' + i" type="text" list="adresses-reference"
+                   formControlName="adresse" (input)="saisirDestination($event, dest)"
+                   placeholder="Saisir une destination ou choisir une suggestion" autocomplete="off">
+            <input type="hidden" formControlName="entite_geographique_id">
+            <small class="erreur" *ngIf="invalideItem(dest, 'adresse')">
+              Saisissez une destination.
+            </small>
+          </div>
+
+          <div class="destination__actions">
+            <button type="button" class="btn btn--icone" (click)="deplacerDestination(i, -1)"
+                    [disabled]="i === 0" [attr.aria-label]="'Monter la destination ' + (i + 1)" title="Monter">↑</button>
+            <button type="button" class="btn btn--icone" (click)="deplacerDestination(i, 1)"
+                    [disabled]="i === destinations.length - 1" [attr.aria-label]="'Descendre la destination ' + (i + 1)" title="Descendre">↓</button>
+            <button type="button" class="btn btn--icone btn--danger" (click)="supprimerDestination(i)"
+                    [disabled]="destinations.length === 1"
+                    [attr.aria-label]="'Supprimer la destination ' + (i + 1)" title="Supprimer">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn--ajout" (click)="ajouterDestination()">
+        + Ajouter une destination
+      </button>
+
+      <h3 class="sous-titre">Retour</h3>
+      <div class="grille grille--depart">
         <div class="champ">
-          <label for="adresse_retour_id">Adresse de retour</label>
-          <select id="adresse_retour_id" formControlName="adresse_retour_id">
-            <option [ngValue]="null">Sélectionner une adresse</option>
-            <option *ngFor="let a of adresses" [ngValue]="a.id">
-              {{ a.libelle }}
-            </option>
-          </select>
+          <label for="adresse_retour_search">Adresse de retour</label>
+          <input id="adresse_retour_search" type="text" list="adresses-reference" formControlName="adresse_retour"
+                 (input)="saisirAdresseRetour($event)"
+                 placeholder="Saisir une adresse ou choisir une suggestion" autocomplete="off">
+          <input type="hidden" formControlName="adresse_retour_id">
         </div>
 
-        <div class="champ"
-             [class.champ--erreur]="invalide('heure_retour') || form.errors?.['retourAvantDepart']">
+        <div class="champ" [class.champ--erreur]="form.errors?.['retourAvantDepart']">
           <label for="heure_retour">Heure de retour</label>
           <input id="heure_retour" type="time" formControlName="heure_retour">
           <small class="erreur" *ngIf="form.errors?.['retourAvantDepart']">
@@ -290,193 +359,70 @@
       </div>
     </section>
 
+    <datalist id="adresses-reference">
+      <option *ngFor="let adresse of adresses" [value]="adresse.libelle"></option>
+    </datalist>
+
+    <!-- Objets transportés -->
     <section class="etape">
-      <h2 class="card__titre">Destinations</h2>
-      <p class="description">Indiquez les destinations dans l'ordre du trajet.</p>
+      <h2 class="card__titre">Objets transportés <span class="compteur" *ngIf="objets.length">{{ objets.length }}</span></h2>
+      <p class="description">Facultatif. Déclarez le matériel ou les colis qui seront transportés.</p>
 
-      <div formArrayName="destinations">
-        <div class="ligne-dynamique"
-             *ngFor="let dest of destinations.controls; let i = index"
-             [formGroupName]="i">
-
-          <div class="champ"
-               [class.champ--erreur]="invalideItem(dest, 'entite_geographique_id')">
-            <label [for]="'destination-' + i">
-              Destination {{ i + 1 }} <b class="req">*</b>
-            </label>
-            <select [id]="'destination-' + i"
-                    formControlName="entite_geographique_id">
-              <option [ngValue]="null">Sélectionner une destination</option>
-              <option *ngFor="let e of entitesGeo" [ngValue]="e.id">
-                {{ libelleEntiteGeo(e) }}
-              </option>
-            </select>
-            <small class="erreur"
-                   *ngIf="invalideItem(dest, 'entite_geographique_id')">
-              Choisissez une destination.
-            </small>
-          </div>
-
-          <button type="button" class="btn btn--retirer"
-                  (click)="supprimerDestination(i)"
-                  *ngIf="destinations.length > 1">
-            Supprimer
-          </button>
-        </div>
-      </div>
-
-      <button type="button" class="btn btn--ajout"
-              (click)="ajouterDestination()">
-        + Ajouter une destination
-      </button>
-    </section>
-
-    <section class="etape">
-      <h2 class="card__titre">Employés concernés</h2>
-
-      <div formArrayName="employes">
-        <div class="bloc-dynamique"
-             *ngFor="let emp of employes.controls; let i = index"
-             [formGroupName]="i">
-
-          <div class="grille grille--3">
-            <div class="champ"
-                 [class.champ--erreur]="invalideItem(emp, 'nom')">
-              <label [for]="'emp-nom-' + i">Nom <b class="req">*</b></label>
-              <input [id]="'emp-nom-' + i" formControlName="nom"
-                     maxlength="255"
-                     placeholder="Saisir un nom">
-              <small class="erreur" *ngIf="invalideItem(emp, 'nom') && emp.get('nom')?.hasError('required')">
-                Le nom est obligatoire.
-              </small>
-              <small class="erreur" *ngIf="invalideItem(emp, 'nom') && emp.get('nom')?.hasError('maxlength')">
-                Le nom ne peut pas dépasser 255 caractères.
-              </small>
-            </div>
-
-            <div class="champ"
-                 [class.champ--erreur]="invalideItem(emp, 'prenom')">
-              <label [for]="'emp-prenom-' + i">Prénom <b class="req">*</b></label>
-              <input [id]="'emp-prenom-' + i" formControlName="prenom"
-                     maxlength="255"
-                     placeholder="Saisir un prénom">
-              <small class="erreur" *ngIf="invalideItem(emp, 'prenom') && emp.get('prenom')?.hasError('required')">
-                Le prénom est obligatoire.
-              </small>
-              <small class="erreur" *ngIf="invalideItem(emp, 'prenom') && emp.get('prenom')?.hasError('maxlength')">
-                Le prénom ne peut pas dépasser 255 caractères.
-              </small>
-            </div>
-
-            <div class="champ">
-              <label [for]="'emp-fonction-' + i">Fonction</label>
-              <input [id]="'emp-fonction-' + i" formControlName="fonction"
-                     maxlength="255"
-                     placeholder="Saisir une fonction">
-              <small class="erreur"
-                     *ngIf="invalideItem(emp, 'fonction') && emp.get('fonction')?.hasError('maxlength')">
-                La fonction ne peut pas dépasser 255 caractères.
-              </small>
-            </div>
-          </div>
-
-          <button type="button" class="btn btn--retirer"
-                  (click)="supprimerEmploye(i)"
-                  *ngIf="employes.length > 1">
-            Supprimer cet employé
-          </button>
-        </div>
-      </div>
-
-      <button type="button" class="btn btn--ajout"
-              (click)="ajouterEmploye()">
-        + Ajouter un employé
-      </button>
-    </section>
-
-    <section class="etape">
-      <h2 class="card__titre">Objets transportés</h2>
-
-      <p class="vide" *ngIf="objets.length === 0">
-        Aucun objet ajouté.
-      </p>
+      <p class="vide" *ngIf="objets.length === 0">Aucun objet ajouté.</p>
 
       <div formArrayName="objets">
-        <div class="bloc-dynamique"
-             *ngFor="let obj of objets.controls; let i = index"
-             [formGroupName]="i">
-
-          <div class="grille grille--2">
-            <div class="champ"
-                 [class.champ--erreur]="invalideItem(obj, 'designation')">
-              <label [for]="'obj-designation-' + i">
-                Désignation <b class="req">*</b>
-              </label>
-              <input [id]="'obj-designation-' + i"
-                     formControlName="designation"
-                     maxlength="255"
+        <div class="bloc-dynamique" *ngFor="let obj of objets.controls; let i = index" [formGroupName]="i">
+          <div class="grille grille--objet">
+            <div class="champ" [class.champ--erreur]="invalideItem(obj, 'designation')">
+              <label [for]="'obj-designation-' + i">Désignation</label>
+              <input [id]="'obj-designation-' + i" formControlName="designation" maxlength="255"
                      placeholder="Saisir la désignation">
-              <small class="erreur"
-                     *ngIf="invalideItem(obj, 'designation') && obj.get('designation')?.hasError('required')">
+              <small class="erreur" *ngIf="invalideItem(obj, 'designation') && obj.get('designation')?.hasError('required')">
                 La désignation est obligatoire.
               </small>
-              <small class="erreur"
-                     *ngIf="invalideItem(obj, 'designation') && obj.get('designation')?.hasError('maxlength')">
+              <small class="erreur" *ngIf="invalideItem(obj, 'designation') && obj.get('designation')?.hasError('maxlength')">
                 La désignation ne peut pas dépasser 255 caractères.
               </small>
             </div>
 
-            <div class="champ"
-                 [class.champ--erreur]="invalideItem(obj, 'quantite')">
-              <label [for]="'obj-quantite-' + i">
-                Quantité
-              </label>
-              <input [id]="'obj-quantite-' + i" type="number"
-                     min="1" step="1" formControlName="quantite"
-                     placeholder="Facultatif">
-              <small class="erreur"
-                     *ngIf="invalideItem(obj, 'quantite')">
-                La quantité, si renseignée, doit être un entier supérieur ou égal à 1.
+            <div class="champ" [class.champ--erreur]="invalideItem(obj, 'quantite')">
+              <label [for]="'obj-quantite-' + i">Quantité</label>
+              <input [id]="'obj-quantite-' + i" type="number" min="1" step="1"
+                     formControlName="quantite" placeholder="1">
+              <small class="erreur" *ngIf="invalideItem(obj, 'quantite')">
+                La quantité doit être un entier supérieur ou égal à 1.
               </small>
             </div>
           </div>
 
           <div class="champ">
             <label [for]="'obj-description-' + i">Description</label>
-            <input [id]="'obj-description-' + i"
-                   formControlName="description"
-                   placeholder="Description de l'objet">
+            <input [id]="'obj-description-' + i" formControlName="description"
+                   placeholder="Poids, dimensions, précautions…">
           </div>
 
-          <button type="button" class="btn btn--retirer"
-                  (click)="supprimerObjet(i)">
+          <button type="button" class="btn btn--retirer" (click)="supprimerObjet(i)">
             Supprimer cet objet
           </button>
         </div>
       </div>
 
-      <button type="button" class="btn btn--ajout"
-              (click)="ajouterObjet()">
-        + Ajouter un objet
-      </button>
+      <button type="button" class="btn btn--ajout" (click)="ajouterObjet()">+ Ajouter un objet</button>
     </section>
 
+    <!-- Commentaire + validation -->
     <section class="etape">
-      <h2 class="card__titre">Validation et envoi</h2>
-      <p class="description">
-        Relisez les informations avant de soumettre votre demande.
-      </p>
+      <h2 class="card__titre">Informations complémentaires</h2>
+
+      <div class="champ">
+        <label for="commentaire">Commentaire</label>
+        <textarea id="commentaire" rows="3" formControlName="commentaire"
+                  placeholder="Précisions utiles…"></textarea>
+      </div>
 
       <div class="actions">
-        <button type="button" class="btn btn--neutre"
-                (click)="annuler()">
-          Annuler
-        </button>
-
-        <button type="submit"
-        class="btn btn--primaire">
-  Vérifier ma demande
-</button>
+        <button type="button" class="btn btn--neutre" (click)="annuler()">Annuler</button>
+        <button type="submit" class="btn btn--primaire">Vérifier ma demande</button>
       </div>
     </section>
   </form>

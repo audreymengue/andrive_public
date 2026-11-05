@@ -1,0 +1,201 @@
+// Styles complémentaires du formulaire « Demande de sortie ».
+// Chargé après demande-sortie.page.scss (voir styleUrls du composant) :
+// il n'y a plus rien à coller dans l'ancien fichier.
+
+// ═════════ Police unique pour tout le formulaire ═════════
+// Pour changer de police, modifiez uniquement cette variable.
+$police: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+:host {
+  font-family: $police;
+  color: #0f2a4a;
+}
+
+// Les champs et boutons n'héritent pas la police par défaut : on la force.
+:host * {
+  font-family: inherit;
+}
+
+:host label,
+:host .services__titre {
+  font-size: .85rem;
+  font-weight: 600;
+  color: #0f2a4a;
+}
+
+:host input,
+:host select,
+:host textarea {
+  font-size: .92rem;
+  font-weight: 400;
+  color: #0f2a4a;
+}
+
+:host ::placeholder {
+  font-family: inherit;
+  font-size: .9rem;
+  color: #9aa7b8;
+  opacity: 1;
+}
+
+:host .erreur {
+  font-size: .78rem;
+  font-weight: 500;
+}
+
+:host .description {
+  font-size: .88rem;
+  color: #6b7a90;
+}
+
+// ═════════ Grilles ═════════
+.grille--motif { grid-template-columns: 2fr 1fr; }
+.grille--objet { grid-template-columns: 2fr 1fr; }
+
+@media (max-width: 720px) {
+  .grille--motif,
+  .grille--objet { grid-template-columns: 1fr; }
+}
+
+// ═════════ Sous-titres d'une section ═════════
+.sous-titre {
+  margin: 24px 0 10px;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #6b7a90;
+}
+
+.sous-titre:first-of-type { margin-top: 4px; }
+
+// ═════════ Destinations (ligne compacte) ═════════
+.destinations {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 760px;
+  margin-bottom: 12px;
+}
+
+.destination {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.destination__num {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: #e0e9fc;
+  color: #1d4ed8;
+  font-size: .8rem;
+  font-weight: 700;
+}
+
+.destination__champ { margin: 0; }
+
+.destination__actions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.btn.btn--icone {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid #d5deec;
+  border-radius: 10px;
+  background: #fff;
+  color: #1d4ed8;
+  font-size: .95rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: #eef3fd; }
+  &:disabled { opacity: .35; cursor: not-allowed; }
+}
+
+.btn.btn--icone.btn--danger {
+  color: #c62828;
+  border-color: #f0c4c4;
+
+  &:hover:not(:disabled) { background: #fdeeee; }
+}
+
+@media (max-width: 560px) {
+  .destination { grid-template-columns: 30px minmax(0, 1fr); }
+  .destination__actions { grid-column: 2; }
+}
+
+// ═════════ Compteur d'objets ═════════
+.compteur {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  padding: 0 7px;
+  border-radius: 12px;
+  background: #e0e9fc;
+  color: #1d4ed8;
+  font-size: .78rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+// ═════════ Services : cartes sélectionnables ═════════
+.services { margin-top: 4px; }
+
+.services__titre {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.services__etat {
+  margin: 0;
+  color: #6b7a90;
+  font-size: .9rem;
+}
+
+.services__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.service-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  text-align: left;
+  background: #f8fafd;
+  border: 1.5px solid #d5deec;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+
+  &:hover { border-color: #93b0ee; background: #fff; }
+  &:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+  &--active {
+    border-color: #2563eb;
+    background: #eef3fd;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+  }
+
+  &__sigle { font-size: 1.05rem; color: #1d4ed8; letter-spacing: .02em; }
+  &__nom { font-size: .85rem; color: #3a4b63; line-height: 1.3; }
+}
+
+.champ--erreur .service-carte { border-color: #e4a4a4; }
