@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { catchError, map, Observable, of, switchMap } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 
 import {
   DirectionParametre,
@@ -96,7 +96,7 @@ export class ParametragePage {
     this.successMessage.set('');
     this.temporaryPassword.set('');
     this.loadRecords();
-    if (section === 'services' || section === 'chauffeurs') this.loadDirections();
+    if (section === 'chauffeurs') this.loadDirections();
   }
 
   protected backToSections(): void {
@@ -123,7 +123,7 @@ export class ParametragePage {
 
   protected openCreate(): void {
     const section = this.selectedSection();
-    if (!section || section === 'directions') return;
+    if (!section) return;
     this.resetDraft();
     this.errorMessage.set('');
     this.editor.set({ mode: 'create' });
@@ -227,6 +227,19 @@ export class ParametragePage {
     }
 
     if (section === 'directions') {
+      if (state.mode === 'create') {
+        if (!this.draft.nom.trim() || !this.draft.code.trim()) {
+          this.errorMessage.set('Le nom et le code de la direction sont obligatoires.');
+          return;
+        }
+        this.runMutation(this.api.createDirection({
+          nom: this.draft.nom.trim(),
+          code: this.draft.code.trim(),
+          description: this.draft.description.trim() || null,
+        }), 'Direction ajoutée.');
+        return;
+      }
+
       const item = state.item;
       if (!this.isDirection(item) || !this.draft.nom.trim()) {
         this.errorMessage.set('Le nom de la direction est obligatoire.');
@@ -330,10 +343,18 @@ export class ParametragePage {
   }
 
   protected directionOf(item: ReferenceRecord): string {
-    if (this.isUser(item)) return this.directions().find((direction) => direction.id === item.direction_id)?.nom ?? (item.direction_id ? `Direction #${item.direction_id}` : '—');
-    return this.isService(item)
-      ? this.directions().find((direction) => direction.id === item.direction_id)?.nom ?? `Direction #${item.direction_id}`
-      : '—';
+    if (this.isService(item)) {
+      if (typeof item.direction === 'string') return item.direction;
+      const directionNom = item.direction?.nom ?? item.direction?.name ?? item.direction_nom;
+      if (directionNom) return directionNom;
+    }
+
+    const rawId = this.isUser(item) || this.isService(item) ? item.direction_id : null;
+    const directionId = Number(rawId);
+    if (!Number.isInteger(directionId) || directionId <= 0) return 'Direction non renseignée';
+
+    return this.directions().find((direction) => Number(direction.id) === directionId)?.nom
+      ?? `Direction #${directionId}`;
   }
 
   protected isDirection(item: ReferenceRecord | undefined): item is DirectionParametre {
@@ -341,7 +362,7 @@ export class ParametragePage {
   }
 
   protected isService(item: ReferenceRecord | undefined): item is ServiceParametre {
-    return !!item && 'direction_id' in item && 'lock_version' in item;
+    return !!item && 'direction_id' in item && 'code' in item && !('roles' in item);
   }
 
   protected isType(item: ReferenceRecord | undefined): item is TypeSortieParametre {
@@ -357,7 +378,7 @@ export class ParametragePage {
   }
 
   protected createAllowed(): boolean {
-    return this.selectedSection() !== 'directions';
+    return this.selectedSection() !== null;
   }
 
   protected emptyMessage(): string {
@@ -374,7 +395,7 @@ export class ParametragePage {
     if (!state) return '';
     if (state.mode === 'status') return state.targetStatus === 'ACTIF' ? 'Activer cet élément' : 'Désactiver cet élément';
     if (state.mode === 'delete') return 'Supprimer cet élément';
-    if (state.mode === 'create') return this.selectedSection() === 'services' ? 'Ajouter un service' : this.selectedSection() === 'types-sortie' ? 'Ajouter un type de sortie' : this.selectedSection() === 'chauffeurs' ? 'Créer un compte chauffeur' : this.selectedSection() === 'vehicules' ? 'Ajouter un véhicule' : 'Ajouter un lieu';
+    if (state.mode === 'create') return this.selectedSection() === 'directions' ? 'Ajouter une direction' : this.selectedSection() === 'services' ? 'Ajouter un service' : this.selectedSection() === 'types-sortie' ? 'Ajouter un type de sortie' : this.selectedSection() === 'chauffeurs' ? 'Créer un compte chauffeur' : this.selectedSection() === 'vehicules' ? 'Ajouter un véhicule' : 'Ajouter un lieu';
     return this.selectedSection() === 'directions' ? 'Modifier la direction' : this.selectedSection() === 'services' ? 'Modifier le service' : this.selectedSection() === 'types-sortie' ? 'Modifier le type de sortie' : 'Modifier le lieu';
   }
 
@@ -385,6 +406,11 @@ export class ParametragePage {
   private loadRecords(): void {
     const section = this.selectedSection();
     if (!section) return;
+    if (section === 'services') {
+      this.loadServices();
+      return;
+    }
+
     this.loading.set(true);
     this.errorMessage.set('');
     const request: Observable<ReferenceRecord[]> = section === 'directions'
@@ -392,11 +418,6 @@ export class ParametragePage {
           this.lastPage.set(response.meta?.last_page ?? 1);
           return response.data;
         }))
-      : section === 'services'
-        ? this.api.listServices({ search: this.searchText, page: this.currentPage() }).pipe(map((response) => {
-            this.lastPage.set(response.meta?.last_page ?? 1);
-            return response.data;
-          }))
       : section === 'types-sortie'
           ? this.api.listTypesSortie().pipe(map((response) => {
               this.currentPage.set(1);
@@ -422,6 +443,27 @@ export class ParametragePage {
         this.records.set(term && (section === 'types-sortie' || section === 'lieux')
           ? data.filter((item) => `${this.nameOf(item)} ${this.codeOf(item)} ${this.descriptionOf(item)}`.toLocaleLowerCase().includes(term))
           : data);
+        this.loading.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.errorMessage.set(this.errorText(error));
+      },
+    });
+  }
+
+  private loadServices(): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
+
+    forkJoin({
+      services: this.api.listServices({ search: this.searchText, page: this.currentPage() }),
+      directions: this.api.listDirections('', 1),
+    }).subscribe({
+      next: ({ services, directions }) => {
+        this.directions.set(directions.data);
+        this.records.set(services.data);
+        this.lastPage.set(services.meta?.last_page ?? 1);
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {

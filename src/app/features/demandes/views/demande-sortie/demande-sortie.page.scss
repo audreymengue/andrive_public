@@ -151,7 +151,7 @@ $erreur: #c62828;
 }
 
 .grille--depart {
-  grid-template-columns: 1.5fr 1fr 1fr;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
 }
 
 .grille--3 {
@@ -481,6 +481,10 @@ $erreur: #c62828;
 @media (max-width: 850px) {
   :host {
     padding: 1.25rem 1rem;
+  }
+
+  .destinations-layout {
+    grid-template-columns: 1fr;
   }
 
   .grille--depart,

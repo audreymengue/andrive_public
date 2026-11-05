@@ -16,7 +16,9 @@ export interface DirectionParametre {
 
 export interface ServiceParametre {
   id: number;
-  direction_id: number;
+  direction_id: number | string | null;
+  direction?: { id?: number | string; nom?: string; name?: string } | string | null;
+  direction_nom?: string | null;
   nom: string;
   code: string;
   description: string | null;
@@ -69,6 +71,12 @@ export class ParametrageService {
 
   getDirection(id: number): Observable<ApiItem<DirectionParametre>> {
     return this.http.get<ApiItem<DirectionParametre>>(`${this.base}/directions/${id}`);
+  }
+
+  createDirection(payload: { nom: string; code: string; description: string | null }): Observable<ApiItem<DirectionParametre>> {
+    return this.http.post<ApiItem<DirectionParametre>>(`${this.base}/directions`, payload, {
+      headers: this.idempotencyHeaders(),
+    });
   }
 
   updateDirection(id: number, payload: { nom: string; description: string | null; version_attendue: number; motif?: string }): Observable<ApiItem<DirectionParametre>> {

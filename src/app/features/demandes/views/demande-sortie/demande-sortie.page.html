@@ -82,16 +82,12 @@
           <strong>{{ form.get('heure_depart')?.value }}</strong>
         </div>
         <div class="fiche__champ">
-          <span>Adresse de départ</span>
-          <strong>{{ libelleAdresseSaisie(form.get('adresse_depart_id')?.value, form.get('adresse_depart')?.value) }}</strong>
-        </div>
-        <div class="fiche__champ">
-          <span>Adresse de retour</span>
-          <strong>{{ libelleAdresseSaisie(form.get('adresse_retour_id')?.value, form.get('adresse_retour')?.value) }}</strong>
-        </div>
-        <div class="fiche__champ">
           <span>Heure de retour</span>
           <strong>{{ form.get('heure_retour')?.value || 'Non précisée' }}</strong>
+        </div>
+        <div class="fiche__champ">
+          <span>Adresse de départ</span>
+          <strong>{{ libelleAdresseSaisie(form.get('adresse_depart_id')?.value, form.get('adresse_depart')?.value) }}</strong>
         </div>
       </div>
     </div>
@@ -228,31 +224,46 @@
       </div>
 
       <!-- Services de la direction choisie -->
-      <div class="champ services" *ngIf="form.get('direction_id')?.value"
-           [class.champ--erreur]="invalide('service_id')">
-        <span class="services__titre" id="services_label">
-          Service de « {{ libelleDirection(form.get('direction_id')?.value) }} »
-        </span>
+      @if (form.get('direction_id')?.value) {
+        <div class="champ services" [class.champ--erreur]="invalide('service_id')">
+          <span class="services__titre" id="services_label">
+            Services de {{ libelleDirectionBrut(form.get('direction_id')?.value) }}
+          </span>
 
-        <p class="services__etat" *ngIf="chargementServices">Chargement des services…</p>
-        <p class="services__etat" *ngIf="!chargementServices && services.length === 0">
-          Aucun service rattaché à cette direction.
-        </p>
+          @if (chargementServices) {
+            <p class="services__etat">Chargement des services…</p>
+          }
+          @if (erreurChargementServices) {
+            <p class="services__etat erreur" role="alert">{{ erreurChargementServices }}</p>
+          }
+          @if (!chargementServices && !erreurChargementServices && services.length === 0) {
+            <p class="services__etat">Aucun service actif rattaché à cette direction.</p>
+          }
 
-        <div class="services__grille" role="radiogroup" aria-labelledby="services_label"
-             *ngIf="!chargementServices && services.length > 0">
-          <button type="button" class="service-carte" role="radio"
-                  *ngFor="let sv of services"
-                  [class.service-carte--active]="sv.id === form.get('service_id')?.value"
-                  [attr.aria-checked]="sv.id === form.get('service_id')?.value"
-                  (click)="choisirService(sv)">
-            <strong class="service-carte__sigle" *ngIf="sv.sigle">{{ sv.sigle }}</strong>
-            <span class="service-carte__nom">{{ sv.libelle }}</span>
-          </button>
+          @if (!chargementServices && services.length > 0) {
+            <div class="services__grille" role="radiogroup" aria-labelledby="services_label" aria-required="true">
+              @for (sv of services; track sv.id) {
+                <label class="service-carte"
+                       [class.service-carte--active]="sv.id === form.get('service_id')?.value">
+                  <input class="service-carte__radio"
+                         type="radio"
+                         formControlName="service_id"
+                         [value]="sv.id"
+                         [attr.aria-label]="sv.libelle">
+                  @if (sv.sigle) {
+                    <strong class="service-carte__sigle">{{ sv.sigle }}</strong>
+                  }
+                  <span class="service-carte__nom">{{ sv.libelle }}</span>
+                </label>
+              }
+            </div>
+          }
+
+          @if (invalide('service_id')) {
+            <small class="erreur">Choisissez un service de cette direction.</small>
+          }
         </div>
-
-        <small class="erreur" *ngIf="invalide('service_id')">Choisissez un service.</small>
-      </div>
+      }
 
       <div class="grille grille--motif">
         <div class="champ" [class.champ--erreur]="invalide('motif')">
@@ -278,13 +289,16 @@
 
       <h3 class="sous-titre">Départ</h3>
       <div class="grille grille--depart">
-        <div class="champ" [class.champ--erreur]="invalide('adresse_depart')">
+        <div class="champ" [class.champ--erreur]="invalide('adresse_depart') || invalide('adresse_depart_id')">
           <label for="adresse_depart_search">Adresse de départ</label>
           <input id="adresse_depart_search" type="text" list="adresses-reference" formControlName="adresse_depart"
                  (input)="saisirAdresseDepart($event)"
                  placeholder="Saisir une adresse ou choisir une suggestion" autocomplete="off">
           <input type="hidden" formControlName="adresse_depart_id">
           <small class="erreur" *ngIf="invalide('adresse_depart')">Saisissez l'adresse de départ.</small>
+          <small class="erreur" *ngIf="invalide('adresse_depart_id')">
+            Choisissez une adresse de départ dans les suggestions.
+          </small>
         </div>
 
         <div class="champ" [class.champ--erreur]="invalide('date_depart')">
@@ -303,53 +317,51 @@
           <input id="heure_depart" type="time" formControlName="heure_depart">
           <small class="erreur" *ngIf="invalide('heure_depart')">L'heure est obligatoire.</small>
         </div>
+
       </div>
 
       <h3 class="sous-titre">Destinations</h3>
       <p class="description">Indiquez les destinations dans l'ordre du trajet. Utilisez les flèches pour réorganiser les étapes.</p>
 
-      <div formArrayName="destinations" class="destinations">
-        <div class="destination" *ngFor="let dest of destinations.controls; let i = index" [formGroupName]="i">
-          <span class="destination__num" aria-hidden="true">{{ i + 1 }}</span>
+      <div class="destinations-layout">
+        <div class="destinations-layout__liste">
+          <div formArrayName="destinations" class="destinations">
+            <div class="destination" *ngFor="let dest of destinations.controls; let i = index" [formGroupName]="i">
+              <span class="destination__num" aria-hidden="true">{{ i + 1 }}</span>
 
-          <div class="champ destination__champ" [class.champ--erreur]="invalideItem(dest, 'adresse')">
-            <label [for]="'destination-' + i">Destination {{ i + 1 }}</label>
-            <input [id]="'destination-' + i" type="text" list="adresses-reference"
-                   formControlName="adresse" (input)="saisirDestination($event, dest)"
-                   placeholder="Saisir une destination ou choisir une suggestion" autocomplete="off">
-            <input type="hidden" formControlName="entite_geographique_id">
-            <small class="erreur" *ngIf="invalideItem(dest, 'adresse')">
-              Saisissez une destination.
-            </small>
+              <div class="champ destination__champ"
+                   [class.champ--erreur]="invalideItem(dest, 'adresse') || invalideItem(dest, 'entite_geographique_id')">
+                <label [for]="'destination-' + i">Destination {{ i + 1 }}</label>
+                <input [id]="'destination-' + i" type="text" list="adresses-reference"
+                       formControlName="adresse" (input)="saisirDestination($event, dest)"
+                       placeholder="Saisir une destination ou choisir une suggestion" autocomplete="off">
+                <input type="hidden" formControlName="entite_geographique_id">
+                <small class="erreur" *ngIf="invalideItem(dest, 'adresse')">
+                  Saisissez une destination.
+                </small>
+                <small class="erreur" *ngIf="invalideItem(dest, 'entite_geographique_id')">
+                  Choisissez une destination dans les suggestions.
+                </small>
+              </div>
+
+              <div class="destination__actions">
+                <button type="button" class="btn btn--icone" (click)="deplacerDestination(i, -1)"
+                        [disabled]="i === 0" [attr.aria-label]="'Monter la destination ' + (i + 1)" title="Monter">↑</button>
+                <button type="button" class="btn btn--icone" (click)="deplacerDestination(i, 1)"
+                        [disabled]="i === destinations.length - 1" [attr.aria-label]="'Descendre la destination ' + (i + 1)" title="Descendre">↓</button>
+                <button type="button" class="btn btn--icone btn--danger" (click)="supprimerDestination(i)"
+                        [disabled]="destinations.length === 1"
+                        [attr.aria-label]="'Supprimer la destination ' + (i + 1)" title="Supprimer">✕</button>
+              </div>
+            </div>
           </div>
 
-          <div class="destination__actions">
-            <button type="button" class="btn btn--icone" (click)="deplacerDestination(i, -1)"
-                    [disabled]="i === 0" [attr.aria-label]="'Monter la destination ' + (i + 1)" title="Monter">↑</button>
-            <button type="button" class="btn btn--icone" (click)="deplacerDestination(i, 1)"
-                    [disabled]="i === destinations.length - 1" [attr.aria-label]="'Descendre la destination ' + (i + 1)" title="Descendre">↓</button>
-            <button type="button" class="btn btn--icone btn--danger" (click)="supprimerDestination(i)"
-                    [disabled]="destinations.length === 1"
-                    [attr.aria-label]="'Supprimer la destination ' + (i + 1)" title="Supprimer">✕</button>
-          </div>
-        </div>
-      </div>
-
-      <button type="button" class="btn btn--ajout" (click)="ajouterDestination()">
-        + Ajouter une destination
-      </button>
-
-      <h3 class="sous-titre">Retour</h3>
-      <div class="grille grille--depart">
-        <div class="champ">
-          <label for="adresse_retour_search">Adresse de retour</label>
-          <input id="adresse_retour_search" type="text" list="adresses-reference" formControlName="adresse_retour"
-                 (input)="saisirAdresseRetour($event)"
-                 placeholder="Saisir une adresse ou choisir une suggestion" autocomplete="off">
-          <input type="hidden" formControlName="adresse_retour_id">
+          <button type="button" class="btn btn--ajout" (click)="ajouterDestination()">
+            + Ajouter une destination
+          </button>
         </div>
 
-        <div class="champ" [class.champ--erreur]="form.errors?.['retourAvantDepart']">
+        <div class="champ champ--retour" [class.champ--erreur]="form.errors?.['retourAvantDepart']">
           <label for="heure_retour">Heure de retour</label>
           <input id="heure_retour" type="time" formControlName="heure_retour">
           <small class="erreur" *ngIf="form.errors?.['retourAvantDepart']">

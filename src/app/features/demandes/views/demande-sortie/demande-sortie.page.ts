@@ -17,7 +17,9 @@ import {
 function retourApresDepart(group: AbstractControl): ValidationErrors | null {
   const depart = group.get('heure_depart')?.value;
   const retour = group.get('heure_retour')?.value;
-  return depart && retour && retour <= depart ? { retourAvantDepart: true } : null;
+  const erreurs: ValidationErrors = {};
+  if (depart && retour && retour <= depart) erreurs['retourAvantDepart'] = true;
+  return Object.keys(erreurs).length ? erreurs : null;
 }
 
 /** Vérifie que la date de départ n'est pas dans le passé. */
@@ -62,6 +64,7 @@ export class DemandeSortiePage implements OnInit {
   adresses: Option[] = [];
   entitesGeo: any[] = [];
   chargementServices = false;
+  erreurChargementServices = '';
 
 
   constructor(
@@ -89,10 +92,8 @@ export class DemandeSortiePage implements OnInit {
         date_depart: ['', [Validators.required, dateNonPassee]],
         heure_depart: ['', Validators.required],
         heure_retour: [''],
-        adresse_depart_id: [null as number | null],
+        adresse_depart_id: [null as number | null, Validators.required],
         adresse_depart: ['', Validators.required],
-        adresse_retour_id: [null as number | null],
-        adresse_retour: [''],
 
         destinations: this.fb.array([this.nouvelleDestination()]),
         objets: this.fb.array([]),
@@ -105,6 +106,8 @@ export class DemandeSortiePage implements OnInit {
     this.form.get('direction_id')!.valueChanges.subscribe((id: number | null) => {
       this.viderService();
       this.services = [];
+      this.chargementServices = false;
+      this.erreurChargementServices = '';
       if (id) this.chargerServices(Number(id));
     });
   }
@@ -113,7 +116,11 @@ export class DemandeSortiePage implements OnInit {
     this.chargementDirections = true;
     this.demandeService.chargerDirections().subscribe({
       next: (r) => {
-        this.directions = r.data.map((d: any) => ({ id: d.id, libelle: d.nom, code: d.code }));
+        this.directions = r.data.map((direction) => ({
+          id: direction.id,
+          libelle: direction.nom,
+          code: direction.code,
+        }));
         this.chargementDirections = false;
         this.cdr.markForCheck();
       },
@@ -141,42 +148,51 @@ export class DemandeSortiePage implements OnInit {
     });
   }
 
-  private afficherErreurChargement(erreur: HttpErrorResponse): void {
-    this.messageErreur =
-      erreur.status === 401
-        ? 'Session expirée ou connexion requise.'
-        : 'Impossible de charger une ou plusieurs listes du formulaire.';
+  private afficherErreurChargement(
+    erreur: HttpErrorResponse,
+    ressource = 'les listes du formulaire'
+  ): string {
+    const messageApi = erreur.error?.message;
+    const message = erreur.status === 401
+      ? 'Session expirée ou connexion requise.'
+      : erreur.status === 403
+        ? `Accès refusé pour charger ${ressource}.`
+        : erreur.status === 404
+          ? `La route de l’API pour charger ${ressource} est introuvable.`
+          : erreur.status === 0
+            ? `Impossible de joindre l’API pour charger ${ressource}.`
+            : messageApi || `Impossible de charger ${ressource} (HTTP ${erreur.status}).`;
+    this.messageErreur = message;
     this.cdr.markForCheck();
+    return message;
   }
 
   // ───────────── Services de la direction ─────────────
   private chargerServices(directionId: number): void {
     this.chargementServices = true;
     this.services = [];
+    this.erreurChargementServices = '';
     this.demandeService.chargerServices(directionId).subscribe({
       next: (r) => {
         // Ignore une réponse arrivée après un changement de direction.
         if (this.form.get('direction_id')?.value != directionId) return;
-        this.services = r.data.map((x: any) => ({
+        this.services = r.data
+          .filter((service: any) => service.direction_id == null || Number(service.direction_id) === directionId)
+          .map((x: any) => ({
           id: x.id,
           libelle: x.nom,
           sigle: x.sigle ?? x.code ?? '',
-        }));
+          }));
         this.chargementServices = false;
+        this.erreurChargementServices = '';
         this.cdr.markForCheck();
       },
       error: (e: HttpErrorResponse) => {
+        if (this.form.get('direction_id')?.value != directionId) return;
         this.chargementServices = false;
-        this.afficherErreurChargement(e);
+        this.erreurChargementServices = this.afficherErreurChargement(e, 'les services de cette direction');
       },
     });
-  }
-
-  // ───────────── Service (cartes sélectionnables) ─────────────
-  choisirService(sv: Option): void {
-    const c = this.form.get('service_id')!;
-    c.setValue(sv.id);
-    c.markAsTouched();
   }
 
   private viderService(): void {
@@ -268,7 +284,7 @@ export class DemandeSortiePage implements OnInit {
 
   private nouvelleDestination(): FormGroup {
     return this.fb.group({
-      entite_geographique_id: [null as number | null],
+      entite_geographique_id: [null as number | null, Validators.required],
       adresse: ['', Validators.required],
     });
   }
@@ -292,11 +308,6 @@ export class DemandeSortiePage implements OnInit {
     const valeur = (event.target as HTMLInputElement).value;
     const id = this.idAdresseCorrespondante(valeur);
     groupe.get('entite_geographique_id')!.setValue(id);
-  }
-
-  saisirAdresseRetour(event: Event): void {
-    const valeur = (event.target as HTMLInputElement).value;
-    this.form.get('adresse_retour_id')!.setValue(this.idAdresseCorrespondante(valeur));
   }
 
   libelleAdresseSaisie(id: number | null, adresse: string | null): string {
@@ -414,26 +425,22 @@ export class DemandeSortiePage implements OnInit {
     return {
       direction_id: v.direction_id,
       service_id: v.service_id,
-      nom: v.nom.trim(),
-      prenom: v.prenom.trim(),
-      fonction: v.fonction.trim(),
+      employes: [{
+        nom: v.nom.trim(),
+        prenom: v.prenom.trim(),
+        fonction: v.fonction.trim(),
+      }],
       motif: v.motif,
-      nombre_employes: Number(v.nombre_employes),
-
       type_sortie_id: v.type_sortie_id,
       adresse_depart_id: v.adresse_depart_id,
-      adresse_depart: v.adresse_depart,
       date_depart: v.date_depart,
       heure_depart: avecSecondes(v.heure_depart),
 
       destinations: v.destinations.map((d: any, i: number) => ({
         entite_geographique_id: d.entite_geographique_id,
-        adresse: d.adresse,
         ordre: i + 1,
       })),
 
-      adresse_retour_id: v.adresse_retour_id ?? null,
-      adresse_retour: v.adresse_retour || null,
       heure_retour: avecSecondes(v.heure_retour),
 
       commentaire: v.commentaire || null,
@@ -464,8 +471,15 @@ export class DemandeSortiePage implements OnInit {
 
     this.demandeService.creer(this.construirePayload()).subscribe({
       next: (reponse) => {
-        this.demandeEnBrouillonId = reponse.data.id;
-        this.soumettreBrouillon(reponse.data.id);
+        const id = reponse?.data?.id;
+        if (!Number.isInteger(id) || id < 1) {
+          this.envoiEnCours = false;
+          this.messageErreur = 'L’API a créé une réponse invalide. Vérifiez l’historique avant de réessayer.';
+          this.cdr.markForCheck();
+          return;
+        }
+        this.demandeEnBrouillonId = id;
+        this.soumettreBrouillon(id);
       },
       error: (erreur: HttpErrorResponse) => {
         this.envoiEnCours = false;
@@ -476,9 +490,19 @@ export class DemandeSortiePage implements OnInit {
           this.messageErreur = 'Session expirée ou connexion requise.';
         } else if (erreur.status === 403) {
           this.messageErreur = 'Vous ne possédez pas la permission de créer une demande.';
+        } else if (erreur.status === 0 && erreur.error?.name === 'TimeoutError') {
+          this.messageErreur =
+            'L’API n’a pas répondu dans le délai prévu. Vérifiez l’historique avant de réessayer.';
+        } else if (erreur.status === 0) {
+          this.messageErreur = 'Impossible de joindre l’API. Vérifiez que le serveur est démarré puis réessayez.';
         } else {
           this.messageErreur = erreur.error?.message || 'Erreur lors de l’envoi de la demande.';
         }
+        this.cdr.markForCheck();
+      },
+      complete: () => {
+        if (this.demandeEnBrouillonId === null) this.envoiEnCours = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -491,7 +515,8 @@ export class DemandeSortiePage implements OnInit {
       next: (reponse) => {
         this.envoiEnCours = false;
         this.demandeEnBrouillonId = null;
-        this.messageSucces = reponse.message || 'Demande soumise avec succès.';
+        this.messageSucces = reponse?.message || 'Demande soumise avec succès.';
+        this.cdr.markForCheck();
         void this.router.navigate(['/dashboard/demandes/historique']);
       },
       error: (erreur: HttpErrorResponse) => {
@@ -501,11 +526,18 @@ export class DemandeSortiePage implements OnInit {
         } else if (erreur.status === 403) {
           this.messageErreur =
             'La demande est enregistrée en brouillon, mais votre compte ne possède pas la permission de la soumettre.';
+        } else if (erreur.status === 0 && erreur.error?.name === 'TimeoutError') {
+          this.messageErreur =
+            'La soumission dépasse le délai prévu. La demande reste en brouillon : cliquez de nouveau pour réessayer.';
+        } else if (erreur.status === 0) {
+          this.messageErreur =
+            'Impossible de joindre l’API. La demande reste en brouillon : vérifiez le serveur puis réessayez.';
         } else {
           this.messageErreur =
             erreur.error?.message ||
             'La demande est enregistrée en brouillon, mais sa soumission a échoué. Réessayez.';
         }
+        this.cdr.markForCheck();
       },
     });
   }
@@ -530,8 +562,6 @@ export class DemandeSortiePage implements OnInit {
       heure_retour: '',
       adresse_depart_id: null,
       adresse_depart: '',
-      adresse_retour_id: null,
-      adresse_retour: '',
       commentaire: '',
     });
     this.services = [];

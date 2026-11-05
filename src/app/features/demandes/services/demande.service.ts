@@ -1,12 +1,17 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
 export interface DemandeDestination {
-  entite_geographique_id?: number | null;
-  adresse?: string;
+  entite_geographique_id: number;
   ordre: number;
+}
+
+export interface DemandeEmploye {
+  nom: string;
+  prenom: string;
+  fonction?: string | null;
 }
 
 export interface DemandeObjet {
@@ -16,27 +21,18 @@ export interface DemandeObjet {
 }
 
 export interface DemandePayload {
-  // Informations personnelles
   direction_id: number;
-  service_id: number;
-  nom: string;
-  prenom: string;
-  fonction: string;
-  motif: string;
-  nombre_employes: number;
-
-  // Sortie
   type_sortie_id: number;
-  adresse_depart_id?: number | null;
-  adresse_depart?: string;
-  adresse_retour_id?: number | null;
-  adresse_retour?: string | null;
+  adresse_depart_id: number;
   date_depart: string;
   heure_depart: string;
   heure_retour?: string | null;
+  motif: string;
   commentaire?: string | null;
   destinations: DemandeDestination[];
+  employes: DemandeEmploye[];
   objets?: DemandeObjet[];
+  service_id?: number;
 }
 
 export interface DemandeApiResponse {
@@ -54,16 +50,30 @@ export interface DemandeApiResponse {
 export class DemandeService {
   private readonly http = inject(HttpClient);
 
-  chargerDirections(): Observable<{ data: { id: number; nom: string }[] }> {
-    return this.http.get<{ data: { id: number; nom: string }[] }>(
+  chargerDirections(): Observable<{
+    data: { id: number; nom: string; code?: string }[];
+  }> {
+    return this.http.get<{
+      data: { id: number; nom: string; code?: string }[];
+    }>(
       `${environment.apiUrl}/directions`
     );
   }
 
   /** Services rattachés à une direction. */
-  chargerServices(directionId: number): Observable<{ data: { id: number; nom: string }[] }> {
-    return this.http.get<{ data: { id: number; nom: string }[] }>(
-      `${environment.apiUrl}/directions/${directionId}/services`
+  chargerServices(directionId: number): Observable<{
+    data: { id: number; direction_id?: number; nom: string; code?: string }[];
+  }> {
+    return this.http.get<{
+      data: { id: number; direction_id?: number; nom: string; code?: string }[];
+    }>(
+      `${environment.apiUrl}/parametrage/services`,
+      {
+        params: new HttpParams()
+          .set('direction_id', directionId)
+          .set('statut', 'ACTIF')
+          .set('per_page', 100),
+      }
     );
   }
 
@@ -82,7 +92,8 @@ export class DemandeService {
   creer(payload: DemandePayload): Observable<DemandeApiResponse> {
     return this.http.post<DemandeApiResponse>(
       `${environment.apiUrl}/demandes`,
-      payload
+      payload,
+      { timeout: 30_000 }
     );
   }
 
@@ -90,6 +101,7 @@ export class DemandeService {
     return this.http.post<DemandeApiResponse>(
       `${environment.apiUrl}/demandes/${id}/soumission`,
       {},
+      { timeout: 30_000 }
     );
   }
 }

@@ -48,7 +48,7 @@
 
     @if (selected === 'directions') {
       <p class="contract-note">
-        Le contrat autorise la modification et le changement de statut des directions. Il ne prévoit ni création ni suppression.
+        Vous pouvez ajouter une direction, modifier ses informations et changer son statut. La suppression n’est pas disponible.
       </p>
     } @else if (selected === 'services') {
       <p class="contract-note">
@@ -241,7 +241,9 @@
             <label class="field">Statut<select [(ngModel)]="draft.statut" name="statut"><option value="ACTIF">Actif</option><option value="INACTIF">Inactif</option></select></label>
           } @else if (selectedSection() === 'directions') {
             <label class="field">Nom de la direction<input [(ngModel)]="draft.nom" name="nom" required maxlength="255" /></label>
-            @if (state.item; as item) { <label class="field">Code<input [value]="codeOf(item)" disabled /></label> }
+            @if (state.mode === 'create') {
+              <label class="field">Code<input [(ngModel)]="draft.code" name="code" required maxlength="255" /></label>
+            } @else if (state.item; as item) { <label class="field">Code<input [value]="codeOf(item)" disabled /></label> }
             <label class="field">Description<textarea [(ngModel)]="draft.description" name="description" rows="3"></textarea></label>
           } @else if (selectedSection() === 'services') {
             @if (state.mode === 'create') {
@@ -269,9 +271,6 @@
               <label class="field">Longitude<input type="number" step="any" [(ngModel)]="draft.longitude" name="longitude" /></label>
             </div>
             <label class="field">Description<textarea [(ngModel)]="draft.description" name="description" rows="3"></textarea></label>
-          }
-          @if (state.mode === 'edit' && (selectedSection() === 'directions' || selectedSection() === 'services')) {
-            <label class="field">Motif (facultatif)<textarea [(ngModel)]="draft.motif" name="motif" rows="2" maxlength="1000"></textarea></label>
           }
           <footer class="modal-actions">
             <button type="button" class="secondary-button" (click)="closeEditor()" [disabled]="saving()">Annuler</button>
