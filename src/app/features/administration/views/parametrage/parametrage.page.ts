@@ -71,8 +71,8 @@ export class ParametragePage {
     description: '',
     libelle: '',
     adresse: '',
-    latitude: '',
-    longitude: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
     motif: '',
     prenom: '',
     email: '',
@@ -144,8 +144,8 @@ export class ParametragePage {
       this.draft.code = item.code;
     } else if (this.isLieu(item)) {
       this.draft.adresse = item.adresse;
-      this.draft.latitude = item.latitude === null ? '' : String(item.latitude);
-      this.draft.longitude = item.longitude === null ? '' : String(item.longitude);
+      this.draft.latitude = item.latitude === null ? null : Number(item.latitude);
+      this.draft.longitude = item.longitude === null ? null : Number(item.longitude);
       this.draft.description = item.description ?? '';
     }
     this.editor.set({ mode: 'edit', item });
@@ -330,6 +330,14 @@ export class ParametragePage {
     return 'description' in item ? item.description ?? '' : '';
   }
 
+  protected latitudeOf(item: ReferenceRecord): string | number {
+    return this.isLieu(item) && item.latitude !== null ? item.latitude : '—';
+  }
+
+  protected longitudeOf(item: ReferenceRecord): string | number {
+    return this.isLieu(item) && item.longitude !== null ? item.longitude : '—';
+  }
+
   protected statusOf(item: ReferenceRecord): StatutReference | null {
     return 'statut' in item ? item.statut : null;
   }
@@ -400,7 +408,7 @@ export class ParametragePage {
   }
 
   private resetDraft(): void {
-    this.draft = { direction_id: null, nom: '', code: '', description: '', libelle: '', adresse: '', latitude: '', longitude: '', motif: '', prenom: '', email: '', immatriculation: '', marque: '', modele: '', statut: 'ACTIF', current_password: '' };
+    this.draft = { direction_id: null, nom: '', code: '', description: '', libelle: '', adresse: '', latitude: null, longitude: null, motif: '', prenom: '', email: '', immatriculation: '', marque: '', modele: '', statut: 'ACTIF', current_password: '' };
   }
 
   private loadRecords(): void {
@@ -497,10 +505,8 @@ export class ParametragePage {
     });
   }
 
-  private parseCoordinate(value: string): number | null {
-    if (!value.trim()) return null;
-    const coordinate = Number(value);
-    return Number.isFinite(coordinate) ? coordinate : null;
+  private parseCoordinate(value: number | null): number | null {
+    return value !== null && Number.isFinite(value) ? value : null;
   }
 
   private saveChauffeur(): void {

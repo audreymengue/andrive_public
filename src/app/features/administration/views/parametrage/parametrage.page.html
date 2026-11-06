@@ -82,11 +82,17 @@
                   <th scope="col">Immatriculation</th><th scope="col">Marque / modèle</th>
                 } @else if (selected === 'chauffeurs') {
                   <th scope="col">Chauffeur</th><th scope="col">E-mail</th><th scope="col">Direction</th>
+                } @else if (selected === 'lieux') {
+                  <th scope="col">Nom / Libellé</th><th scope="col">Latitude</th><th scope="col">Longitude</th>
+                } @else if (selected === 'types-sortie') {
+                  <th scope="col">ID</th><th scope="col">Nom / Libellé</th><th scope="col">Code</th>
                 } @else {
                   <th scope="col">Nom / Libellé</th><th scope="col">Code</th>
                   @if (selected === 'services') { <th scope="col">Direction</th> }
                 }
-                <th scope="col">Statut</th>
+                @if (selected !== 'types-sortie' && selected !== 'lieux') {
+                  <th scope="col">Statut</th>
+                }
                 <th scope="col" class="actions-heading">Actions</th>
               </tr>
             </thead>
@@ -97,6 +103,14 @@
                     <td><strong>{{ nameOf(item) }}</strong></td><td>{{ codeOf(item) }}</td><td>{{ directionOf(item) }}</td>
                   } @else if (selected === 'vehicules') {
                     <td><strong>{{ nameOf(item) }}</strong></td><td>{{ codeOf(item) }}</td>
+                  } @else if (selected === 'lieux') {
+                    <td>
+                      <strong>{{ nameOf(item) }}</strong>
+                      @if (descriptionOf(item)) { <small>{{ descriptionOf(item) }}</small> }
+                    </td>
+                    <td>{{ latitudeOf(item) }}</td><td>{{ longitudeOf(item) }}</td>
+                  } @else if (selected === 'types-sortie') {
+                    <td>{{ item.id }}</td><td><strong>{{ nameOf(item) }}</strong></td><td><code>{{ codeOf(item) }}</code></td>
                   } @else {
                     <td>
                       <strong>{{ nameOf(item) }}</strong>
@@ -105,13 +119,15 @@
                     <td><code>{{ codeOf(item) }}</code></td>
                     @if (selected === 'services') { <td>{{ directionOf(item) }}</td> }
                   }
-                  <td>
-                    @if (statusOf(item); as status) {
-                      <span class="status-pill" [class.status-pill--off]="status === 'INACTIF'">{{ status }}</span>
-                    } @else {
-                      <span class="muted">—</span>
-                    }
-                  </td>
+                  @if (selected !== 'types-sortie' && selected !== 'lieux') {
+                    <td>
+                      @if (statusOf(item); as status) {
+                        <span class="status-pill" [class.status-pill--off]="status === 'INACTIF'">{{ status }}</span>
+                      } @else {
+                        <span class="muted">—</span>
+                      }
+                    </td>
+                  }
                   <td class="row-actions">
                     @if (selected === 'chauffeurs') {
                       @if (statusOf(item) === 'ACTIF') {
