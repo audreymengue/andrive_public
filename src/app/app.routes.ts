@@ -60,13 +60,13 @@ export const routes: Routes = [
                 path: 'demandes/:id',
                 loadComponent: () => import('./features/demandes/views/detail-demande/detail-demande.page').then(m => m.DetailDemandePage),
                 canActivate: [RoleGuard],
-                data: { roles: ['agent', 'demandeur', 'super_admin'], title: 'Détail de la demande' }
+                data: { roles: ['agent', 'demandeur', 'dag', 'super_admin'], title: 'Détail de la demande' }
             },
             {
                 path: 'gestion/demandes',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
+                loadComponent: () => import('./features/backoffice/views/traitement-demandes/traitement-demandes.page').then(m => m.TraitementDemandesPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['dag', 'super_admin'], title: 'Traitement des demandes', description: 'Examinez, validez ou planifiez les demandes de transport.' }
+                data: { roles: ['dag', 'super_admin'], title: 'Traitement des demandes', description: 'Consultez les demandes en attente et préparez les courses.' }
             },
             {
                 path: 'gestion/chauffeurs',

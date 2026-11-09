@@ -284,7 +284,7 @@ export class DemandeSortiePage implements OnInit {
 
   private nouvelleDestination(): FormGroup {
     return this.fb.group({
-      entite_geographique_id: [null as number | null, Validators.required],
+      entite_geographique_id: [null as number | null],
       adresse: ['', Validators.required],
     });
   }
@@ -437,7 +437,8 @@ export class DemandeSortiePage implements OnInit {
       heure_depart: avecSecondes(v.heure_depart),
 
       destinations: v.destinations.map((d: any, i: number) => ({
-        entite_geographique_id: d.entite_geographique_id,
+        ...(d.entite_geographique_id ? { entite_geographique_id: d.entite_geographique_id } : {}),
+        adresse: d.adresse.trim(),
         ordre: i + 1,
       })),
 

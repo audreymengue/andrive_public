@@ -19,6 +19,7 @@ interface DemandeDetail {
   heure_retour?: string | null;
   demandeur?: { nom: string; prenom: string } | null;
   direction?: { nom: string } | null;
+  service?: { id: number; nom: string; code?: string } | null;
   type_sortie?: { libelle: string } | null;
   adresse_depart?: { adresse: string } | null;
   adresse_retour?: { adresse: string } | null;
@@ -46,11 +47,19 @@ export class DetailDemandePage implements OnInit {
   protected readonly demande = signal<DemandeDetail | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
+  protected readonly returnLabel = signal('Retour à l’historique');
 
   private id = 0;
+  private returnPath = '/dashboard/demandes/historique';
+  private treatmentSource = false;
 
   ngOnInit(): void {
     this.id = Number(this.route.snapshot.paramMap.get('id'));
+    this.treatmentSource = this.route.snapshot.queryParamMap.get('source') === 'traitement';
+    if (this.treatmentSource) {
+      this.returnPath = '/dashboard/gestion/demandes';
+      this.returnLabel.set('Retour au traitement');
+    }
     this.charger();
   }
 
@@ -63,26 +72,52 @@ export class DetailDemandePage implements OnInit {
 
     this.loading.set(true);
     this.error.set(null);
-    this.api.get<{ data: DemandeDetail }>(`/demandes/${this.id}`)
+    const endpoint = this.treatmentSource ? `/traitement/demandes/${this.id}` : `/demandes/${this.id}`;
+    this.api.get<{ data: DemandeDetail }>(endpoint)
       .pipe(
         catchError((err: HttpErrorResponse) => {
           this.error.set(
-            err.status === 404
-              ? 'Cette demande est introuvable.'
-              : 'Impossible de récupérer le détail de la demande.'
+            err.status === 401
+              ? 'Votre session a expiré. Reconnectez-vous pour consulter cette demande.'
+              : err.status === 403
+                ? 'Vous n’avez pas l’autorisation de consulter cette demande.'
+                : err.status === 404
+                  ? 'Cette demande est introuvable ou ne vous est pas accessible.'
+                  : err.status === 0
+                    ? 'Impossible de joindre le serveur. Vérifiez que l’API est démarrée.'
+                    : `Le serveur n’a pas pu charger cette demande (HTTP ${err.status}).`
           );
           this.loading.set(false);
           return of(null);
         })
       )
       .subscribe((response) => {
-        if (response?.data) this.demande.set(response.data);
+        const envelope = response as { data?: unknown } | null;
+        const firstLevel = envelope?.data;
+        const nestedEnvelope = firstLevel && typeof firstLevel === 'object' && 'data' in firstLevel
+          ? (firstLevel as { data?: unknown }).data
+          : undefined;
+        const detail = nestedEnvelope ?? firstLevel ?? response;
+
+        if (!detail || typeof detail !== 'object' || !('id' in detail)) {
+          this.error.set('La réponse du serveur ne contient pas le détail de cette demande.');
+          this.loading.set(false);
+          return;
+        }
+
+        const demande = detail as DemandeDetail;
+        this.demande.set({
+          ...demande,
+          destinations: Array.isArray(demande.destinations) ? demande.destinations : [],
+          employes: Array.isArray(demande.employes) ? demande.employes : [],
+          objets: Array.isArray(demande.objets) ? demande.objets : [],
+        });
         this.loading.set(false);
       });
   }
 
   protected retourHistorique(): void {
-    void this.router.navigate(['/dashboard/demandes/historique']);
+    void this.router.navigate([this.returnPath]);
   }
 
   protected heure(value?: string | null): string {

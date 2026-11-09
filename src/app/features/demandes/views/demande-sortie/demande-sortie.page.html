@@ -321,7 +321,7 @@
       </div>
 
       <h3 class="sous-titre">Destinations</h3>
-      <p class="description">Indiquez les destinations dans l'ordre du trajet. Utilisez les flèches pour réorganiser les étapes.</p>
+      <p class="description">Indiquez les destinations dans l'ordre du trajet. Utilisez les flèches pour réorganiser les étapes. Une nouvelle adresse sera enregistrée automatiquement avec la demande.</p>
 
       <div class="destinations-layout">
         <div class="destinations-layout__liste">
@@ -330,7 +330,7 @@
               <span class="destination__num" aria-hidden="true">{{ i + 1 }}</span>
 
               <div class="champ destination__champ"
-                   [class.champ--erreur]="invalideItem(dest, 'adresse') || invalideItem(dest, 'entite_geographique_id')">
+                   [class.champ--erreur]="invalideItem(dest, 'adresse')">
                 <label [for]="'destination-' + i">Destination {{ i + 1 }}</label>
                 <input [id]="'destination-' + i" type="text" list="adresses-reference"
                        formControlName="adresse" (input)="saisirDestination($event, dest)"
@@ -338,9 +338,6 @@
                 <input type="hidden" formControlName="entite_geographique_id">
                 <small class="erreur" *ngIf="invalideItem(dest, 'adresse')">
                   Saisissez une destination.
-                </small>
-                <small class="erreur" *ngIf="invalideItem(dest, 'entite_geographique_id')">
-                  Choisissez une destination dans les suggestions.
                 </small>
               </div>
 

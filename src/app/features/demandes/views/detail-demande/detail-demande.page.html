@@ -1,104 +1,204 @@
 <section class="detail-page">
   <header class="detail-header">
     <button type="button" class="back-button" (click)="retourHistorique()">
-      <span aria-hidden="true">←</span> Retour à l’historique
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>
+      <span>{{ returnLabel() }}</span>
     </button>
-    <p class="eyebrow">DEMANDE DE TRANSPORT</p>
-    <h1>Détail de la demande</h1>
+    <div class="detail-header__copy">
+      <p class="eyebrow">DEMANDE DE TRANSPORT</p>
+      <h1>Fiche détaillée</h1>
+      <p>Consultez les informations et le trajet de votre demande.</p>
+    </div>
   </header>
 
   @if (loading()) {
-    <div class="state" role="status">Chargement du détail de la demande…</div>
+    <div class="state" role="status">
+      <span class="state__icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></span>
+      <span>Chargement du détail de la demande…</span>
+    </div>
   } @else if (error(); as message) {
     <div class="state state--error" role="alert">
-      <p>{{ message }}</p>
-      <button type="button" class="button button--secondary" (click)="charger()">Réessayer</button>
-      <button type="button" class="button button--primary" (click)="retourHistorique()">Retour à l’historique</button>
+      <span class="state__icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+      <div class="state__content">
+        <strong>Le détail n’est pas disponible</strong>
+        <p>{{ message }}</p>
+        <div class="state__actions">
+          <button type="button" class="button button--secondary" (click)="charger()">Réessayer</button>
+          <button type="button" class="button button--primary" (click)="retourHistorique()">{{ returnLabel() }}</button>
+        </div>
+      </div>
     </div>
   } @else if (demande(); as d) {
     <article class="detail-card">
-      <div class="reference-row">
-        <div>
-          <span class="field-label">Référence</span>
+      <header class="detail-summary">
+        <div class="detail-summary__main">
+          <span class="reference-label">Référence de la demande</span>
           <h2>{{ d.reference }}</h2>
+          <div class="summary-meta">
+            <span><i class="bi bi-person" aria-hidden="true"></i>{{ d.demandeur ? d.demandeur.prenom + ' ' + d.demandeur.nom : 'Demandeur non renseigné' }}</span>
+            @if (d.created_at) {
+              <span><i class="bi bi-calendar3" aria-hidden="true"></i>Créée le {{ d.created_at | date:'dd/MM/yyyy à HH:mm' }}</span>
+            }
+          </div>
         </div>
-        <span class="status" [ngClass]="statutClass(d.statut)">{{ statutLabel(d.statut) }}</span>
+        <span class="status" [ngClass]="statutClass(d.statut)">
+          <span class="status__dot" aria-hidden="true"></span>{{ statutLabel(d.statut) }}
+        </span>
+      </header>
+
+      <div class="detail-content">
+        <section class="detail-section">
+          <header class="section-heading">
+            <span class="section-heading__icon"><i class="bi bi-card-text" aria-hidden="true"></i></span>
+            <div>
+              <h3>Informations de la demande</h3>
+              <p>Direction, service et motif</p>
+            </div>
+          </header>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="field-label">Direction</span>
+              <strong>{{ d.direction?.nom || '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <span class="field-label">Service</span>
+              <strong>{{ d.service?.nom || '—' }}</strong>
+              @if (d.service?.code) { <small class="info-item__secondary">Code : {{ d.service?.code }}</small> }
+            </div>
+            <div class="info-item">
+              <span class="field-label">Type de sortie</span>
+              <strong>{{ d.type_sortie?.libelle || '—' }}</strong>
+            </div>
+            <div class="info-item info-item--wide">
+              <span class="field-label">Motif</span>
+              <p>{{ d.motif || '—' }}</p>
+            </div>
+            @if (d.commentaire) {
+              <div class="info-item info-item--wide">
+                <span class="field-label">Commentaire</span>
+                <p>{{ d.commentaire }}</p>
+              </div>
+            }
+          </div>
+        </section>
+
+        <div class="detail-columns">
+          <section class="detail-section">
+            <header class="section-heading">
+              <span class="section-heading__icon"><i class="bi bi-signpost-2" aria-hidden="true"></i></span>
+              <div>
+                <h3>Trajet</h3>
+                <p>Départ et horaires prévus</p>
+              </div>
+            </header>
+
+            <div class="route-list">
+              <div class="route-stop">
+                <span class="route-stop__marker route-stop__marker--start"><i class="bi bi-circle-fill" aria-hidden="true"></i></span>
+                <div class="route-stop__body">
+                  <span class="field-label">Départ</span>
+                  <strong>{{ d.adresse_depart?.adresse || '—' }}</strong>
+                  <div class="route-stop__meta">
+                    <span><i class="bi bi-calendar3" aria-hidden="true"></i>{{ d.date_depart | date:'dd/MM/yyyy' }}</span>
+                    <span><i class="bi bi-clock" aria-hidden="true"></i>{{ heure(d.heure_depart) }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="route-stop">
+                <span class="route-stop__marker route-stop__marker--end"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i></span>
+                <div class="route-stop__body">
+                  <span class="field-label">Retour</span>
+                  <strong>{{ d.adresse_retour?.adresse || '—' }}</strong>
+                  <div class="route-stop__meta">
+                    <span><i class="bi bi-clock" aria-hidden="true"></i>{{ heure(d.heure_retour) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="detail-section">
+            <header class="section-heading">
+              <span class="section-heading__icon"><i class="bi bi-geo" aria-hidden="true"></i></span>
+              <div>
+                <h3>Destinations</h3>
+                <p>{{ d.destinations.length }} étape{{ d.destinations.length === 1 ? '' : 's' }} prévue{{ d.destinations.length === 1 ? '' : 's' }}</p>
+              </div>
+            </header>
+
+            @if (d.destinations.length) {
+              <ol class="destination-list">
+                @for (destination of d.destinations; track destination.ordre; let i = $index) {
+                  <li>
+                    <span class="destination-list__number">{{ i + 1 }}</span>
+                    <span>{{ destination.entite_geographique?.adresse || 'Adresse non renseignée' }}</span>
+                  </li>
+                }
+              </ol>
+            } @else {
+              <p class="empty">Aucune destination renseignée.</p>
+            }
+          </section>
+        </div>
+
+        <div class="detail-columns detail-columns--lower">
+          <section class="detail-section">
+            <header class="section-heading">
+              <span class="section-heading__icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+              <div>
+                <h3>Employés concernés</h3>
+                <p>{{ d.employes.length }} personne{{ d.employes.length === 1 ? '' : 's' }}</p>
+              </div>
+            </header>
+
+            @if (d.employes.length) {
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Nom</th><th>Prénom</th><th>Fonction</th></tr></thead>
+                  <tbody>
+                    @for (employe of d.employes; track $index) {
+                      <tr><td>{{ employe.nom }}</td><td>{{ employe.prenom }}</td><td>{{ employe.fonction || '—' }}</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="empty">Aucun employé renseigné.</p>
+            }
+          </section>
+
+          <section class="detail-section">
+            <header class="section-heading">
+              <span class="section-heading__icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+              <div>
+                <h3>Objets transportés</h3>
+                <p>{{ d.objets.length }} article{{ d.objets.length === 1 ? '' : 's' }}</p>
+              </div>
+            </header>
+
+            @if (d.objets.length) {
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Désignation</th><th>Quantité</th><th>Description</th></tr></thead>
+                  <tbody>
+                    @for (objet of d.objets; track $index) {
+                      <tr><td>{{ objet.designation }}</td><td>{{ objet.quantite ?? '—' }}</td><td>{{ objet.description || '—' }}</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p class="empty">Aucun objet renseigné.</p>
+            }
+          </section>
+        </div>
       </div>
 
-      <section class="detail-section">
-        <h3>Informations générales</h3>
-        <div class="detail-grid">
-          <div class="field"><span class="field-label">Demandeur</span><strong>{{ d.demandeur ? d.demandeur.prenom + ' ' + d.demandeur.nom : '—' }}</strong></div>
-          <div class="field"><span class="field-label">Créée le</span><strong>{{ d.created_at | date:"dd/MM/yyyy 'à' HH:mm" }}</strong></div>
-          <div class="field"><span class="field-label">Direction</span><strong>{{ d.direction?.nom || '—' }}</strong></div>
-          <div class="field"><span class="field-label">Type de sortie</span><strong>{{ d.type_sortie?.libelle || '—' }}</strong></div>
-          <div class="field field--wide"><span class="field-label">Motif</span><strong>{{ d.motif || '—' }}</strong></div>
-          <div class="field field--wide" *ngIf="d.commentaire"><span class="field-label">Commentaire</span><p>{{ d.commentaire }}</p></div>
-        </div>
-      </section>
-
-      <section class="detail-section">
-        <h3>Départ et retour</h3>
-        <div class="detail-grid">
-          <div class="field"><span class="field-label">Adresse de départ</span><strong>{{ d.adresse_depart?.adresse || '—' }}</strong></div>
-          <div class="field"><span class="field-label">Date de départ</span><strong>{{ d.date_depart | date:'dd/MM/yyyy' }}</strong></div>
-          <div class="field"><span class="field-label">Heure de départ</span><strong>{{ heure(d.heure_depart) }}</strong></div>
-          <div class="field"><span class="field-label">Adresse de retour</span><strong>{{ d.adresse_retour?.adresse || '—' }}</strong></div>
-          <div class="field"><span class="field-label">Heure de retour</span><strong>{{ heure(d.heure_retour) }}</strong></div>
-        </div>
-      </section>
-
-      <section class="detail-section">
-        <h3>Destinations</h3>
-        @if (d.destinations.length) {
-          <ol class="item-list">
-            @for (destination of d.destinations; track destination.ordre) {
-              <li>{{ destination.entite_geographique?.adresse || 'Adresse non renseignée' }}</li>
-            }
-          </ol>
-        } @else {
-          <p class="empty">Aucune destination renseignée.</p>
-        }
-      </section>
-
-      <section class="detail-section">
-        <h3>Employés concernés</h3>
-        @if (d.employes.length) {
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Nom</th><th>Prénom</th><th>Fonction</th></tr></thead>
-              <tbody>
-                @for (employe of d.employes; track $index) {
-                  <tr><td>{{ employe.nom }}</td><td>{{ employe.prenom }}</td><td>{{ employe.fonction || '—' }}</td></tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else {
-          <p class="empty">Aucun employé renseigné.</p>
-        }
-      </section>
-
-      <section class="detail-section detail-section--last">
-        <h3>Objets transportés</h3>
-        @if (d.objets.length) {
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Désignation</th><th>Quantité</th><th>Description</th></tr></thead>
-              <tbody>
-                @for (objet of d.objets; track $index) {
-                  <tr><td>{{ objet.designation }}</td><td>{{ objet.quantite ?? '—' }}</td><td>{{ objet.description || '—' }}</td></tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        } @else {
-          <p class="empty">Aucun objet renseigné.</p>
-        }
-      </section>
-
       <footer class="detail-actions">
-        <button type="button" class="button button--primary" (click)="retourHistorique()">Retour à l’historique</button>
+        <button type="button" class="button button--secondary" (click)="retourHistorique()">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ returnLabel() }}
+        </button>
       </footer>
     </article>
   }
