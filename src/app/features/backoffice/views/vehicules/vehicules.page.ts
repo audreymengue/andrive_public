@@ -1,8 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 
-import { Vehicule, VehiculeService, StatutVehicule } from '../../services/vehicule.service';
+import { Vehicule, VehiculeService } from '../../services/vehicule.service';
 
 @Component({
   selector: 'app-vehicules-page',
@@ -27,7 +29,6 @@ export class VehiculesPage {
 
   protected readonly filtersForm = new FormGroup({
     search: new FormControl('', { nonNullable: true }),
-    status: new FormControl<'' | StatutVehicule>('', { nonNullable: true }),
   });
 
   protected readonly createForm = new FormGroup({
@@ -42,6 +43,9 @@ export class VehiculesPage {
 
   constructor() {
     this.loadVehicles();
+    this.filtersForm.controls.search.valueChanges
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe(() => this.search());
   }
 
   protected loadVehicles(): void {
@@ -49,7 +53,6 @@ export class VehiculesPage {
     this.errorMessage.set('');
     this.api.list({
       search: this.filtersForm.controls.search.value,
-      statut: this.filtersForm.controls.status.value || undefined,
       page: this.currentPage(),
       perPage: this.perPage,
     }).subscribe({
@@ -67,11 +70,6 @@ export class VehiculesPage {
   }
 
   protected search(): void {
-    this.currentPage.set(1);
-    this.loadVehicles();
-  }
-
-  protected changeStatusFilter(): void {
     this.currentPage.set(1);
     this.loadVehicles();
   }

@@ -1,8 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 
-import { isEligibleChauffeurAccount, User, StatutCode } from '../../../administration/models/user.model';
+import { isEligibleChauffeurAccount, User } from '../../../administration/models/user.model';
 import { UserService } from '../../../administration/services/user.service';
 
 @Component({
@@ -24,11 +26,13 @@ export class ChauffeursPage {
   protected readonly errorMessage = signal('');
   protected readonly filtersForm = new FormGroup({
     search: new FormControl('', { nonNullable: true }),
-    status: new FormControl<'' | StatutCode>('', { nonNullable: true }),
   });
 
   constructor() {
     this.loadChauffeurs();
+    this.filtersForm.controls.search.valueChanges
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe(() => this.search());
   }
 
   protected loadChauffeurs(): void {
@@ -36,7 +40,6 @@ export class ChauffeursPage {
     this.errorMessage.set('');
     this.usersApi.list({
       search: this.filtersForm.controls.search.value,
-      statut: this.filtersForm.controls.status.value || undefined,
       page: this.currentPage(),
       perPage: this.perPage,
       role: 'chauffeur',
@@ -56,11 +59,6 @@ export class ChauffeursPage {
   }
 
   protected search(): void {
-    this.currentPage.set(1);
-    this.loadChauffeurs();
-  }
-
-  protected changeStatusFilter(): void {
     this.currentPage.set(1);
     this.loadChauffeurs();
   }

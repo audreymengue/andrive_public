@@ -16,30 +16,17 @@
   }
 
   <p class="contract-note">
-    La capacité indique le nombre de places passagers, hors chauffeur. Le statut est administratif et ne représente pas la disponibilité pour une course.
+    La capacité indique le nombre de places passagers, hors chauffeur.
   </p>
 
-  <form class="toolbar" [formGroup]="filtersForm" (ngSubmit)="search()">
+  <div class="toolbar" [formGroup]="filtersForm">
     <label class="search-field">
       <i class="bi bi-search" aria-hidden="true"></i>
       <span class="sr-only">Rechercher par immatriculation</span>
       <input type="search" formControlName="search" placeholder="Rechercher par immatriculation..." />
     </label>
-    <button type="submit" class="secondary-button">Rechercher</button>
-    <label class="filter-field">
-      <span class="sr-only">Filtrer par statut du véhicule</span>
-      <select formControlName="status" (change)="changeStatusFilter()">
-        <option value="">Tous les statuts</option>
-        <option value="ACTIF">Actif</option>
-        <option value="INACTIF">Inactif</option>
-      </select>
-    </label>
-    <button type="button" class="secondary-button" (click)="loadVehicles()" [disabled]="loading()">
-      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-      Actualiser
-    </button>
     <span class="record-count">{{ total() }} véhicule(s)</span>
-  </form>
+  </div>
 
   <div class="table-card" [attr.aria-busy]="loading()">
     @if (loading()) {
@@ -57,7 +44,6 @@
             <tr>
               <th scope="col">Immatriculation</th>
               <th scope="col">Places passagers</th>
-              <th scope="col">Statut administratif</th>
             </tr>
           </thead>
           <tbody>
@@ -65,9 +51,6 @@
               <tr>
                 <td><strong>{{ vehicle.immatriculation }}</strong></td>
                 <td>{{ vehicle.places_utiles }}</td>
-                <td>
-                  <span class="status-pill" [class.status-pill--off]="vehicle.statut === 'INACTIF'">{{ vehicle.statut }}</span>
-                </td>
               </tr>
             }
           </tbody>
@@ -98,7 +81,7 @@
         </button>
       </header>
 
-      <p class="modal-copy">Renseignez les informations du véhicule. Le statut ACTIF sera attribué automatiquement.</p>
+      <p class="modal-copy">Renseignez les informations du véhicule.</p>
       @if (errorMessage()) { <div class="notice notice--error" role="alert">{{ errorMessage() }}</div> }
 
       <form [formGroup]="createForm" (ngSubmit)="createVehicle()">
@@ -112,11 +95,6 @@
           <label for="vehicle-capacity">Places utiles (hors chauffeur)</label>
           <input id="vehicle-capacity" class="form-input" type="number" formControlName="places_utiles" min="1" step="1" />
           @if (fieldError('places_utiles')) { <span class="field-error" role="alert">{{ fieldError('places_utiles') }}</span> }
-        </div>
-
-        <div class="field">
-          <span class="field-label">Statut</span>
-          <div class="default-status" aria-label="Statut ACTIF attribué automatiquement">ACTIF <span>Attribué automatiquement</span></div>
         </div>
 
         <div class="modal-actions">

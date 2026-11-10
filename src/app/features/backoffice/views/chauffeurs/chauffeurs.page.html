@@ -12,27 +12,14 @@
     <div class="notice notice--error" role="alert">{{ errorMessage() }}</div>
   }
 
-  <form class="toolbar" [formGroup]="filtersForm" (ngSubmit)="search()">
+  <div class="toolbar" [formGroup]="filtersForm">
     <label class="search-field">
       <i class="bi bi-search" aria-hidden="true"></i>
       <span class="sr-only">Rechercher un chauffeur</span>
       <input type="search" formControlName="search" placeholder="Rechercher par nom ou prénom..." />
     </label>
-    <button type="submit" class="secondary-button">Rechercher</button>
-    <label class="filter-field">
-      <span class="sr-only">Filtrer par statut du compte chauffeur</span>
-      <select formControlName="status" (change)="changeStatusFilter()">
-        <option value="">Tous les statuts</option>
-        <option value="ACTIF">Actif</option>
-        <option value="INACTIF">Inactif</option>
-      </select>
-    </label>
-    <button type="button" class="secondary-button" (click)="loadChauffeurs()" [disabled]="loading()">
-      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-      Actualiser
-    </button>
     <span class="record-count">{{ total() }} chauffeur(s)</span>
-  </form>
+  </div>
 
   <div class="table-card" [attr.aria-busy]="loading()">
     @if (loading()) {
@@ -50,7 +37,6 @@
             <tr>
               <th scope="col">Chauffeur</th>
               <th scope="col">E-mail</th>
-              <th scope="col">Statut du compte</th>
             </tr>
           </thead>
           <tbody>
@@ -58,9 +44,6 @@
               <tr>
                 <td><strong>{{ fullName(chauffeur) }}</strong></td>
                 <td>{{ chauffeur.email }}</td>
-                <td>
-                  <span class="status-pill" [class.status-pill--off]="chauffeur.statut === 'INACTIF'">{{ chauffeur.statut }}</span>
-                </td>
               </tr>
             }
           </tbody>
