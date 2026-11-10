@@ -24,7 +24,7 @@ export const BACKOFFICE_ROUTES: Routes = [
   },
   {
     path: 'gestion/parc-automobile',
-    loadComponent: () => import('./views/section.page').then((module) => module.SectionPage),
+    loadComponent: () => import('./views/vehicules/vehicules.page').then((module) => module.VehiculesPage),
     canActivate: [RoleGuard],
     data: { roles: ['dag', 'super_admin'], title: 'Parc automobile', description: 'Gérez les véhicules du parc automobile.' },
   },

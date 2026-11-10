@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import { User } from '../../../administration/models/user.model';
 import { UserService } from '../../../administration/services/user.service';
@@ -28,6 +29,7 @@ export class ChauffeursPage {
   protected readonly lastPage = signal(1);
   protected readonly total = signal(0);
   protected readonly errorMessage = signal('');
+  protected readonly emailErrorMessage = signal('');
   protected readonly accountError = signal('');
   protected readonly successMessage = signal('');
   protected readonly filtersForm = new FormGroup({
@@ -55,7 +57,7 @@ export class ChauffeursPage {
         this.profiles.set(response.data);
         this.total.set(response.meta?.total ?? response.data.length);
         this.lastPage.set(Math.max(1, response.meta?.last_page ?? 1));
-        this.loading.set(false);
+        this.loadMissingEmails(response.data);
       },
       error: (error: unknown) => {
         this.loading.set(false);
@@ -137,7 +139,7 @@ export class ChauffeursPage {
   }
 
   protected email(profile: ProfilChauffeur): string {
-    return this.accountOf(profile)?.email || '—';
+    return this.accountOf(profile)?.email || (profile.user_id === null ? '—' : 'E-mail indisponible');
   }
 
   protected accountStatus(profile: ProfilChauffeur): StatutProfilChauffeur | 'LIE' | null {
@@ -146,6 +148,45 @@ export class ChauffeursPage {
 
   private accountOf(profile: ProfilChauffeur): ProfilChauffeur['utilisateur'] | ProfilChauffeur['user'] {
     return profile.utilisateur ?? profile.user ?? null;
+  }
+
+  private loadMissingEmails(profiles: ProfilChauffeur[]): void {
+    const profilesWithoutEmail = profiles.filter((profile) =>
+      profile.user_id !== null && !this.accountOf(profile)?.email,
+    );
+    if (profilesWithoutEmail.length === 0) {
+      this.emailErrorMessage.set('');
+      this.loading.set(false);
+      return;
+    }
+
+    forkJoin(profilesWithoutEmail.map((profile) => this.usersApi.get(profile.user_id!))).subscribe({
+      next: (accounts) => {
+        const accountsById = new Map(accounts.map((account) => [account.id, account]));
+        this.profiles.update((currentProfiles) => currentProfiles.map((profile) => {
+          const account = profile.user_id === null ? undefined : accountsById.get(profile.user_id);
+          if (!account) return profile;
+
+          const linkedAccount = this.accountOf(profile) ?? {};
+          return {
+            ...profile,
+            utilisateur: {
+              ...linkedAccount,
+              email: account.email,
+            },
+          };
+        }));
+        this.emailErrorMessage.set('');
+        this.loading.set(false);
+      },
+      error: (error: unknown) => {
+        this.emailErrorMessage.set(this.errorText(
+          error,
+          'Les adresses e-mail des comptes liés n’ont pas pu être chargées.',
+        ));
+        this.loading.set(false);
+      },
+    });
   }
 
   private errorText(error: unknown, fallback: string, permission?: 'read_driver' | 'create_driver'): string {

@@ -18,6 +18,9 @@
   @if (errorMessage() && !editorOpen()) {
     <div class="notice notice--error" role="alert">{{ errorMessage() }}</div>
   }
+  @if (emailErrorMessage()) {
+    <div class="notice notice--error" role="alert">{{ emailErrorMessage() }}</div>
+  }
 
   <p class="contract-note">
     Un profil chauffeur est distinct d’un compte utilisateur. Vous pouvez lier un compte chauffeur existant ou créer le profil sans compte.

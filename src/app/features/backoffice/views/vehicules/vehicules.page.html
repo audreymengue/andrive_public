@@ -1,0 +1,135 @@
+<section class="page">
+  <header class="page-header">
+    <div class="page-header__icon" aria-hidden="true"><i class="bi bi-car-front"></i></div>
+    <div class="page-header__title">
+      <span class="eyebrow">GESTION</span>
+      <h1>Parc automobile</h1>
+      <p>Enregistrez et consultez les véhicules du parc.</p>
+    </div>
+    <button type="button" class="primary-button" (click)="openCreate()">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      Ajouter un véhicule
+    </button>
+  </header>
+
+  @if (successMessage()) {
+    <div class="notice notice--success" role="status">{{ successMessage() }}</div>
+  }
+  @if (errorMessage() && !editorOpen()) {
+    <div class="notice notice--error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  <p class="contract-note">
+    La capacité indique le nombre de places passagers, hors chauffeur. Le statut est administratif et ne représente pas la disponibilité pour une course.
+  </p>
+
+  <form class="toolbar" [formGroup]="filtersForm" (ngSubmit)="search()">
+    <label class="search-field">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <span class="sr-only">Rechercher par immatriculation</span>
+      <input type="search" formControlName="search" placeholder="Rechercher par immatriculation..." />
+    </label>
+    <button type="submit" class="secondary-button">Rechercher</button>
+    <label class="filter-field">
+      <span class="sr-only">Filtrer par statut du véhicule</span>
+      <select formControlName="status" (change)="changeStatusFilter()">
+        <option value="">Tous les statuts</option>
+        <option value="ACTIF">Actif</option>
+        <option value="INACTIF">Inactif</option>
+      </select>
+    </label>
+    <button type="button" class="secondary-button" (click)="loadVehicles()" [disabled]="loading()">
+      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+      Actualiser
+    </button>
+    <span class="record-count">{{ total() }} véhicule(s)</span>
+  </form>
+
+  <div class="table-card" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <div class="loading-state" role="status"><span class="spinner"></span> Chargement du parc automobile...</div>
+    } @else if (vehicles().length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-inbox" aria-hidden="true"></i>
+        <p>Aucun véhicule trouvé.</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">Parc automobile</caption>
+          <thead>
+            <tr>
+              <th scope="col">Immatriculation</th>
+              <th scope="col">Places passagers</th>
+              <th scope="col">Statut administratif</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (vehicle of vehicles(); track vehicle.id) {
+              <tr>
+                <td><strong>{{ vehicle.immatriculation }}</strong><small>Véhicule #{{ vehicle.id }}</small></td>
+                <td>{{ vehicle.places_utiles }}</td>
+                <td>
+                  <span class="status-pill" [class.status-pill--off]="vehicle.statut === 'INACTIF'">{{ vehicle.statut }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  @if (lastPage() > 1) {
+    <nav class="pagination" aria-label="Pagination du parc automobile">
+      <button type="button" class="secondary-button" (click)="changePage(currentPage() - 1)" [disabled]="currentPage() === 1 || loading()">Précédent</button>
+      <span>Page {{ currentPage() }} sur {{ lastPage() }}</span>
+      <button type="button" class="secondary-button" (click)="changePage(currentPage() + 1)" [disabled]="currentPage() === lastPage() || loading()">Suivant</button>
+    </nav>
+  }
+</section>
+
+@if (editorOpen()) {
+  <div class="overlay" (click)="closeCreate()">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="create-vehicle-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div>
+          <span class="eyebrow">PARC AUTOMOBILE</span>
+          <h2 id="create-vehicle-title">Ajouter un véhicule</h2>
+        </div>
+        <button type="button" class="close-button" (click)="closeCreate()" [disabled]="saving()" aria-label="Fermer">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <p class="modal-copy">Renseignez les informations du véhicule. Le statut ACTIF sera attribué automatiquement.</p>
+      @if (errorMessage()) { <div class="notice notice--error" role="alert">{{ errorMessage() }}</div> }
+
+      <form [formGroup]="createForm" (ngSubmit)="createVehicle()">
+        <div class="field">
+          <label for="vehicle-registration">Immatriculation</label>
+          <input id="vehicle-registration" class="form-input" type="text" formControlName="immatriculation" maxlength="255" autocomplete="off" />
+          @if (fieldError('immatriculation')) { <span class="field-error" role="alert">{{ fieldError('immatriculation') }}</span> }
+        </div>
+
+        <div class="field">
+          <label for="vehicle-capacity">Places utiles (hors chauffeur)</label>
+          <input id="vehicle-capacity" class="form-input" type="number" formControlName="places_utiles" min="1" step="1" />
+          @if (fieldError('places_utiles')) { <span class="field-error" role="alert">{{ fieldError('places_utiles') }}</span> }
+        </div>
+
+        <div class="field">
+          <span class="field-label">Statut</span>
+          <div class="default-status" aria-label="Statut ACTIF attribué automatiquement">ACTIF <span>Attribué automatiquement</span></div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-button" (click)="closeCreate()" [disabled]="saving()">Annuler</button>
+          <button type="submit" class="primary-button" [disabled]="saving()">
+            {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
