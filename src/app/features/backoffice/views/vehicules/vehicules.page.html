@@ -6,10 +6,6 @@
       <h1>Parc automobile</h1>
       <p>Enregistrez et consultez les véhicules du parc.</p>
     </div>
-    <button type="button" class="primary-button" (click)="openCreate()">
-      <i class="bi bi-plus-lg" aria-hidden="true"></i>
-      Ajouter un véhicule
-    </button>
   </header>
 
   @if (successMessage()) {
@@ -67,7 +63,7 @@
           <tbody>
             @for (vehicle of vehicles(); track vehicle.id) {
               <tr>
-                <td><strong>{{ vehicle.immatriculation }}</strong><small>Véhicule #{{ vehicle.id }}</small></td>
+                <td><strong>{{ vehicle.immatriculation }}</strong></td>
                 <td>{{ vehicle.places_utiles }}</td>
                 <td>
                   <span class="status-pill" [class.status-pill--off]="vehicle.statut === 'INACTIF'">{{ vehicle.statut }}</span>

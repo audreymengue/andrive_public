@@ -43,8 +43,7 @@ export interface EntiteGeographiqueParametre {
 export interface VehiculeParametre {
   id: number;
   immatriculation: string;
-  marque: string;
-  modele: string;
+  places_utiles: number;
   statut: StatutReference;
   lock_version: number;
 }
@@ -62,6 +61,7 @@ export interface ApiList<T> extends ApiItem<T[]> {
 export class ParametrageService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
+  private readonly vehiculesBase = `${this.base}/parametrage/vehicules`;
 
   listDirections(search = '', page = 1): Observable<ApiList<DirectionParametre>> {
     return this.http.get<ApiList<DirectionParametre>>(`${this.base}/parametrage/directions`, {
@@ -146,17 +146,17 @@ export class ParametrageService {
   }
 
   listVehicules(search = '', page = 1): Observable<ApiList<VehiculeParametre>> {
-    return this.http.get<ApiList<VehiculeParametre>>(`${this.base}/vehicules`, {
+    return this.http.get<ApiList<VehiculeParametre>>(this.vehiculesBase, {
       params: new HttpParams().set('page', page).set('per_page', 100).set('search', search),
     });
   }
 
-  createVehicule(payload: Pick<VehiculeParametre, 'immatriculation' | 'marque' | 'modele' | 'statut'>): Observable<ApiItem<VehiculeParametre>> {
-    return this.http.post<ApiItem<VehiculeParametre>>(`${this.base}/vehicules`, payload, { headers: this.idempotencyHeaders() });
+  createVehicule(payload: Pick<VehiculeParametre, 'immatriculation' | 'places_utiles'>): Observable<ApiItem<VehiculeParametre>> {
+    return this.http.post<ApiItem<VehiculeParametre>>(this.vehiculesBase, payload, { headers: this.idempotencyHeaders() });
   }
 
   deleteVehicule(id: number, version: number): Observable<ApiItem<VehiculeParametre>> {
-    return this.http.delete<ApiItem<VehiculeParametre>>(`${this.base}/vehicules/${id}`, {
+    return this.http.delete<ApiItem<VehiculeParametre>>(`${this.vehiculesBase}/${id}`, {
       headers: this.idempotencyHeaders().set('X-Expected-Version', String(version)).set('X-Change-Reason', encodeURIComponent('Retrait du parc automobile')),
     });
   }

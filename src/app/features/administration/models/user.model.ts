@@ -92,6 +92,11 @@ export const fullName = (u: Pick<User, 'prenom' | 'nom'>): string => `${u.prenom
 
 export const isActif = (u: Pick<User, 'statut'>): boolean => u.statut === 'ACTIF';
 
+export const isEligibleChauffeurAccount = (user: Pick<User, 'email'>): boolean => {
+  const email = user.email.toLocaleLowerCase();
+  return !email.includes('admin') && !email.includes('demandeur');
+};
+
 export const getRoleNames = (u: Pick<User, 'roles'>): string[] =>
   (u.roles ?? []).map((r) => r.nom ?? r.libelle ?? r.name ?? r.code ?? '').filter(Boolean);
 

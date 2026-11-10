@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -27,12 +27,9 @@ export interface ProfilChauffeur {
   } | null;
 }
 
-interface ApiItem<T> {
+interface ApiList<T> {
   message: string;
-  data: T;
-}
-
-interface ApiList<T> extends ApiItem<T[]> {
+  data: T[];
   meta?: { current_page: number; per_page: number; total: number; last_page: number };
 }
 
@@ -53,11 +50,5 @@ export class ChauffeurService {
     if (options.search?.trim()) params = params.set('search', options.search.trim());
     if (options.statut) params = params.set('statut', options.statut);
     return this.http.get<ApiList<ProfilChauffeur>>(this.base, { params });
-  }
-
-  create(payload: { user_id: number | null }): Observable<ApiItem<ProfilChauffeur>> {
-    return this.http.post<ApiItem<ProfilChauffeur>>(this.base, payload, {
-      headers: new HttpHeaders({ 'Idempotency-Key': globalThis.crypto.randomUUID() }),
-    });
   }
 }
