@@ -1,0 +1,135 @@
+<section class="page">
+  <header class="page-header">
+    <div class="page-header__icon" aria-hidden="true"><i class="bi bi-people"></i></div>
+    <div class="page-header__title">
+      <span class="eyebrow">GESTION</span>
+      <h1>Registre des chauffeurs</h1>
+      <p>Gérez les profils chauffeurs et les comptes qui leur sont liés.</p>
+    </div>
+    <button type="button" class="primary-button" (click)="openCreate()">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      Nouveau profil
+    </button>
+  </header>
+
+  @if (successMessage()) {
+    <div class="notice notice--success" role="status">{{ successMessage() }}</div>
+  }
+  @if (errorMessage() && !editorOpen()) {
+    <div class="notice notice--error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  <p class="contract-note">
+    Un profil chauffeur est distinct d’un compte utilisateur. Vous pouvez lier un compte chauffeur existant ou créer le profil sans compte.
+  </p>
+
+  <form class="toolbar" [formGroup]="filtersForm" (ngSubmit)="search()">
+    <label class="search-field">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <span class="sr-only">Rechercher un chauffeur</span>
+      <input type="search" formControlName="search" placeholder="Rechercher par nom ou prénom..." />
+    </label>
+    <button type="submit" class="secondary-button">Rechercher</button>
+    <label class="filter-field">
+      <span class="sr-only">Filtrer par statut du profil</span>
+      <select formControlName="status" (change)="changeStatusFilter()">
+        <option value="">Tous les statuts</option>
+        <option value="ACTIF">Actif</option>
+        <option value="INACTIF">Inactif</option>
+      </select>
+    </label>
+    <button type="button" class="secondary-button" (click)="loadProfiles()" [disabled]="loading()">
+      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+      Actualiser
+    </button>
+    <span class="record-count">{{ total() }} profil(s)</span>
+  </form>
+
+  <div class="table-card" [attr.aria-busy]="loading()">
+    @if (loading()) {
+      <div class="loading-state" role="status"><span class="spinner"></span> Chargement des chauffeurs...</div>
+    } @else if (profiles().length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-inbox" aria-hidden="true"></i>
+        <p>Aucun profil chauffeur trouvé.</p>
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <caption class="sr-only">Registre des chauffeurs</caption>
+          <thead>
+            <tr>
+              <th scope="col">Chauffeur</th>
+              <th scope="col">E-mail</th>
+              <th scope="col">Compte utilisateur</th>
+              <th scope="col">Statut du profil</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (profile of profiles(); track profile.id) {
+              <tr>
+                <td><strong>{{ fullName(profile) }}</strong><small>Profil #{{ profile.id }}</small></td>
+                <td>{{ email(profile) }}</td>
+                <td>
+                  @if (accountStatus(profile); as status) {
+                    <span class="status-pill" [class.status-pill--off]="status === 'INACTIF'">{{ status === 'LIE' ? 'Compte lié' : status }}</span>
+                  } @else {
+                    <span class="muted">Aucun compte lié</span>
+                  }
+                </td>
+                <td>
+                  <span class="status-pill" [class.status-pill--off]="profile.statut === 'INACTIF'">{{ profile.statut }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  @if (lastPage() > 1) {
+    <nav class="pagination" aria-label="Pagination du registre des chauffeurs">
+      <button type="button" class="secondary-button" (click)="changePage(currentPage() - 1)" [disabled]="currentPage() === 1 || loading()">Précédent</button>
+      <span>Page {{ currentPage() }} sur {{ lastPage() }}</span>
+      <button type="button" class="secondary-button" (click)="changePage(currentPage() + 1)" [disabled]="currentPage() === lastPage() || loading()">Suivant</button>
+    </nav>
+  }
+</section>
+
+@if (editorOpen()) {
+  <div class="overlay" (click)="closeCreate()">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="create-driver-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div>
+          <span class="eyebrow">REGISTRE DES CHAUFFEURS</span>
+          <h2 id="create-driver-title">Créer un profil chauffeur</h2>
+        </div>
+        <button type="button" class="close-button" (click)="closeCreate()" [disabled]="saving()" aria-label="Fermer">×</button>
+      </header>
+
+      <p class="modal-copy">La création du profil ne crée ni ne modifie le compte utilisateur.</p>
+      @if (errorMessage()) { <div class="notice notice--error" role="alert">{{ errorMessage() }}</div> }
+      @if (accountError()) { <div class="notice notice--error" role="alert">{{ accountError() }} Vous pouvez tout de même créer un profil sans compte.</div> }
+
+      <form [formGroup]="createForm" (ngSubmit)="createProfile()">
+        <label class="field" for="driver-user">Compte chauffeur (facultatif)</label>
+        <select id="driver-user" class="account-select" formControlName="userId">
+          <option [ngValue]="null">{{ loadingAccounts() ? 'Chargement des comptes...' : 'Créer sans compte lié' }}</option>
+          @for (account of accounts(); track account.id) {
+            <option [ngValue]="account.id">{{ account.prenom }} {{ account.nom }} — {{ account.email }}</option>
+          }
+        </select>
+        @if (!loadingAccounts() && accounts().length === 0 && !accountError()) {
+          <p class="field-help">Aucun compte chauffeur existant. Le profil sera créé sans compte lié.</p>
+        }
+        <div class="modal-actions">
+          <button type="button" class="secondary-button" (click)="closeCreate()" [disabled]="saving()">Annuler</button>
+          <button type="submit" class="primary-button" [disabled]="saving()">
+            {{ saving() ? 'Enregistrement...' : 'Créer le profil' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

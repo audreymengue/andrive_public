@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
 import { PasswordChangeGuard } from './core/guards/password-change.guard';
+import { BACKOFFICE_ROUTES } from './features/backoffice/routes';
 
 export const routes: Routes = [
     {
@@ -62,48 +63,7 @@ export const routes: Routes = [
                 canActivate: [RoleGuard],
                 data: { roles: ['agent', 'demandeur', 'dag', 'super_admin'], title: 'Détail de la demande' }
             },
-            {
-                path: 'gestion/demandes',
-                loadComponent: () => import('./features/backoffice/views/traitement-demandes/traitement-demandes.page').then(m => m.TraitementDemandesPage),
-                canActivate: [RoleGuard],
-                data: { roles: ['dag', 'super_admin'], title: 'Traitement des demandes', description: 'Consultez les demandes en attente et préparez les courses.' }
-            },
-            {
-                path: 'gestion/chauffeurs',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
-                canActivate: [RoleGuard],
-                data: { roles: ['dag', 'super_admin'], title: 'Registre des chauffeurs', description: 'Gérez les informations et la disponibilité des chauffeurs.' }
-            },
-            {
-                path: 'gestion/parc-automobile',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
-                canActivate: [RoleGuard],
-                data: { roles: ['dag', 'super_admin'], title: 'Parc automobile', description: 'Gérez les véhicules du parc automobile.' }
-            },
-            {
-                path: 'gestion/alertes',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
-                canActivate: [RoleGuard],
-                data: { roles: ['dag', 'super_admin'], title: 'Alertes', description: 'Suivez les alertes liées aux chauffeurs et aux véhicules.' }
-            },
-            {
-                path: 'missions/planifiees',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
-                canActivate: [RoleGuard],
-                data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Missions planifiées', description: 'Consultez les missions qui vous sont affectées.' }
-            },
-            {
-                path: 'missions/historique',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
-                canActivate: [RoleGuard],
-                data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Historique des missions', description: 'Consultez les missions terminées.' }
-            },
-            {
-                path: 'missions/signalement',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
-                canActivate: [RoleGuard],
-                data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Signalement', description: 'Signalez un incident ou une anomalie.' }
-            }
+            ...BACKOFFICE_ROUTES
         ]
     },
     

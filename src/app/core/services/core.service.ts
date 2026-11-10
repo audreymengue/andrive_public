@@ -133,7 +133,7 @@ export class CoreService {
    */
  hasPermission(permission: string): boolean {
   return this.currentUser()?.roles?.some(r =>
-    r.permissions.some(p => p.code === permission)
+    r.permissions?.some(p => p.code === permission)
   ) ?? false;
  }
 }
