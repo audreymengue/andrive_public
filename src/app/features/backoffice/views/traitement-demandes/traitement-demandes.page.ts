@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { HttpParams } from '@angular/common/http';
+import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ApiService } from '@/core/services/api.service';
 
@@ -15,21 +15,19 @@ interface ApiItem<T> {
   data: T;
 }
 
-interface DirectionOption {
-  id: number;
-  nom: string;
-  code?: string;
-}
-
 interface TreatmentDemande {
   id: number;
   reference: string;
   statut: string;
-  direction: { id: number; nom: string };
-  service: { id: number; nom: string; code: string } | null;
+  priorite?: string | null;
+  urgence?: boolean | string | null;
+  direction: { id: number; nom: string } | null;
+  service: { id: number; nom: string; code?: string } | null;
   date_depart: string | null;
   heure_depart: string | null;
 }
+
+type DemandePriority = 'NORMALE' | 'PRIORITAIRE' | 'URGENTE';
 
 interface CoursePreparationVersion {
   version: number;
@@ -62,25 +60,70 @@ export class TraitementDemandesPage implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly demandes = signal<TreatmentDemande[]>([]);
-  protected readonly directions = signal<DirectionOption[]>([]);
+  private readonly demandeCache = signal(new Map<number, TreatmentDemande>());
   protected readonly courses = signal<CoursePreparation[]>([]);
   protected readonly page = signal(1);
   protected readonly lastPage = signal(1);
   protected readonly totalDemandes = signal(0);
-  protected readonly directionId = signal<number | null>(null);
-  protected readonly dateDepartFrom = signal('');
-  protected readonly dateDepartTo = signal('');
+  protected readonly searchTerm = signal('');
+  protected readonly activeTab = signal<'all' | 'urgent' | 'priority' | 'selected'>('all');
   protected readonly selectedCourseId = signal<number | null>(null);
   protected readonly selectedDemandeIds = signal<Set<number>>(new Set());
-  protected readonly selectedCourse = computed(() =>
-    this.courses().find((course) => course.id === this.selectedCourseId()) ?? null,
+  protected readonly priorityOverrides = signal(new Map<number, DemandePriority>());
+  protected readonly priorityLocalNotice = signal(false);
+  protected readonly editableCourses = computed(() => this.courses().filter((course) => course.statut_execution === null));
+  protected readonly selectedDemandes = computed(() =>
+    [...this.selectedDemandeIds()].map((id) => ({
+      id,
+      demande: this.demandeCache().get(id) ?? null,
+    })),
   );
+  protected readonly urgentCount = computed(() => this.demandes().filter((demande) => this.isUrgent(demande)).length);
+  protected readonly priorityCount = computed(() => this.demandes().filter((demande) => this.isPriority(demande)).length);
+  protected readonly visibleDemandes = computed(() => {
+    const term = this.searchTerm().trim().toLocaleLowerCase();
+    return this.demandes().filter((demande) => {
+      const selected = this.selectedDemandeIds().has(demande.id);
+      if (this.activeTab() === 'selected' && !selected) {
+        return false;
+      }
+      if (this.activeTab() === 'urgent' && !this.isUrgent(demande)) {
+        return false;
+      }
+      if (this.activeTab() === 'priority' && !this.isPriority(demande)) {
+        return false;
+      }
+      if (!term) {
+        return true;
+      }
+      return [demande.reference, demande.direction?.nom, demande.service?.nom, demande.statut]
+        .some((value) => value?.toLocaleLowerCase().includes(term));
+    });
+  });
+  protected readonly selectedCourse = computed(() =>
+    this.editableCourses().find((course) => course.id === this.selectedCourseId()) ?? null,
+  );
+  protected readonly hasAllVisibleSelected = computed(() => {
+    const visibles = this.visibleDemandes();
+    return visibles.length > 0 && visibles.every((demande) => this.selectedDemandeIds().has(demande.id));
+  });
+  protected readonly hasSomeVisibleSelected = computed(() =>
+    this.visibleDemandes().some((demande) => this.selectedDemandeIds().has(demande.id)),
+  );
+  protected readonly hasSelectionChanges = computed(() => {
+    const course = this.selectedCourse();
+    if (!course) {
+      return false;
+    }
+    const currentIds = new Set(course.demande_ids);
+    const selectedIds = this.selectedDemandeIds();
+    return currentIds.size !== selectedIds.size || [...currentIds].some((id) => !selectedIds.has(id));
+  });
   protected readonly loadingDemandes = signal(false);
   protected readonly loadingCourses = signal(false);
   protected readonly saving = signal(false);
   protected readonly pendingError = signal('');
   protected readonly courseError = signal('');
-  protected readonly directionError = signal('');
   protected readonly successMessage = signal('');
 
   ngOnInit(): void {
@@ -92,32 +135,48 @@ export class TraitementDemandesPage implements OnInit {
   }
 
   protected reload(): void {
-    this.loadDirections();
     this.loadDemandes();
     this.loadCourses();
   }
 
-  protected applyFilters(): void {
-    this.page.set(1);
-    this.loadDemandes();
+  protected changeSearch(value: string): void {
+    this.searchTerm.set(value);
   }
 
-  protected changeDirection(value: string): void {
-    this.directionId.set(value ? Number(value) : null);
+  protected changeTab(tab: 'all' | 'urgent' | 'priority' | 'selected'): void {
+    this.activeTab.set(tab);
   }
 
-  protected changeDateFrom(value: string): void {
-    this.dateDepartFrom.set(value);
+  protected priorityOf(demande: TreatmentDemande): DemandePriority {
+    const override = this.priorityOverrides().get(demande.id);
+    if (override) {
+      return override;
+    }
+
+    const priority = demande.priorite?.trim().toLocaleUpperCase();
+    const urgency = typeof demande.urgence === 'string' ? demande.urgence.trim().toLocaleUpperCase() : demande.urgence;
+    if (urgency === true || urgency === 'URGENT' || urgency === 'URGENTE' || priority === 'URGENT' || priority === 'URGENTE') {
+      return 'URGENTE';
+    }
+    return priority === 'PRIORITAIRE' || urgency === 'PRIORITAIRE' ? 'PRIORITAIRE' : 'NORMALE';
   }
 
-  protected changeDateTo(value: string): void {
-    this.dateDepartTo.set(value);
+  protected setPriority(demande: TreatmentDemande, value: string): void {
+    if (value !== 'NORMALE' && value !== 'PRIORITAIRE' && value !== 'URGENTE') {
+      return;
+    }
+
+    this.priorityOverrides.update((current) => new Map(current).set(demande.id, value));
+    const updatedDemande = { ...demande, priorite: value };
+    this.demandes.update((items) => items.map((item) => item.id === demande.id ? updatedDemande : item));
+    this.demandeCache.update((cache) => new Map(cache).set(demande.id, updatedDemande));
+    this.priorityLocalNotice.set(true);
   }
 
   protected selectCourse(value: string): void {
     const id = value ? Number(value) : null;
     this.selectedCourseId.set(id);
-    const course = this.courses().find((item) => item.id === id);
+    const course = this.editableCourses().find((item) => item.id === id);
     this.selectedDemandeIds.set(new Set(course?.demande_ids ?? []));
     this.successMessage.set('');
     this.courseError.set('');
@@ -138,6 +197,28 @@ export class TraitementDemandesPage implements OnInit {
     this.successMessage.set('');
   }
 
+  protected toggleVisibleDemandes(checked: boolean): void {
+    const next = new Set(this.selectedDemandeIds());
+    for (const demande of this.visibleDemandes()) {
+      if (checked) {
+        next.add(demande.id);
+      } else {
+        next.delete(demande.id);
+      }
+    }
+    this.selectedDemandeIds.set(next);
+    this.successMessage.set('');
+  }
+
+  protected removeSelectedDemande(demandeId: number): void {
+    this.toggleDemande(demandeId, false);
+  }
+
+  protected clearSelection(): void {
+    this.selectedDemandeIds.set(new Set());
+    this.successMessage.set('');
+  }
+
   protected createPreparation(): void {
     this.courseError.set('');
     this.successMessage.set('');
@@ -153,7 +234,7 @@ export class TraitementDemandesPage implements OnInit {
         this.saving.set(false);
       },
       error: (error: unknown) => {
-        this.courseError.set(this.errorMessage(error, 'Impossible de créer la préparation de course.'));
+        this.courseError.set(this.errorMessage(error, 'Impossible de créer la préparation de course.', 'create_course'));
         this.saving.set(false);
       },
     });
@@ -188,7 +269,7 @@ export class TraitementDemandesPage implements OnInit {
         }
         this.courseError.set(status === 409
           ? 'La préparation ou une demande a changé depuis son chargement. Les données ont été actualisées ; vérifiez la sélection puis réessayez.'
-          : this.errorMessage(error, 'Impossible d’enregistrer la préparation.'));
+          : this.errorMessage(error, 'Impossible d’enregistrer la préparation.', 'update_course'));
         this.saving.set(false);
       },
     });
@@ -208,39 +289,30 @@ export class TraitementDemandesPage implements OnInit {
     }
   }
 
-  private loadDirections(): void {
-    this.directionError.set('');
-    this.api.get<ApiList<DirectionOption>>('/directions').subscribe({
-      next: (response) => this.directions.set(response.data ?? []),
-      error: (error: unknown) => this.directionError.set(this.errorMessage(error, 'Les directions ne sont pas disponibles pour le filtre.')),
-    });
-  }
-
   protected loadDemandes(): void {
     this.loadingDemandes.set(true);
     this.pendingError.set('');
     this.successMessage.set('');
-    let params = new HttpParams().set('page', this.page()).set('per_page', 20);
-    if (this.directionId() !== null) {
-      params = params.set('direction_id', this.directionId()!);
-    }
-    if (this.dateDepartFrom()) {
-      params = params.set('date_depart_from', this.dateDepartFrom());
-    }
-    if (this.dateDepartTo()) {
-      params = params.set('date_depart_to', this.dateDepartTo());
-    }
+    const params = new HttpParams().set('page', this.page()).set('per_page', 20);
 
     this.api.get<ApiList<TreatmentDemande>>('/traitement/demandes', { params }).subscribe({
       next: (response) => {
-        this.demandes.set(response.data ?? []);
+        const demandes = response.data ?? [];
+        this.demandes.set(demandes);
+        this.demandeCache.update((cache) => {
+          const updated = new Map(cache);
+          for (const demande of demandes) {
+            updated.set(demande.id, demande);
+          }
+          return updated;
+        });
         this.page.set(response.meta?.current_page ?? this.page());
         this.lastPage.set(response.meta?.last_page ?? 1);
         this.totalDemandes.set(response.meta?.total ?? response.data?.length ?? 0);
         this.loadingDemandes.set(false);
       },
       error: (error: unknown) => {
-        this.pendingError.set(this.errorMessage(error, 'Impossible de charger les demandes en attente.'));
+        this.pendingError.set(this.errorMessage(error, 'Impossible de charger les demandes en attente.', 'read_demande_traitement'));
         this.loadingDemandes.set(false);
       },
     });
@@ -256,7 +328,7 @@ export class TraitementDemandesPage implements OnInit {
         this.courses.set(response.data ?? []);
         const selectedId = this.selectedCourseId();
         if (selectedId !== null) {
-          const updated = response.data?.find((item) => item.id === selectedId);
+          const updated = response.data?.find((item) => item.id === selectedId && item.statut_execution === null);
           if (updated) {
             this.selectedDemandeIds.set(new Set(updated.demande_ids));
           } else {
@@ -267,7 +339,7 @@ export class TraitementDemandesPage implements OnInit {
         this.loadingCourses.set(false);
       },
       error: (error: unknown) => {
-        this.courseError.set(this.errorMessage(error, 'Impossible de charger les préparations de course.'));
+        this.courseError.set(this.errorMessage(error, 'Impossible de charger les préparations de course.', 'read_course'));
         this.loadingCourses.set(false);
       },
     });
@@ -283,7 +355,58 @@ export class TraitementDemandesPage implements OnInit {
     });
   }
 
-  private errorMessage(error: unknown, fallback: string): string {
+  protected statutLabel(statut: string): string {
+    const labels: Record<string, string> = {
+      EN_ATTENTE: 'En attente',
+      REVALIDATION_REQUISE: 'Revalidation requise',
+      BROUILLON: 'Brouillon',
+      VALIDEE: 'Validée',
+      APPROUVEE: 'Approuvée',
+      EN_COURS: 'En cours',
+      TERMINEE: 'Terminée',
+      ANNULEE: 'Annulée',
+      REFUSEE: 'Refusée',
+    };
+    return labels[statut?.toUpperCase()] ?? statut;
+  }
+
+  protected isUrgent(demande: TreatmentDemande): boolean {
+    return this.priorityOf(demande) === 'URGENTE';
+  }
+
+  protected isPriority(demande: TreatmentDemande): boolean {
+    return this.priorityOf(demande) === 'PRIORITAIRE';
+  }
+
+  protected statutClass(statut: string): string {
+    switch (statut?.toUpperCase()) {
+      case 'VALIDEE':
+      case 'APPROUVEE':
+      case 'TERMINEE':
+        return 'status-pill--success';
+      case 'REFUSEE':
+      case 'ANNULEE':
+        return 'status-pill--danger';
+      case 'EN_ATTENTE':
+      case 'REVALIDATION_REQUISE':
+        return 'status-pill--pending';
+      default:
+        return 'status-pill--neutral';
+    }
+  }
+
+  private errorMessage(error: unknown, fallback: string, requiredPermission?: string): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 403 && requiredPermission) {
+        return `Accès refusé : votre compte ne dispose pas de la permission « ${requiredPermission} ».`;
+      }
+      if (error.status === 401) {
+        return 'Votre session a expiré. Reconnectez-vous pour poursuivre.';
+      }
+      if (error.status === 0) {
+        return 'Le serveur API est injoignable. Vérifiez votre connexion puis réessayez.';
+      }
+    }
     const message = (error as { error?: { message?: string } })?.error?.message;
     return typeof message === 'string' && message.trim() ? message : fallback;
   }

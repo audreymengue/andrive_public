@@ -1,164 +1,227 @@
 <section class="treatment-page">
   <header class="page-header">
-    <div class="heading-copy">
-      <span class="eyebrow">ESPACE DE GESTION</span>
-      <h1>Traitement des demandes</h1>
-      <p>Consultez les demandes en attente et préparez les courses à traiter.</p>
-    </div>
-    <div class="header-actions">
-      <button type="button" class="button button--secondary" (click)="reload()" [disabled]="loadingDemandes() || loadingCourses() || saving()">
-        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-        Actualiser
-      </button>
-      <button type="button" class="button button--primary" (click)="createPreparation()" [disabled]="saving()">
-        <i class="bi bi-plus-lg" aria-hidden="true"></i>
-        Nouvelle préparation
-      </button>
+    <div class="page-header__eyebrow">ESPACE DE GESTION • LISTE ET PANNEAU</div>
+    <div class="page-header__row">
+      <div>
+        <h1>Traitement des demandes</h1>
+        <p class="page-header__subtitle">Cochez les demandes dans la liste : le panneau de droite compose la préparation en direct.</p>
+      </div>
+      <div class="page-header__actions">
+        <button type="button" class="button button--secondary" (click)="reload()" [disabled]="loadingDemandes() || loadingCourses() || saving() || hasSelectionChanges()">
+          <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+          Actualiser les données
+        </button>
+        <button type="button" class="button button--primary" (click)="createPreparation()" [disabled]="saving() || loadingCourses() || hasSelectionChanges()">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i>
+          Nouvelle préparation
+        </button>
+      </div>
     </div>
   </header>
 
-  <div class="scope-note" role="note">
-    <i class="bi bi-info-circle" aria-hidden="true"></i>
-    <span>Cette version organise les demandes en préparations. Elle ne valide pas les demandes et ne réserve pas de chauffeur ou de véhicule.</span>
+  <div class="info-banner" role="note">
+    <span class="info-banner__icon"><i class="bi bi-info-circle" aria-hidden="true"></i></span>
+    <span><strong>À savoir</strong> — Enregistrer une préparation ne valide pas les demandes et ne réserve ni chauffeur ni véhicule. La confirmation est une étape distincte.</span>
   </div>
 
   @if (successMessage()) {
-    <div class="notice notice--success" role="status">{{ successMessage() }}</div>
+    <div class="notice notice--success" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i>{{ successMessage() }}</div>
   }
 
-  <section class="preparation-card" aria-labelledby="preparation-title">
-    <div class="section-heading">
-      <div>
-        <span class="eyebrow">ORGANISATION</span>
-        <h2 id="preparation-title">Préparation de course</h2>
-        <p>Choisissez une préparation, puis composez sa liste de demandes.</p>
+  <div class="treatment-layout">
+    <section class="request-panel" aria-label="Demandes à traiter">
+      <div class="request-panel__tabs" aria-label="Filtrer les demandes">
+        <button type="button" class="request-tab" [class.is-active]="activeTab() === 'all'" [attr.aria-pressed]="activeTab() === 'all'" (click)="changeTab('all')">
+          Toutes ({{ totalDemandes() }})
+        </button>
+        <button type="button" class="request-tab" [class.is-active]="activeTab() === 'urgent'" [attr.aria-pressed]="activeTab() === 'urgent'" (click)="changeTab('urgent')">
+          Urgentes ({{ urgentCount() }})
+        </button>
+        <button type="button" class="request-tab" [class.is-active]="activeTab() === 'priority'" [attr.aria-pressed]="activeTab() === 'priority'" (click)="changeTab('priority')">
+          Prioritaires ({{ priorityCount() }})
+        </button>
+        <button type="button" class="request-tab" [class.is-active]="activeTab() === 'selected'" [attr.aria-pressed]="activeTab() === 'selected'" (click)="changeTab('selected')">
+          Sélectionnées ({{ selectedDemandeIds().size }})
+        </button>
       </div>
-      <span class="selection-count">{{ selectedDemandeIds().size }} sélectionnée(s)</span>
-    </div>
 
-    <div class="preparation-controls">
-      <label class="field">
-        <span>Préparation existante</span>
-        <select [value]="selectedCourseId() ?? ''" (change)="selectCourse($any($event.target).value)" [disabled]="loadingCourses() || saving()">
-          <option value="">Sélectionner une préparation</option>
-          @for (course of courses(); track course.id) {
+      <label class="search-field">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <span class="sr-only">Rechercher parmi les demandes de cette page</span>
+        <input type="search" [value]="searchTerm()" (input)="changeSearch($any($event.target).value)" placeholder="Rechercher une demande sur cette page" />
+      </label>
+
+      @if (priorityLocalNotice()) {
+        <p class="priority-local-note" role="status">
+          Les changements de priorité sont visibles dans cette page uniquement ; l’API actuelle ne permet pas encore de les enregistrer.
+        </p>
+      }
+
+      @if (pendingError()) {
+        <div class="notice notice--error" role="alert">
+          <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+          <span>{{ pendingError() }}</span>
+          <button type="button" class="button button--secondary" (click)="loadDemandes()" [disabled]="loadingDemandes()">Réessayer</button>
+        </div>
+      } @else {
+        <div class="table-wrap" [attr.aria-busy]="loadingDemandes()">
+          <table>
+            <caption class="sr-only">Demandes en attente de traitement</caption>
+            <thead>
+              <tr>
+                <th scope="col" class="checkbox-column">
+                  <input type="checkbox" aria-label="Sélectionner toutes les demandes affichées" [checked]="hasAllVisibleSelected()" [indeterminate]="hasSomeVisibleSelected() && !hasAllVisibleSelected()" [disabled]="!selectedCourse() || saving() || loadingDemandes() || visibleDemandes().length === 0" (change)="toggleVisibleDemandes($any($event.target).checked)" />
+                </th>
+                <th scope="col">Demande</th>
+                <th scope="col">Direction</th>
+                <th scope="col">Service</th>
+                <th scope="col">Départ</th>
+                <th scope="col">Priorité</th>
+                <th scope="col">Statut</th>
+                <th scope="col" class="detail-column">Détail</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (loadingDemandes()) {
+                <tr><td colspan="8" class="table-state"><span class="spinner" aria-hidden="true"></span> Chargement des demandes…</td></tr>
+              } @else {
+                @for (demande of visibleDemandes(); track demande.id) {
+                  <tr [class.is-selected]="isSelected(demande.id)">
+                    <td class="checkbox-column">
+                      <input type="checkbox" [attr.aria-label]="'Inclure la demande ' + demande.reference" [checked]="isSelected(demande.id)" [disabled]="!selectedCourse() || saving()" (change)="toggleDemande(demande.id, $any($event.target).checked)" />
+                    </td>
+                    <td><strong class="request-ref">{{ demande.reference }}</strong></td>
+                    <td>{{ demande.direction?.nom || '—' }}</td>
+                    <td>{{ demande.service?.nom || '—' }}</td>
+                    <td>
+                      <span class="cell-primary">{{ demande.date_depart ? (demande.date_depart | date:'dd/MM/yyyy') : '—' }}</span>
+                      <span class="cell-secondary">{{ demande.heure_depart || 'Heure non précisée' }}</span>
+                    </td>
+                    <td>
+                      <label class="sr-only" [attr.for]="'priority-' + demande.id">Priorité pour {{ demande.reference }}</label>
+                      <select class="priority-select" [id]="'priority-' + demande.id" [value]="priorityOf(demande)" (change)="setPriority(demande, $any($event.target).value)">
+                        <option value="NORMALE">Normale</option>
+                        <option value="PRIORITAIRE">Prioritaire</option>
+                        <option value="URGENTE">Urgente</option>
+                      </select>
+                    </td>
+                    <td><span class="status-pill" [ngClass]="statutClass(demande.statut)">{{ statutLabel(demande.statut) }}</span></td>
+                    <td class="detail-column"><button type="button" class="detail-link" (click)="consulter(demande)" [attr.aria-label]="'Consulter la demande ' + demande.reference"><i class="bi bi-eye" aria-hidden="true"></i><span>Détails</span></button></td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="8" class="table-state">
+                    <span class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></span>
+                    <strong>
+                      @switch (activeTab()) {
+                        @case ('selected') { Aucune demande sélectionnée sur cette page }
+                        @case ('urgent') { Aucune demande urgente sur cette page }
+                        @case ('priority') { Aucune demande prioritaire sur cette page }
+                        @default { {{ searchTerm() ? 'Aucun résultat sur cette page' : 'Aucune demande en attente' }} }
+                      }
+                    </strong>
+                    <span>
+                      @switch (activeTab()) {
+                        @case ('selected') { Les demandes sélectionnées sur d’autres pages restent dans votre préparation. }
+                        @case ('urgent') { Aucune demande urgente n’est signalée dans les données reçues de l’API. }
+                        @case ('priority') { Aucune demande prioritaire n’est signalée dans les données reçues de l’API. }
+                        @default { {{ searchTerm() ? 'Essayez un autre terme de recherche.' : 'Les nouvelles demandes apparaîtront ici.' }} }
+                      }
+                    </span>
+                  </td></tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <footer class="pagination" aria-label="Pagination des demandes">
+          <span>{{ visibleDemandes().length }} affichée(s) sur cette page · Page <strong>{{ page() }}</strong> sur <strong>{{ lastPage() }}</strong> · {{ totalDemandes() }} au total</span>
+          <div>
+            <button type="button" class="button button--secondary" (click)="previousPage()" [disabled]="page() <= 1 || loadingDemandes()">Précédent</button>
+            <button type="button" class="button button--secondary" (click)="nextPage()" [disabled]="page() >= lastPage() || loadingDemandes()">Suivant</button>
+          </div>
+        </footer>
+      }
+    </section>
+
+    <aside class="course-panel" aria-label="Préparation de course">
+      <div class="course-panel__header">
+        <span class="course-panel__label">ORGANISATION</span>
+        <h2>Préparation de course</h2>
+      </div>
+
+      <label class="field course-field">
+        <span>Préparation active</span>
+        <select [value]="selectedCourseId() ?? ''" (change)="selectCourse($any($event.target).value)" [disabled]="loadingCourses() || saving() || hasSelectionChanges()">
+          <option value="">Choisir une préparation…</option>
+          @for (course of editableCourses(); track course.id) {
             <option [value]="course.id">Préparation #{{ course.id }} · v{{ course.version_preparation }} · {{ course.demande_ids.length }} demande(s)</option>
           }
         </select>
       </label>
 
-      @if (selectedCourse(); as course) {
+      @if (loadingCourses()) {
+        <p class="panel-state"><span class="spinner" aria-hidden="true"></span> Chargement des préparations…</p>
+      } @else if (!selectedCourse()) {
+        <div class="preparation-hint">
+          <i class="bi bi-lightbulb" aria-hidden="true"></i>
+          <span>{{ editableCourses().length ? 'Sélectionnez une préparation pour modifier sa composition.' : 'Aucune préparation modifiable. Créez-en une pour commencer.' }}</span>
+        </div>
+        @if (editableCourses().length === 0) {
+          <button type="button" class="button button--primary full-width" (click)="createPreparation()" [disabled]="saving()">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Nouvelle préparation
+          </button>
+        }
+      } @else {
         <div class="course-summary">
-          <span class="course-icon"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></span>
-          <div>
-            <strong>Préparation #{{ course.id }}</strong>
-            <span>Version {{ course.version_preparation }} · verrou {{ course.lock_version }} · {{ course.demande_ids.length }} demande(s)</span>
+          <div class="course-summary__item">
+            <span class="course-summary__label">Demandes</span>
+            <strong>{{ selectedDemandeIds().size }}</strong>
           </div>
+          <div class="course-summary__item">
+            <span class="course-summary__label">Version</span>
+            <strong>{{ selectedCourse()?.version_preparation }}</strong>
+          </div>
+        </div>
+
+        @if (hasSelectionChanges()) {
+          <p class="unsaved-note" role="status"><i class="bi bi-pencil-square" aria-hidden="true"></i> Modifications non enregistrées : enregistrez ou videz la sélection avant de changer de préparation.</p>
+        }
+
+        <div class="course-panel__list-header">Demandes dans la préparation</div>
+        <div class="selected-list">
+          @for (item of selectedDemandes(); track item.id; let index = $index) {
+            <div class="selected-item">
+              <span class="selected-item__index">{{ index + 1 }}</span>
+              <div class="selected-item__content">
+                @if (item.demande; as demande) {
+                  <strong>{{ demande.direction?.nom || 'Direction non précisée' }} · {{ demande.service?.nom || demande.reference }}</strong>
+                  <span>{{ demande.reference }} · {{ demande.date_depart ? (demande.date_depart | date:'dd/MM/yyyy') : 'Date non précisée' }} · {{ demande.heure_depart || 'Heure non précisée' }}</span>
+                } @else {
+                  <strong>Demande #{{ item.id }}</strong>
+                  <span>Détails non chargés · la demande est conservée dans la préparation</span>
+                }
+              </div>
+              <button type="button" class="selected-item__remove" (click)="removeSelectedDemande(item.id)" [disabled]="saving()" [attr.aria-label]="'Retirer la demande ' + (item.demande?.reference || item.id)" title="Retirer de la sélection">
+                <i class="bi bi-x" aria-hidden="true"></i>
+              </button>
+            </div>
+          } @empty {
+            <div class="selected-empty">Aucune demande dans cette préparation.</div>
+          }
         </div>
       }
 
-      <button type="button" class="button button--primary save-button" (click)="savePreparation()" [disabled]="!selectedCourse() || saving() || loadingCourses()">
-        @if (saving()) { Enregistrement... } @else { Enregistrer la sélection }
-      </button>
-    </div>
+      @if (courseError()) {
+        <div class="notice notice--error" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><span>{{ courseError() }}</span></div>
+      }
 
-    @if (courseError()) {
-      <div class="notice notice--error" role="alert">{{ courseError() }}</div>
-    }
-  </section>
-
-  <section class="demande-card" aria-labelledby="pending-title">
-    <div class="section-heading list-heading">
-      <div>
-        <span class="eyebrow">FILE D’ATTENTE</span>
-        <h2 id="pending-title">Demandes en attente</h2>
-        <p>{{ totalDemandes() }} demande(s) à traiter</p>
-      </div>
-      <span class="status-pill"><span></span> EN ATTENTE</span>
-    </div>
-
-    <div class="filters">
-      <label class="field">
-        <span>Direction</span>
-        <select [value]="directionId() ?? ''" (change)="changeDirection($any($event.target).value)">
-          <option value="">Toutes les directions</option>
-          @for (direction of directions(); track direction.id) {
-            <option [value]="direction.id">{{ direction.nom }}@if (direction.code) { · {{ direction.code }} }</option>
-          }
-        </select>
-      </label>
-      <label class="field">
-        <span>Départ à partir du</span>
-        <input type="date" [value]="dateDepartFrom()" (change)="changeDateFrom($any($event.target).value)" />
-      </label>
-      <label class="field">
-        <span>Départ jusqu’au</span>
-        <input type="date" [value]="dateDepartTo()" (change)="changeDateTo($any($event.target).value)" />
-      </label>
-      <button type="button" class="button button--secondary filter-button" (click)="applyFilters()" [disabled]="loadingDemandes()">
-        <i class="bi bi-funnel" aria-hidden="true"></i> Filtrer
-      </button>
-    </div>
-
-    @if (directionError()) {
-      <p class="inline-warning" role="status">{{ directionError() }} Le filtre par direction est indisponible.</p>
-    }
-
-    @if (pendingError()) {
-      <div class="notice notice--error" role="alert">
-        <span>{{ pendingError() }}</span>
-        <button type="button" class="button button--secondary" (click)="loadDemandes()">Réessayer</button>
-      </div>
-    } @else {
-      <div class="table-wrap" [attr.aria-busy]="loadingDemandes()">
-        <table>
-          <caption class="visually-hidden">Demandes en attente de traitement</caption>
-          <thead>
-            <tr>
-              <th scope="col" class="check-column">Inclure</th>
-              <th scope="col">Référence</th>
-              <th scope="col">Direction / Service</th>
-              <th scope="col">Départ prévu</th>
-              <th scope="col">Statut</th>
-              <th scope="col">Détail</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (loadingDemandes()) {
-              <tr><td colspan="6" class="table-state"><span class="spinner"></span> Chargement des demandes...</td></tr>
-            } @else {
-              @for (demande of demandes(); track demande.id) {
-                <tr>
-                  <td class="check-column">
-                    <input type="checkbox" [attr.aria-label]="'Inclure la demande ' + demande.reference" [checked]="isSelected(demande.id)" [disabled]="!selectedCourse() || saving()" (change)="toggleDemande(demande.id, $any($event.target).checked)" />
-                  </td>
-                  <td><strong class="reference">{{ demande.reference }}</strong></td>
-                  <td>
-                    <span class="cell-primary">{{ demande.direction.nom }}</span>
-                    <span class="cell-secondary">{{ demande.service?.nom || 'Aucun service précisé' }}</span>
-                  </td>
-                  <td>
-                    <span class="cell-primary">{{ demande.date_depart ? (demande.date_depart | date:'dd/MM/yyyy') : '—' }}</span>
-                    <span class="cell-secondary">{{ demande.heure_depart || 'Heure non précisée' }}</span>
-                  </td>
-                  <td><span class="status-pill status-pill--small"><span></span>{{ demande.statut }}</span></td>
-                  <td><button type="button" class="detail-link" (click)="consulter(demande)" [attr.aria-label]="'Consulter la demande ' + demande.reference"><i class="bi bi-eye" aria-hidden="true"></i> Détails</button></td>
-                </tr>
-              } @empty {
-                <tr><td colspan="6" class="table-state">Aucune demande en attente pour ces filtres.</td></tr>
-              }
-            }
-          </tbody>
-        </table>
-      </div>
-
-      <footer class="pagination" aria-label="Pagination des demandes">
-        <span>Page {{ page() }} sur {{ lastPage() }}</span>
-        <div>
-          <button type="button" class="button button--secondary" (click)="previousPage()" [disabled]="page() <= 1 || loadingDemandes()">Précédent</button>
-          <button type="button" class="button button--secondary" (click)="nextPage()" [disabled]="page() >= lastPage() || loadingDemandes()">Suivant</button>
-        </div>
-      </footer>
-    }
-  </section>
+      @if (selectedCourse()) {
+        <button type="button" class="primary-action" (click)="savePreparation()" [disabled]="saving() || loadingCourses() || !hasSelectionChanges()">
+          @if (saving()) { <span class="spinner spinner--light" aria-hidden="true"></span> Enregistrement… } @else { <i class="bi bi-save2" aria-hidden="true"></i> Enregistrer la sélection }
+        </button>
+        <button type="button" class="secondary-action" (click)="clearSelection()" [disabled]="saving() || selectedDemandeIds().size === 0">Vider la sélection</button>
+      }
+    </aside>
+  </div>
 </section>
