@@ -211,16 +211,23 @@
         >
           <option value="">— Aucun rôle —</option>
           @for (role of allRoles(); track role.id) {
-            <option [value]="role.id" [selected]="hasRole(role.id)">
+            <option [value]="role.id" [selected]="hasRole(role.id)" [disabled]="role.statut === 'INACTIF' && !hasRole(role.id)">
               {{ role.nom }}
             </option>
           }
         </select>
+        <label class="form-label" for="role-reason">Motif de l’attribution *</label>
+        <textarea id="role-reason" class="form-control" rows="2" maxlength="2000" [value]="roleReason()" (input)="roleReason.set($any($event.target).value)" placeholder="Expliquez pourquoi le rôle change"></textarea>
+        @if (requiresSuperAdminReauthentication()) {
+          <label class="form-label" for="role-current-password">Votre mot de passe administrateur *</label>
+          <input id="role-current-password" class="form-control" type="password" autocomplete="current-password" [value]="roleCurrentPassword()" (input)="roleCurrentPassword.set($any($event.target).value)" />
+        }
+        @if (roleError(); as message) { <div class="state state--error" role="alert"><p>{{ message }}</p></div> }
       </div>
 
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="closeRoles()">Annuler</button>
-        <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="saveUserRoles()">Enregistrer</button>
+        <button type="button" class="btn btn-primary" [disabled]="busy() || !roleReason().trim() || (requiresSuperAdminReauthentication() && !roleCurrentPassword())" (click)="saveUserRoles()">Enregistrer</button>
       </div>
     </div>
   </div>
@@ -244,17 +251,28 @@
               <button type="button" class="btn btn-ghost" (click)="copyPassword(target.newPassword)">Copier</button>
             </div>
           </div>
+        } @else if (target.resetCompleted) {
+          <p class="alert alert-success">Le mot de passe est réinitialisé. Vous pouvez réessayer de l’afficher sans relancer la réinitialisation.</p>
+          @if (target.revealError) { <div class="state state--error" role="alert"><p>{{ target.revealError }}</p></div> }
         } @else {
-          <p>Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ? Un nouveau mot de passe temporaire sera généré.</p>
+          <p>Un mot de passe temporaire sera généré. La réauthentification et un motif sont requis pour cette opération.</p>
+          <label class="form-label" for="reset-current-password">Votre mot de passe administrateur *</label>
+          <input id="reset-current-password" class="form-control" type="password" autocomplete="current-password" [value]="resetCurrentPassword()" (input)="resetCurrentPassword.set($any($event.target).value)" />
+          <label class="form-label" for="reset-reason">Motif de la réinitialisation *</label>
+          <textarea id="reset-reason" class="form-control" rows="2" maxlength="2000" [value]="resetReason()" (input)="resetReason.set($any($event.target).value)" placeholder="Expliquez la demande de réinitialisation"></textarea>
+          @if (target.revealError) { <div class="state state--error" role="alert"><p>{{ target.revealError }}</p></div> }
         }
       </div>
 
       <div class="modal-actions">
         @if (target.newPassword) {
           <button type="button" class="btn btn-primary" (click)="closeResetPassword()">Fermer</button>
+        } @else if (target.resetCompleted) {
+          <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="closeResetPassword()">Fermer</button>
+          <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="revealResetPassword()">{{ busy() ? 'Chargement…' : 'Afficher le mot de passe' }}</button>
         } @else {
           <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="closeResetPassword()">Annuler</button>
-          <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="confirmResetPassword()">Confirmer</button>
+          <button type="button" class="btn btn-primary" [disabled]="busy() || !resetReason().trim() || !resetCurrentPassword()" (click)="confirmResetPassword()">{{ busy() ? 'Traitement…' : 'Réinitialiser' }}</button>
         }
       </div>
     </div>
@@ -274,6 +292,11 @@
         </div>
       }
 
+      @if (c.requiresReason) {
+        <label class="form-label" for="status-reason">Motif *</label>
+        <textarea id="status-reason" class="form-control" rows="2" maxlength="2000" [value]="confirmReason()" (input)="confirmReason.set($any($event.target).value)" placeholder="Expliquez cette action"></textarea>
+      }
+
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" [disabled]="busy()" (click)="closeConfirm()">Annuler</button>
         <button
@@ -281,7 +304,7 @@
           class="btn"
           [class.btn-danger]="c.danger"
           [class.btn-primary]="!c.danger"
-          [disabled]="busy()"
+          [disabled]="busy() || (c.requiresReason && !confirmReason().trim())"
           (click)="runConfirm()"
         >
           {{ c.confirmLabel }}

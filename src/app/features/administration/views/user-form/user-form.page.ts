@@ -2,8 +2,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { of } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
 
 import { DIRECTIONS, Role, USERS_BASE_PATH, User, fullName } from '../../models/user.model';
 import { FlashService } from '../../services/flash.service';
@@ -11,7 +9,7 @@ import { RoleService } from '../../services/role.service';
 import { UserService } from '../../services/user.service';
 
 type Mode = 'create' | 'edit' | 'detail';
-type FieldName = 'nom' | 'prenom' | 'email' | 'direction_id';
+type FieldName = 'nom' | 'prenom' | 'email' | 'direction_id' | 'motif' | 'roles';
 
 @Component({
   selector: 'app-user-form-page',
@@ -39,9 +37,13 @@ export class UserFormPage {
   protected readonly directions = DIRECTIONS;
 
   protected readonly allRoles = signal<Role[]>([]);
+  protected readonly creationRoles = computed(() => this.allRoles().filter((role) =>
+    ['demandeur', 'chauffeur'].includes((role.nom ?? role.name ?? '').toLocaleLowerCase())
+      && role.statut !== 'INACTIF'));
   protected readonly rolesError = signal<string | null>(null);
 
   protected readonly user = signal<User | null>(null);
+  protected readonly createdUser = signal<User | null>(null);
   protected readonly loading = signal(this.mode !== 'create');
   protected readonly loadError = signal(false);
   protected readonly saving = signal(false);
@@ -52,7 +54,9 @@ export class UserFormPage {
     prenom: ['', [Validators.required, Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
     direction_id: this.fb.control<number | null>(null, Validators.required),
-    roles: [[] as number[]],
+    roles: this.fb.control<number[]>([], this.mode === 'create' ? Validators.required : []),
+    motif: ['', this.mode === 'edit' || this.mode === 'create' ? [Validators.required, Validators.maxLength(2000)] : []],
+    admin_current_password: ['', this.mode === 'create' ? Validators.required : []],
   });
 
   protected readonly title = computed(() => {
@@ -156,7 +160,7 @@ export class UserFormPage {
     if (!(control.touched || control.dirty) || !control.errors) return null;
     if (control.errors['server']) return control.errors['server'];
     if (control.errors['required']) return 'Ce champ est obligatoire.';
-    if (control.errors['maxlength']) return 'Ce champ est trop long (100 caractères maximum).';
+    if (control.errors['maxlength']) return name === 'motif' ? 'Le motif ne peut pas dépasser 2 000 caractères.' : 'Ce champ est trop long (100 caractères maximum).';
     if (control.errors['email']) return 'Saisissez une adresse email valide.';
     return null;
   }
@@ -168,27 +172,33 @@ export class UserFormPage {
   protected submit(): void {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
+    if (this.mode === 'create' && this.createdUser()) {
+      this.revealCreatedPassword();
+      return;
+    }
 
     this.saving.set(true);
     this.error.set(null);
 
-    const { roles, ...payload } = this.form.getRawValue();
+    const { roles, motif, admin_current_password, ...payload } = this.form.getRawValue();
 
     if (this.mode === 'create') {
-      this.api.create(payload).pipe(
-        switchMap((created) => {
-          const assignRoles$ = roles.length
-            ? this.api.assignRoles(created.user.id, roles)
-            : of(created.user);
-          return assignRoles$.pipe(map(() => created));
-        })
-      ).subscribe({
+      const role = this.creationRoles().find((item) => item.id === roles[0])?.nom?.toLocaleLowerCase();
+      if (role !== 'demandeur' && role !== 'chauffeur') {
+        this.saving.set(false);
+        this.error.set('Choisissez un rôle demandeur ou chauffeur pour créer ce compte.');
+        return;
+      }
+      this.api.create({ ...payload, role }).subscribe({
         next: (created) => {
-          this.flash.show(
-            `Utilisateur ${created.user.email} créé. Mot de passe temporaire : ${created.temporary_password}. À changer à la première connexion.`,
-            15000
-          );
-          this.cancel();
+          this.saving.set(false);
+          this.createdUser.set(created.user);
+          if (created.temporary_password) {
+            this.flash.show(`Utilisateur ${created.user.email} créé. Mot de passe temporaire : ${created.temporary_password}. À changer à la première connexion.`, 15000);
+            this.cancel();
+          } else {
+            this.revealCreatedPassword();
+          }
         },
         error: (err: HttpErrorResponse) => {
           this.saving.set(false);
@@ -202,20 +212,14 @@ export class UserFormPage {
         return;
       }
 
-      this.api.update(this.id, payload)
-        .pipe(
-          switchMap((savedResponse: any) => {
-            // Extraction sécurisée de l'ID utilisateur au cas où l'API renvoie { data: { id: ... } }
-            const updatedUser = savedResponse?.data ?? savedResponse;
-            const targetId = updatedUser?.id ?? this.id;
-
-            return this.form.controls.roles.dirty
-              ? this.api.assignRoles(targetId, roles)
-              : of(savedResponse);
-          })
-        )
+      const currentUser = this.user();
+      const updatePayload = currentUser && currentUser.direction_id !== payload.direction_id
+        ? { ...payload, service_id: null }
+        : payload;
+      this.api.update(this.id, updatePayload, { version: currentUser?.lock_version ?? 0, motif: motif.trim() })
         .subscribe({
-          next: () => {
+          next: (updated) => {
+            this.user.set(updated);
             this.flash.show('Modifications enregistrées.', 5000);
             this.cancel();
           },
@@ -225,6 +229,32 @@ export class UserFormPage {
           },
         });
     }
+  }
+
+  protected revealCreatedPassword(): void {
+    const created = this.createdUser();
+    const currentPassword = this.form.controls.admin_current_password.value;
+    const motif = this.form.controls.motif.value.trim();
+    if (!created || !currentPassword || !motif || this.saving()) return;
+    this.saving.set(true);
+    this.error.set(null);
+    this.api.revealTemporaryPassword(
+      created.id,
+      created.password_generation ?? 1,
+      created.lock_version ?? 0,
+      currentPassword,
+      motif,
+    ).subscribe({
+      next: ({ temporary_password }) => {
+        this.saving.set(false);
+        this.flash.show(`Utilisateur ${created.email} créé. Mot de passe temporaire : ${temporary_password}. À changer à la première connexion.`, 15000);
+        this.cancel();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.saving.set(false);
+        this.error.set(`Le compte ${created.email} a bien été créé, mais le mot de passe temporaire n’a pas pu être affiché. Corrigez votre mot de passe administrateur puis réessayez. ${err.error?.message ?? ''}`.trim());
+      },
+    });
   }
 
   private handleError(err: HttpErrorResponse): void {

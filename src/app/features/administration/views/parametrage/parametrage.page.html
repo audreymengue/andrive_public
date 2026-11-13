@@ -79,7 +79,7 @@
             <thead>
               <tr>
                 @if (selected === 'vehicules') {
-                  <th scope="col">Immatriculation</th><th scope="col">Places utiles</th>
+                  <th scope="col">Immatriculation</th><th scope="col">Marque / modèle</th>
                 } @else if (selected === 'chauffeurs') {
                   <th scope="col">Chauffeur</th><th scope="col">E-mail</th><th scope="col">Direction</th>
                 } @else if (selected === 'lieux') {
@@ -250,7 +250,11 @@
             </label>
           } @else if (selectedSection() === 'vehicules') {
             <label class="field">Immatriculation<input [(ngModel)]="draft.immatriculation" name="immatriculation" required maxlength="30" /></label>
-            <label class="field">Places utiles<input type="number" [(ngModel)]="draft.places_utiles" name="places_utiles" required min="1" step="1" /></label>
+            <div class="field-row">
+              <label class="field">Marque<input [(ngModel)]="draft.marque" name="marque" required maxlength="100" /></label>
+              <label class="field">Modèle<input [(ngModel)]="draft.modele" name="modele" required maxlength="100" /></label>
+            </div>
+            <label class="field">Statut<select [(ngModel)]="draft.statut" name="statut"><option value="ACTIF">Actif</option><option value="INACTIF">Inactif</option></select></label>
           } @else if (selectedSection() === 'directions') {
             <label class="field">Nom de la direction<input [(ngModel)]="draft.nom" name="nom" required maxlength="255" /></label>
             @if (state.mode === 'create') {

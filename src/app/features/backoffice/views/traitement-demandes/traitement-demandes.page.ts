@@ -27,6 +27,19 @@ interface TreatmentDemande {
   heure_depart: string | null;
 }
 
+interface DemandeDetail extends TreatmentDemande {
+  motif: string;
+  commentaire?: string | null;
+  heure_retour?: string | null;
+  demandeur?: { nom: string; prenom: string } | null;
+  type_sortie?: { libelle: string } | null;
+  adresse_depart?: { adresse: string } | null;
+  adresse_retour?: { adresse: string } | null;
+  destinations: Array<{ ordre: number; entite_geographique?: { adresse: string } | null }>;
+  employes: Array<{ nom: string; prenom: string; fonction?: string | null }>;
+  objets: Array<{ designation: string; quantite?: number | null; description?: string | null }>;
+}
+
 type DemandePriority = 'NORMALE' | 'PRIORITAIRE' | 'URGENTE';
 
 interface CoursePreparationVersion {
@@ -68,6 +81,9 @@ export class TraitementDemandesPage implements OnInit {
   protected readonly searchTerm = signal('');
   protected readonly activeTab = signal<'all' | 'urgent' | 'priority' | 'selected'>('all');
   protected readonly selectedCourseId = signal<number | null>(null);
+  protected readonly selectedDemandeDetail = signal<DemandeDetail | null>(null);
+  protected readonly loadingDemandeDetail = signal(false);
+  protected readonly demandeDetailError = signal('');
   protected readonly selectedDemandeIds = signal<Set<number>>(new Set());
   protected readonly priorityOverrides = signal(new Map<number, DemandePriority>());
   protected readonly priorityLocalNotice = signal(false);
@@ -132,6 +148,46 @@ export class TraitementDemandesPage implements OnInit {
 
   protected consulter(demande: TreatmentDemande): void {
     void this.router.navigate(['/dashboard/demandes', demande.id], { queryParams: { source: 'traitement' } });
+  }
+
+  protected showMiniFiche(demande: TreatmentDemande): void {
+    if (this.selectedDemandeDetail()?.id === demande.id || this.loadingDemandeDetail()) {
+      return;
+    }
+    this.selectedDemandeDetail.set(null);
+    this.demandeDetailError.set('');
+    this.loadingDemandeDetail.set(true);
+    this.api.get<ApiItem<DemandeDetail>>(`/traitement/demandes/${demande.id}`).subscribe({
+      next: (response) => {
+        this.selectedDemandeDetail.set(response.data);
+        this.loadingDemandeDetail.set(false);
+      },
+      error: (error: unknown) => {
+        this.demandeDetailError.set(this.errorMessage(error, 'Impossible de charger la fiche de cette demande.', 'read_demande_traitement'));
+        this.loadingDemandeDetail.set(false);
+      },
+    });
+  }
+
+  protected closeMiniFiche(): void {
+    this.selectedDemandeDetail.set(null);
+    this.demandeDetailError.set('');
+  }
+
+  protected ouvrirCourse(): void {
+    const demande = this.selectedDemandeDetail();
+    if (demande) {
+      const demandeIds = this.selectedDemandeIds().has(demande.id)
+        ? [...this.selectedDemandeIds()]
+        : [demande.id];
+      void this.router.navigate(['/dashboard/gestion/courses/nouvelle'], { queryParams: { demandeIds: demandeIds.join(',') } });
+    }
+  }
+
+  protected preparerCourseAvecSelection(): void {
+    const demandeIds = [...this.selectedDemandeIds()];
+    if (demandeIds.length === 0) return;
+    void this.router.navigate(['/dashboard/gestion/courses/nouvelle'], { queryParams: { demandeIds: demandeIds.join(',') } });
   }
 
   protected reload(): void {

@@ -56,8 +56,8 @@ export const APP_MENU: MenuItem[] = [
     roles: ['dag', 'super_admin'],
     children: [
       { id: 'traitement-demandes', title: 'Traitement des demandes', route: '/dashboard/gestion/demandes', icon: 'bi bi-inboxes' },
-      { id: 'registre-chauffeurs', title: 'Registre des chauffeurs', route: '/dashboard/gestion/chauffeurs', icon: 'bi bi-people' },
-      { id: 'parc-automobile', title: 'Parc automobile', route: '/dashboard/gestion/parc-automobile', icon: 'bi bi-car-front' },
+      { id: 'registre-chauffeurs', title: 'Registre des chauffeurs', route: '/dashboard/gestion/chauffeurs', icon: 'bi bi-people', roles: ['super_admin'] },
+      { id: 'parc-automobile', title: 'Parc automobile', route: '/dashboard/gestion/parc-automobile', icon: 'bi bi-car-front', roles: ['super_admin'] },
       { id: 'alertes', title: 'Alertes', route: '/dashboard/gestion/alertes', icon: 'bi bi-bell' },
     ],
   },

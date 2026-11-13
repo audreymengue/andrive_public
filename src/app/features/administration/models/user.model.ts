@@ -74,6 +74,7 @@ export interface UserPayload {
   prenom: string;
   email: string;
   direction_id: number | null;
+  service_id?: number | null;
   role?: 'demandeur' | 'chauffeur';
 }
 
@@ -92,10 +93,8 @@ export const fullName = (u: Pick<User, 'prenom' | 'nom'>): string => `${u.prenom
 
 export const isActif = (u: Pick<User, 'statut'>): boolean => u.statut === 'ACTIF';
 
-export const isEligibleChauffeurAccount = (user: Pick<User, 'email'>): boolean => {
-  const email = user.email.toLocaleLowerCase();
-  return !email.includes('admin') && !email.includes('demandeur');
-};
+export const isEligibleChauffeurAccount = (user: Pick<User, 'roles'>): boolean =>
+  getRoleNames(user).some((role) => role.toLocaleLowerCase() === 'chauffeur');
 
 export const getRoleNames = (u: Pick<User, 'roles'>): string[] =>
   (u.roles ?? []).map((r) => r.nom ?? r.libelle ?? r.name ?? r.code ?? '').filter(Boolean);

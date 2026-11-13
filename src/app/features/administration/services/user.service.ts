@@ -14,18 +14,13 @@ interface Item<T> {
 interface CreatedUserItem {
   data: {
     user: User;
-    temporary_password: string;
+    temporary_password?: string;
   };
 }
 
 export interface CreatedUserResult {
   user: User;
-  temporary_password: string;
-}
-
-export interface ResetPasswordResult {
-  must_change_password: boolean;
-  temporary_password: string;
+  temporary_password?: string;
 }
 
 export interface UserQuery {
@@ -159,20 +154,24 @@ export class UserService {
     return this.http.post<CreatedUserItem>(this.base, payload, { headers: this.commandHeaders() }).pipe(map((r) => r.data));
   }
 
-  update(id: number, payload: UserPayload): Observable<User> {
+  update(id: number, payload: UserPayload, options?: { version: number; motif: string }): Observable<User> {
     if (environment.useMockData) {
       MOCK_USERS = MOCK_USERS.map((u) => (u.id === id ? { ...u, ...payload } : u));
       return of(MOCK_USERS.find((u) => u.id === id)!).pipe(delay(250));
     }
-    return this.http.put<Item<User>>(`${this.base}/${id}`, payload).pipe(map((r) => r.data));
+    return this.http.put<Item<User>>(`${this.base}/${id}`, {
+      ...payload,
+      ...(options ? { version_attendue: options.version, motif: options.motif } : {}),
+    }, { headers: options ? this.commandHeaders() : undefined }).pipe(map((r) => r.data));
   }
 
-  activate(id: number): Observable<User> {
+  activate(id: number, options?: { version: number; motif: string }): Observable<User> {
     if (environment.useMockData) {
       MOCK_USERS = MOCK_USERS.map((u) => (u.id === id ? { ...u, statut: 'ACTIF' } : u));
       return of(MOCK_USERS.find((u) => u.id === id)!).pipe(delay(200));
     }
-    return this.http.patch<Item<User>>(`${this.base}/${id}/activate`, {}).pipe(map((r) => r.data));
+    const body = options ? { version_attendue: options.version, motif: options.motif } : {};
+    return this.http.patch<Item<User>>(`${this.base}/${id}/activate`, body, { headers: options ? this.commandHeaders() : undefined }).pipe(map((r) => r.data));
   }
 
   deactivate(id: number, options?: { version?: number; motif?: string }): Observable<User> {
@@ -184,14 +183,14 @@ export class UserService {
     return this.http.patch<Item<User>>(`${this.base}/${id}/deactivate`, body, { headers: options ? this.commandHeaders() : undefined }).pipe(map((r) => r.data));
   }
 
-  assignRoles(id: number, roleIds: number[], options?: { version?: number; motif?: string }): Observable<User> {
+  assignRoles(id: number, roleIds: number[], options?: { version: number; motif: string; currentPassword?: string }): Observable<User> {
     if (environment.useMockData) {
       const roles: Role[] = MOCK_ROLES.filter((r) => roleIds.includes(r.id));
       MOCK_USERS = MOCK_USERS.map((u) => (u.id === id ? { ...u, roles } : u));
       return of(MOCK_USERS.find((u) => u.id === id)!).pipe(delay(200));
     }
     return this.http
-      .put<Item<User>>(`${this.base}/${id}/roles`, { role_ids: roleIds, ...(options ? { version_attendue: options.version, motif: options.motif } : {}) }, { headers: options ? this.commandHeaders() : undefined })
+      .put<Item<User>>(`${this.base}/${id}/roles`, { role_ids: roleIds, ...(options ? { version_attendue: options.version, motif: options.motif, ...(options.currentPassword ? { current_password: options.currentPassword } : {}) } : {}) }, { headers: options ? this.commandHeaders() : undefined })
       .pipe(map((r) => r.data));
   }
 
@@ -208,13 +207,17 @@ export class UserService {
     return new HttpHeaders({ 'Idempotency-Key': globalThis.crypto.randomUUID() });
   }
 
-  resetPassword(id: number): Observable<ResetPasswordResult> {
+  resetPassword(id: number, options?: { version: number; motif: string; currentPassword: string }): Observable<User> {
     if (environment.useMockData) {
       MOCK_USERS = MOCK_USERS.map((u) => (u.id === id ? { ...u, must_change_password: true } : u));
-      return of({ must_change_password: true, temporary_password: '' }).pipe(delay(200));
+      return of(MOCK_USERS.find((u) => u.id === id)!).pipe(delay(200));
     }
     return this.http
-      .post<{ data: ResetPasswordResult }>(`${this.base}/${id}/reset-password`, {})
+      .post<Item<User>>(`${this.base}/${id}/reset-password`, options ? {
+        version_attendue: options.version,
+        motif: options.motif,
+        current_password: options.currentPassword,
+      } : {}, { headers: options ? this.commandHeaders() : undefined })
       .pipe(map((r) => r.data));
   }
 }

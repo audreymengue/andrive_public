@@ -1,0 +1,46 @@
+<main class="drafts-page">
+  <header class="page-header">
+    <div>
+      <button type="button" class="back-link" (click)="nouvellePreparation()"><i class="bi bi-arrow-left" aria-hidden="true"></i> Retour aux demandes</button>
+      <p class="eyebrow">TRAITEMENT DES DEMANDES</p>
+      <h1>Brouillons de courses</h1>
+      <p class="subtitle">Consultez et modifiez les préparations enregistrées avant leur validation définitive.</p>
+    </div>
+    <button type="button" class="secondary-button" (click)="charger()" [disabled]="loading()"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Actualiser</button>
+  </header>
+
+  <div class="notice"><i class="bi bi-info-circle" aria-hidden="true"></i><span>Les brouillons restent modifiables. La validation définitive doit être fournie par l’API avant de pouvoir confirmer une course ici.</span></div>
+
+  @if (loading()) {
+    <section class="state-card" role="status"><span class="spinner" aria-hidden="true"></span> Chargement des brouillons…</section>
+  } @else if (error()) {
+    <section class="state-card error" role="alert"><p>{{ error() }}</p><button type="button" class="secondary-button" (click)="charger()">Réessayer</button></section>
+  } @else if (drafts().length) {
+    <div class="list-heading"><h2>{{ drafts().length }} brouillon(s)</h2><span>{{ total() }} course(s) au total</span></div>
+    <section class="draft-list" aria-label="Liste des brouillons de courses">
+      @for (draft of drafts(); track draft.id) {
+        <article class="draft-card">
+          <div class="draft-icon"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></div>
+          <div class="draft-content">
+            <div class="title-row"><h3>Course CR-{{ draft.id }}</h3><span class="status">Brouillon</span></div>
+            <p>{{ draft.demande_ids?.length ?? 0 }} demande(s) associée(s) · Préparation v{{ draft.version_preparation ?? 1 }}</p>
+            <small>Modifié le {{ (draft.updated_at || draft.created_at) ? ((draft.updated_at || draft.created_at) | date:'dd/MM/yyyy à HH:mm') : '—' }}</small>
+          </div>
+          <div class="actions">
+            <button type="button" class="secondary-button" (click)="ouvrir(draft)"><i class="bi bi-eye" aria-hidden="true"></i> Consulter</button>
+            <button type="button" class="primary-button" (click)="modifier(draft)"><i class="bi bi-pencil" aria-hidden="true"></i> Modifier</button>
+          </div>
+        </article>
+      }
+    </section>
+    @if (lastPage() > 1) {
+      <nav class="pagination" aria-label="Pagination des brouillons">
+        <button type="button" class="secondary-button" (click)="pagePrecedente()" [disabled]="loading() || page() <= 1">Précédent</button>
+        <span>Page {{ page() }} sur {{ lastPage() }}</span>
+        <button type="button" class="secondary-button" (click)="pageSuivante()" [disabled]="loading() || page() >= lastPage()">Suivant</button>
+      </nav>
+    }
+  } @else {
+    <section class="empty-state"><span class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></span><h2>Aucun brouillon enregistré</h2><p>Les préparations enregistrées depuis le traitement apparaîtront dans cette liste.</p><button type="button" class="primary-button" (click)="nouvellePreparation()">Retourner aux demandes</button></section>
+  }
+</main>

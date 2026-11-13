@@ -34,10 +34,15 @@ export class VehiculesPage {
   protected readonly createForm = new FormGroup({
     immatriculation: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(255)],
+      validators: [Validators.required, Validators.maxLength(30)],
     }),
-    places_utiles: new FormControl<number | null>(null, {
-      validators: [Validators.required, Validators.min(1)],
+    marque: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(100)],
+    }),
+    modele: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(100)],
     }),
   });
 
@@ -81,7 +86,7 @@ export class VehiculesPage {
   }
 
   protected openCreate(): void {
-    this.createForm.reset({ immatriculation: '', places_utiles: null });
+    this.createForm.reset({ immatriculation: '', marque: '', modele: '' });
     this.createForm.enable();
     this.errorMessage.set('');
     this.editorOpen.set(true);
@@ -100,15 +105,15 @@ export class VehiculesPage {
       return;
     }
 
-    const { immatriculation, places_utiles } = this.createForm.getRawValue();
-    if (places_utiles === null) return;
+    const { immatriculation, marque, modele } = this.createForm.getRawValue();
 
     this.saving.set(true);
     this.createForm.disable();
     this.errorMessage.set('');
     this.api.create({
       immatriculation: immatriculation.trim().toUpperCase(),
-      places_utiles,
+      marque: marque.trim(),
+      modele: modele.trim(),
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -125,12 +130,15 @@ export class VehiculesPage {
     });
   }
 
-  protected fieldError(field: 'immatriculation' | 'places_utiles'): string {
+  protected fieldError(field: 'immatriculation' | 'marque' | 'modele'): string {
     const control = this.createForm.controls[field];
     if (!control.touched) return '';
     if (control.hasError('required')) return 'Ce champ est obligatoire.';
-    if (control.hasError('maxlength')) return 'L’immatriculation ne peut pas dépasser 255 caractères.';
-    if (control.hasError('min')) return 'Le nombre de places utiles doit être supérieur ou égal à 1.';
+    if (control.hasError('maxlength')) {
+      return field === 'immatriculation'
+        ? 'L’immatriculation ne peut pas dépasser 30 caractères.'
+        : 'Ce champ ne peut pas dépasser 100 caractères.';
+    }
     return '';
   }
 

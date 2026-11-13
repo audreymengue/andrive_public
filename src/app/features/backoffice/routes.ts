@@ -13,11 +13,41 @@ export const BACKOFFICE_ROUTES: Routes = [
     },
   },
   {
+    path: 'gestion/courses/brouillons',
+    loadComponent: () => import('./views/course-drafts/course-drafts.page').then((module) => module.CourseDraftsPage),
+    canActivate: [RoleGuard],
+    data: {
+      roles: ['dag', 'super_admin'],
+      title: 'Brouillons de courses',
+      description: 'Consultez et modifiez les préparations avant leur validation.',
+    },
+  },
+  {
+    path: 'gestion/courses/nouvelle',
+    loadComponent: () => import('./views/course-preparation/course-preparation.page').then((module) => module.CoursePreparationPage),
+    canActivate: [RoleGuard],
+    data: {
+      roles: ['dag', 'super_admin'],
+      title: 'Préparer une course',
+      description: 'Affectez un chauffeur, un véhicule et définissez l’itinéraire prévu.',
+    },
+  },
+  {
+    path: 'gestion/courses/:id',
+    loadComponent: () => import('./views/course-preparation/course-detail.page').then((module) => module.CourseDetailPage),
+    canActivate: [RoleGuard],
+    data: {
+      roles: ['dag', 'super_admin'],
+      title: 'Détail de la course',
+      description: 'Consultez la préparation enregistrée et les détails de la demande.',
+    },
+  },
+  {
     path: 'gestion/chauffeurs',
     loadComponent: () => import('./views/chauffeurs/chauffeurs.page').then((module) => module.ChauffeursPage),
     canActivate: [RoleGuard],
     data: {
-      roles: ['dag', 'super_admin'],
+      roles: ['super_admin'],
       title: 'Registre des chauffeurs',
       description: 'Gérez les informations et la disponibilité des chauffeurs.',
     },
@@ -26,7 +56,7 @@ export const BACKOFFICE_ROUTES: Routes = [
     path: 'gestion/parc-automobile',
     loadComponent: () => import('./views/vehicules/vehicules.page').then((module) => module.VehiculesPage),
     canActivate: [RoleGuard],
-    data: { roles: ['dag', 'super_admin'], title: 'Parc automobile', description: 'Gérez les véhicules du parc automobile.' },
+    data: { roles: ['super_admin'], title: 'Parc automobile', description: 'Gérez les véhicules du parc automobile.' },
   },
   {
     path: 'gestion/alertes',

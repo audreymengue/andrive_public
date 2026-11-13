@@ -48,6 +48,22 @@
             Un mot de passe par défaut sera attribué au compte. L'utilisateur devra le modifier à sa première connexion.
           </p>
         </div>
+        <div class="grid">
+          <div class="field">
+            <label for="admin-current-password">Votre mot de passe administrateur <span aria-hidden="true">*</span></label>
+            <input id="admin-current-password" type="password" formControlName="admin_current_password" autocomplete="current-password" />
+          </div>
+          <div class="field">
+            <label for="creation-motif">Motif de création et d’affichage du mot de passe <span aria-hidden="true">*</span></label>
+            <textarea id="creation-motif" formControlName="motif" rows="2" maxlength="2000"></textarea>
+          </div>
+        </div>
+        @if (createdUser(); as created) {
+          <div class="notice notice--info" role="status">
+            <p>Le compte {{ created.email }} est créé. Le mot de passe n’a pas encore été affiché.</p>
+            <p>Corrigez le mot de passe administrateur si nécessaire, puis réessayez l’affichage. Le compte ne sera pas recréé.</p>
+          </div>
+        }
       }
 
       @if (rolesError(); as message) {
@@ -133,22 +149,39 @@
             <p class="hint">Aucun rôle attribué.</p>
           }
         </div>
-      } @else {
+      } @else if (mode === 'create') {
         <div class="field">
           <label for="roles">Habilitation</label>
-          <p class="hint">Choisissez un seul rôle pour cet utilisateur.</p>
+          <p class="hint">Choisissez le profil initial du compte.</p>
           <select
             id="roles"
             class="role-select"
             [value]="form.controls.roles.value[0] ?? ''"
             (change)="onRolesSelectChange($any($event.target))"
           >
-            <option value="">— Aucun rôle —</option>
-            @for (role of allRoles(); track role.id) {
+            <option value="">— Choisir un rôle —</option>
+            @for (role of creationRoles(); track role.id) {
               <option [value]="role.id">{{ role.nom }}</option>
             }
           </select>
+          @if (errorOf('roles'); as msg) { <p class="field-error" role="alert">{{ msg }}</p> }
         </div>
+      } @else {
+        <div class="field">
+          <span class="label">Rôles actuels</span>
+          <p class="hint">Pour modifier le rôle, utilisez « Attribuer des rôles » dans la liste des utilisateurs.</p>
+          @if (form.controls.roles.value.length) {
+            <ul class="chips">@for (id of form.controls.roles.value; track id) { <li class="badge badge--admin">{{ roleLabel(id) }}</li> }</ul>
+          } @else { <p class="hint">Aucun rôle attribué.</p> }
+        </div>
+      }
+
+      @if (mode === 'edit') {
+        @if (mode === 'edit') { <div class="field">
+          <label for="motif">Motif de la modification <span aria-hidden="true">*</span></label>
+          <textarea id="motif" formControlName="motif" rows="3" maxlength="2000" [class.is-invalid]="errorOf('motif')"></textarea>
+          @if (errorOf('motif'); as msg) { <p class="field-error" role="alert">{{ msg }}</p> }
+        </div> }
       }
 
       @if (error(); as message) {
@@ -160,8 +193,8 @@
       <div class="form-actions" [class.form-actions--right]="mode === 'detail'">
         <button type="button" class="btn btn-ghost" (click)="cancel()">Annuler</button>
         @if (mode !== 'detail') {
-          <button type="submit" class="btn btn-primary" [disabled]="saving()">
-            {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+          <button type="submit" class="btn btn-primary" [disabled]="saving() || form.invalid">
+            {{ saving() ? 'Enregistrement…' : (createdUser() ? 'Réessayer d’afficher le mot de passe' : (mode === 'create' ? 'Créer l’utilisateur' : 'Enregistrer')) }}
           </button>
         }
       </div>

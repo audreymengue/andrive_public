@@ -15,9 +15,7 @@
     <div class="notice notice--error" role="alert">{{ errorMessage() }}</div>
   }
 
-  <p class="contract-note">
-    La capacité indique le nombre de places passagers, hors chauffeur.
-  </p>
+  <p class="contract-note">Les véhicules sont enregistrés actifs et leur statut reste visible dans la liste.</p>
 
   <div class="toolbar" [formGroup]="filtersForm">
     <label class="search-field">
@@ -43,14 +41,16 @@
           <thead>
             <tr>
               <th scope="col">Immatriculation</th>
-              <th scope="col">Places passagers</th>
+              <th scope="col">Marque / modèle</th>
+              <th scope="col">Statut</th>
             </tr>
           </thead>
           <tbody>
             @for (vehicle of vehicles(); track vehicle.id) {
               <tr>
                 <td><strong>{{ vehicle.immatriculation }}</strong></td>
-                <td>{{ vehicle.places_utiles }}</td>
+                <td>{{ vehicle.marque }} {{ vehicle.modele }}</td>
+                <td>{{ vehicle.statut }}</td>
               </tr>
             }
           </tbody>
@@ -87,14 +87,20 @@
       <form [formGroup]="createForm" (ngSubmit)="createVehicle()">
         <div class="field">
           <label for="vehicle-registration">Immatriculation</label>
-          <input id="vehicle-registration" class="form-input" type="text" formControlName="immatriculation" maxlength="255" autocomplete="off" />
+          <input id="vehicle-registration" class="form-input" type="text" formControlName="immatriculation" maxlength="30" autocomplete="off" />
           @if (fieldError('immatriculation')) { <span class="field-error" role="alert">{{ fieldError('immatriculation') }}</span> }
         </div>
 
         <div class="field">
-          <label for="vehicle-capacity">Places utiles (hors chauffeur)</label>
-          <input id="vehicle-capacity" class="form-input" type="number" formControlName="places_utiles" min="1" step="1" />
-          @if (fieldError('places_utiles')) { <span class="field-error" role="alert">{{ fieldError('places_utiles') }}</span> }
+          <label for="vehicle-brand">Marque</label>
+          <input id="vehicle-brand" class="form-input" type="text" formControlName="marque" maxlength="100" autocomplete="off" />
+          @if (fieldError('marque')) { <span class="field-error" role="alert">{{ fieldError('marque') }}</span> }
+        </div>
+
+        <div class="field">
+          <label for="vehicle-model">Modèle</label>
+          <input id="vehicle-model" class="form-input" type="text" formControlName="modele" maxlength="100" autocomplete="off" />
+          @if (fieldError('modele')) { <span class="field-error" role="alert">{{ fieldError('modele') }}</span> }
         </div>
 
         <div class="modal-actions">

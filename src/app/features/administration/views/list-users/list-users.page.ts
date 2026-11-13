@@ -47,6 +47,7 @@ interface Confirmation {
   message: string;
   confirmLabel: string;
   danger?: boolean;
+  requiresReason?: boolean;
   run: () => Observable<unknown>;
 }
 
@@ -79,9 +80,14 @@ export class ListUsersPage {
 
   protected readonly menu = signal<ContextMenu | null>(null);
   protected readonly rolesTarget = signal<User | null>(null);
+  protected readonly roleReason = signal('');
+  protected readonly roleCurrentPassword = signal('');
+  protected readonly roleError = signal<string | null>(null);
 
   // Signal pour la modale de réinitialisation de mot de passe
-  protected readonly resetPasswordTarget = signal<{ user: User; newPassword?: string } | null>(null);
+  protected readonly resetPasswordTarget = signal<{ user: User; newPassword?: string; resetCompleted?: boolean; revealError?: string } | null>(null);
+  protected readonly resetReason = signal('');
+  protected readonly resetCurrentPassword = signal('');
 
   protected readonly allRoles = signal<Role[]>([]);
   protected readonly selectedRoleIds = signal<number[]>([]);
@@ -89,6 +95,7 @@ export class ListUsersPage {
   protected readonly confirm = signal<Confirmation | null>(null);
   protected readonly busy = signal(false);
   protected readonly confirmError = signal<string | null>(null);
+  protected readonly confirmReason = signal('');
 
   protected readonly fullName = fullName;
   protected readonly isActif = isActif;
@@ -169,12 +176,24 @@ export class ListUsersPage {
     this.rolesTarget.set(u);
     const currentIds = Array.isArray(u.roles) ? u.roles.map((r: any) => r.id ?? r) : [];
     this.selectedRoleIds.set(currentIds.slice(0, 1));
+    this.roleReason.set('');
+    this.roleCurrentPassword.set('');
+    this.roleError.set(null);
   }
 
   protected closeRoles(): void {
     if (!this.busy()) {
       this.rolesTarget.set(null);
+      this.roleError.set(null);
     }
+  }
+
+  protected requiresSuperAdminReauthentication(): boolean {
+    const target = this.rolesTarget();
+    if (!target) return false;
+    const superAdmin = this.allRoles().find((role) => role.nom?.toLocaleLowerCase() === 'super_admin');
+    return !!superAdmin && this.selectedRoleIds().includes(superAdmin.id)
+      && !(target.roles ?? []).some((role: any) => (role.id ?? role) === superAdmin.id);
   }
 
   protected hasRole(roleId: number): boolean {
@@ -190,18 +209,33 @@ export class ListUsersPage {
   protected saveUserRoles(): void {
     const target = this.rolesTarget();
     if (!target) return;
+    const motif = this.roleReason().trim();
+    const currentPassword = this.roleCurrentPassword();
+    if (!motif) {
+      this.roleError.set('Indiquez le motif de cette attribution.');
+      return;
+    }
+    if (this.requiresSuperAdminReauthentication() && !currentPassword) {
+      this.roleError.set('Saisissez votre mot de passe administrateur pour attribuer le rôle super_admin.');
+      return;
+    }
 
+    this.roleError.set(null);
     this.busy.set(true);
-    this.api.assignRoles(target.id, this.selectedRoleIds()).subscribe({
-      next: () => {
+    this.api.assignRoles(target.id, this.selectedRoleIds(), {
+      version: target.lock_version ?? 0,
+      motif,
+      ...(this.requiresSuperAdminReauthentication() ? { currentPassword } : {}),
+    }).subscribe({
+      next: (updated) => {
         this.busy.set(false);
         this.rolesTarget.set(null);
+        this.replace(updated);
         this.flash.show('Rôles mis à jour avec succès.');
-        this.reload();
       },
       error: (err: HttpErrorResponse) => {
         this.busy.set(false);
-        this.flash.show(err.error?.message || "Erreur lors de la mise à jour des rôles.");
+        this.roleError.set(err.error?.message || "Erreur lors de la mise à jour des rôles.");
       }
     });
   }
@@ -209,6 +243,8 @@ export class ListUsersPage {
   // --- Gestion de la réinitialisation du mot de passe ---
   protected resetPassword(u: User): void {
     this.resetPasswordTarget.set({ user: u });
+    this.resetReason.set('');
+    this.resetCurrentPassword.set('');
   }
 
   /** Alias appelé par le template HTML */
@@ -219,35 +255,61 @@ export class ListUsersPage {
   protected closeResetPassword(): void {
     if (!this.busy()) {
       this.resetPasswordTarget.set(null);
+      this.resetReason.set('');
+      this.resetCurrentPassword.set('');
     }
   }
 
   protected confirmResetPassword(): void {
     const target = this.resetPasswordTarget();
     if (!target) return;
+    const motif = this.resetReason().trim();
+    const currentPassword = this.resetCurrentPassword();
+    if (!motif || !currentPassword) {
+      this.resetPasswordTarget.set({ ...target, revealError: 'Le motif et votre mot de passe administrateur sont obligatoires.' });
+      return;
+    }
 
     this.busy.set(true);
-    this.api.resetPassword(target.user.id).subscribe({
-      next: (res: any) => {
-        this.busy.set(false);
-        const newPass = res?.temporary_password;
-        this.resetPasswordTarget.set({
-          user: target.user,
-          ...(newPass ? { newPassword: newPass } : {}),
-        });
-        this.flash.show(`Le mot de passe de ${target.user.email} a été réinitialisé.`);
+    this.resetPasswordTarget.set({ ...target, revealError: undefined });
+    this.api.resetPassword(target.user.id, { version: target.user.lock_version ?? 0, motif, currentPassword }).subscribe({
+      next: (updatedUser) => {
+        this.replace(updatedUser);
+        this.resetPasswordTarget.set({ user: updatedUser, resetCompleted: true });
+        this.revealResetPassword(updatedUser, motif, currentPassword);
       },
       error: (err: HttpErrorResponse) => {
         this.busy.set(false);
-        this.flash.show(err.error?.message || "Erreur lors de la réinitialisation.");
+        this.resetPasswordTarget.set({ ...target, revealError: err.error?.message || "Erreur lors de la réinitialisation." });
       }
     });
   }
 
-  protected copyPassword(password: string): void {
-    navigator.clipboard.writeText(password).then(() => {
-      this.flash.show('Mot de passe copié dans le presse-papier !');
+  protected revealResetPassword(user?: User, motif?: string, currentPassword?: string): void {
+    const target = this.resetPasswordTarget();
+    const account = user ?? target?.user;
+    const reason = motif ?? this.resetReason().trim();
+    const password = currentPassword ?? this.resetCurrentPassword();
+    if (!account || !reason || !password) return;
+    this.busy.set(true);
+    this.api.revealTemporaryPassword(account.id, account.password_generation ?? 0, account.lock_version ?? 0, password, reason).subscribe({
+      next: (result) => {
+        this.busy.set(false);
+        this.resetPasswordTarget.set({ user: account, resetCompleted: true, newPassword: result.temporary_password });
+        this.flash.show(`Le mot de passe de ${account.email} a été réinitialisé.`);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.resetPasswordTarget.set({ user: account, resetCompleted: true, revealError: err.error?.message || 'Le mot de passe a été réinitialisé, mais son affichage a échoué.' });
+      },
     });
+  }
+
+  protected copyPassword(password: string): void {
+    navigator.clipboard.writeText(password).then(
+      () => this.flash.show('Mot de passe copié dans le presse-papier !'),
+      () => this.flash.show('Copie impossible. Sélectionnez et copiez le mot de passe manuellement.'),
+    );
   }
 
   protected reload(): void {
@@ -298,24 +360,33 @@ export class ListUsersPage {
       this.confirm.set(null);
       this.rolesTarget.set(null);
       this.resetPasswordTarget.set(null);
+      this.roleCurrentPassword.set('');
+      this.resetCurrentPassword.set('');
+      this.resetReason.set('');
     }
   }
 
   protected toggleStatus(u: User): void {
     const activate = !this.isActif(u);
-    (activate ? this.api.activate(u.id) : this.api.deactivate(u.id)).subscribe({
-      next: (updated: User) => {
-        this.replace(updated);
-        this.flash.show(activate ? 'Compte activé.' : 'Compte désactivé.');
-      },
-      error: () => {
-        this.flash.show("L'action a échoué.");
-      },
+    this.confirmReason.set('');
+    this.openConfirm({
+      title: activate ? 'Activer le compte' : 'Désactiver le compte',
+      message: `Confirmez-vous l’opération pour ${fullName(u)} (${u.email}) ?`,
+      confirmLabel: activate ? 'Activer' : 'Désactiver',
+      danger: !activate,
+      requiresReason: true,
+      run: () => (activate ? this.api.activate(u.id, { version: u.lock_version ?? 0, motif: this.confirmReason().trim() }) : this.api.deactivate(u.id, { version: u.lock_version ?? 0, motif: this.confirmReason().trim() })).pipe(
+        tap((updated) => {
+          this.replace(updated);
+          this.flash.show(activate ? 'Compte activé.' : 'Compte désactivé.');
+        }),
+      ),
     });
   }
 
   private openConfirm(c: Confirmation): void {
     this.confirmError.set(null);
+    this.confirmReason.set('');
     this.confirm.set(c);
   }
 
@@ -326,6 +397,10 @@ export class ListUsersPage {
   protected runConfirm(): void {
     const c = this.confirm();
     if (!c) return;
+    if (c.requiresReason && !this.confirmReason().trim()) {
+      this.confirmError.set('Le motif est obligatoire.');
+      return;
+    }
     this.busy.set(true);
     this.confirmError.set(null);
     c.run().subscribe({

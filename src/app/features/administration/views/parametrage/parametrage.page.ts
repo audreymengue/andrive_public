@@ -77,7 +77,8 @@ export class ParametragePage {
     prenom: '',
     email: '',
     immatriculation: '',
-    places_utiles: null as number | null,
+    marque: '',
+    modele: '',
     statut: 'ACTIF' as StatutReference,
     current_password: '',
   };
@@ -212,13 +213,15 @@ export class ParametragePage {
     }
 
     if (section === 'vehicules') {
-      if (!this.draft.immatriculation.trim() || this.draft.places_utiles === null || this.draft.places_utiles < 1) {
-        this.errorMessage.set('L’immatriculation et le nombre de places utiles (au moins 1) sont obligatoires.');
+      if (!this.draft.immatriculation.trim() || !this.draft.marque.trim() || !this.draft.modele.trim()) {
+        this.errorMessage.set('L’immatriculation, la marque et le modèle sont obligatoires.');
         return;
       }
       this.runMutation(this.api.createVehicule({
         immatriculation: this.draft.immatriculation.trim().toUpperCase(),
-        places_utiles: this.draft.places_utiles,
+        marque: this.draft.marque.trim(),
+        modele: this.draft.modele.trim(),
+        statut: this.draft.statut,
       }), 'Véhicule ajouté.');
       return;
     }
@@ -318,7 +321,7 @@ export class ParametragePage {
   }
 
   protected codeOf(item: ReferenceRecord): string {
-    if (this.isVehicule(item)) return `${item.places_utiles} place(s) utile(s)`;
+    if (this.isVehicule(item)) return `${item.marque} ${item.modele}`;
     if (this.isUser(item)) return item.email;
     return 'code' in item ? item.code : '—';
   }
@@ -405,7 +408,7 @@ export class ParametragePage {
   }
 
   private resetDraft(): void {
-    this.draft = { direction_id: null, nom: '', code: '', description: '', libelle: '', adresse: '', latitude: null, longitude: null, motif: '', prenom: '', email: '', immatriculation: '', places_utiles: null, statut: 'ACTIF', current_password: '' };
+    this.draft = { direction_id: null, nom: '', code: '', description: '', libelle: '', adresse: '', latitude: null, longitude: null, motif: '', prenom: '', email: '', immatriculation: '', marque: '', modele: '', statut: 'ACTIF', current_password: '' };
   }
 
   private loadRecords(): void {

@@ -43,7 +43,8 @@ export interface EntiteGeographiqueParametre {
 export interface VehiculeParametre {
   id: number;
   immatriculation: string;
-  places_utiles: number;
+  marque: string;
+  modele: string;
   statut: StatutReference;
   lock_version: number;
 }
@@ -61,7 +62,7 @@ export interface ApiList<T> extends ApiItem<T[]> {
 export class ParametrageService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
-  private readonly vehiculesBase = `${this.base}/parametrage/vehicules`;
+  private readonly vehiculesBase = `${this.base}/vehicules`;
 
   listDirections(search = '', page = 1): Observable<ApiList<DirectionParametre>> {
     return this.http.get<ApiList<DirectionParametre>>(`${this.base}/parametrage/directions`, {
@@ -151,7 +152,7 @@ export class ParametrageService {
     });
   }
 
-  createVehicule(payload: Pick<VehiculeParametre, 'immatriculation' | 'places_utiles'>): Observable<ApiItem<VehiculeParametre>> {
+  createVehicule(payload: Pick<VehiculeParametre, 'immatriculation' | 'marque' | 'modele' | 'statut'>): Observable<ApiItem<VehiculeParametre>> {
     return this.http.post<ApiItem<VehiculeParametre>>(this.vehiculesBase, payload, { headers: this.idempotencyHeaders() });
   }
 
