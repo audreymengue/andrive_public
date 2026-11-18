@@ -47,7 +47,7 @@ export const BACKOFFICE_ROUTES: Routes = [
     loadComponent: () => import('./views/chauffeurs/chauffeurs.page').then((module) => module.ChauffeursPage),
     canActivate: [RoleGuard],
     data: {
-      roles: ['super_admin'],
+      roles: ['dag', 'super_admin'],
       title: 'Registre des chauffeurs',
       description: 'Gérez les informations et la disponibilité des chauffeurs.',
     },
@@ -56,7 +56,7 @@ export const BACKOFFICE_ROUTES: Routes = [
     path: 'gestion/parc-automobile',
     loadComponent: () => import('./views/vehicules/vehicules.page').then((module) => module.VehiculesPage),
     canActivate: [RoleGuard],
-    data: { roles: ['super_admin'], title: 'Parc automobile', description: 'Gérez les véhicules du parc automobile.' },
+    data: { roles: ['dag', 'super_admin'], title: 'Parc automobile', description: 'Gérez les véhicules du parc automobile.' },
   },
   {
     path: 'gestion/alertes',
@@ -66,20 +66,26 @@ export const BACKOFFICE_ROUTES: Routes = [
   },
   {
     path: 'missions/planifiees',
-    loadComponent: () => import('./views/section.page').then((module) => module.SectionPage),
+    loadComponent: () => import('./views/missions/missions.page').then((module) => module.MissionsPage),
     canActivate: [RoleGuard],
-    data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Missions planifiées', description: 'Consultez les missions qui vous sont affectées.' },
+    data: { roles: ['chauffeur', 'pool_chauffeur', 'super_admin'], missionStatus: 'planned', title: 'Missions planifiées', description: 'Consultez les courses qui vous sont affectées.' },
   },
   {
     path: 'missions/historique',
-    loadComponent: () => import('./views/section.page').then((module) => module.SectionPage),
+    loadComponent: () => import('./views/missions/missions.page').then((module) => module.MissionsPage),
     canActivate: [RoleGuard],
-    data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Historique des missions', description: 'Consultez les missions terminées.' },
+    data: { roles: ['chauffeur', 'pool_chauffeur', 'super_admin'], missionStatus: 'history', title: 'Historique des missions', description: 'Consultez les courses terminées.' },
   },
   {
     path: 'missions/signalement',
-    loadComponent: () => import('./views/section.page').then((module) => module.SectionPage),
+    loadComponent: () => import('./views/transport/transport.page').then((module) => module.TransportPage),
     canActivate: [RoleGuard],
-    data: { roles: ['pool_chauffeur', 'super_admin'], title: 'Signalement', description: 'Signalez un incident ou une anomalie.' },
+    data: { roles: ['chauffeur', 'pool_chauffeur', 'super_admin'], title: 'Signalement', description: 'Signalez un incident ou une anomalie.' },
+  },
+  {
+    path: 'missions/:id',
+    loadComponent: () => import('./views/missions/mission-detail.page').then((module) => module.MissionDetailPage),
+    canActivate: [RoleGuard],
+    data: { roles: ['chauffeur', 'pool_chauffeur', 'super_admin'], title: 'Détail de la course', description: 'Consultez et mettez à jour votre course affectée.' },
   },
 ];

@@ -1,0 +1,58 @@
+<main class="mission-page">
+  <header class="page-header">
+    <button type="button" class="back-link" (click)="retour()"><i class="bi bi-arrow-left" aria-hidden="true"></i> Retour aux missions</button>
+    @if (course(); as item) {
+      <p class="eyebrow">ESPACE CHAUFFEUR</p>
+      <div class="title-row"><div><h1>Course CR-{{ item.id }}</h1><p class="subtitle">Consultez le trajet et mettez à jour l’exécution de votre course.</p></div><span class="status" [class.status--running]="item.statut_execution === 'EN_COURS'">{{ statutLabel() }}</span></div>
+    }
+  </header>
+
+  @if (loading()) { <section class="state-card" role="status"><span class="spinner" aria-hidden="true"></span> Chargement de la course…</section> }
+  @else if (error() && !course()) { <section class="state-card error" role="alert">{{ error() }} <button type="button" class="secondary-button" (click)="charger()">Réessayer</button></section> }
+  @else if (course(); as item) {
+    @if (error()) { <p class="feedback error-feedback" role="alert">{{ error() }}</p> }
+    @if (success()) { <p class="feedback success-feedback" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ success() }}</p> }
+    <article class="mission-sheet">
+      <section class="sheet-section">
+        <div class="section-heading"><div><p class="eyebrow">AFFECTATION CONFIRMÉE</p><h2>Horaires et ressources</h2></div><span class="version">Préparation v{{ item.version_preparation ?? 1 }}</span></div>
+        <div class="facts">
+          <div class="fact"><span>Début prévu</span><strong>{{ item.plan?.occupation_debut_prevue ? (item.plan?.occupation_debut_prevue | date:'dd/MM/yyyy à HH:mm') : '—' }}</strong></div>
+          <div class="fact"><span>Fin prévue</span><strong>{{ item.plan?.occupation_fin_prevue ? (item.plan?.occupation_fin_prevue | date:'dd/MM/yyyy à HH:mm') : '—' }}</strong></div>
+          <div class="fact"><span>Chargement vérifié</span><strong>{{ item.plan?.chargement_confirme ? 'Oui' : 'Non' }}</strong></div>
+          @if (item.demarree_a) { <div class="fact"><span>Départ réel</span><strong>{{ item.demarree_a | date:'dd/MM/yyyy à HH:mm' }}</strong></div> }
+          @if (item.terminee_a) { <div class="fact"><span>Fin réelle</span><strong>{{ item.terminee_a | date:'dd/MM/yyyy à HH:mm' }}</strong></div> }
+          @if (item.chauffeur_libere_a) { <div class="fact"><span>Chauffeur libéré à</span><strong>{{ item.chauffeur_libere_a | date:'dd/MM/yyyy à HH:mm' }}</strong></div> }
+          @if (item.vehicule_libere_a) { <div class="fact"><span>Véhicule libéré à</span><strong>{{ item.vehicule_libere_a | date:'dd/MM/yyyy à HH:mm' }}</strong></div> }
+        </div>
+      </section>
+
+      <section class="sheet-section">
+        <div class="section-heading"><div><p class="eyebrow">PARCOURS</p><h2>Itinéraire prévu</h2></div><span class="count">{{ item.plan?.arrets?.length ?? 0 }} arrêt(s)</span></div>
+        @if (item.plan?.arrets?.length) {
+          <ol class="stops">@for (stop of item.plan?.arrets; track $index) { <li><span class="stop-index">{{ stop.ordre ?? $index + 1 }}</span><strong>{{ stop.lieu }}</strong><time>{{ stop.heure_prevue ? (stop.heure_prevue | date:'dd/MM/yyyy à HH:mm') : 'Heure non précisée' }}</time></li> }</ol>
+        } @else { <p class="muted">Aucun arrêt n’est renseigné sur cette course.</p> }
+      </section>
+
+      @if (item.demande_ids?.length) {
+        <section class="sheet-section"><div class="section-heading"><div><p class="eyebrow">DEMANDES LIÉES</p><h2>Références</h2></div><span class="count">{{ item.demande_ids?.length }} demande(s)</span></div>
+          <ul class="request-list">@for (id of item.demande_ids; track id) { <li>Demande #{{ id }}</li> }</ul>
+        </section>
+      }
+
+      @if (item.statut_execution === 'A_VENIR') {
+        <section class="action-panel"><div><h2>La course peut commencer</h2><p>En démarrant, l’heure réelle est enregistrée par le serveur.</p></div><button type="button" class="primary-button" (click)="demarrer()" [disabled]="saving()"><i class="bi bi-play-fill" aria-hidden="true"></i> {{ saving() ? 'Enregistrement…' : 'Démarrer la course' }}</button></section>
+      } @else if (item.statut_execution === 'EN_COURS') {
+        <section class="action-panel action-panel--form"><div><p class="eyebrow">FIN DE COURSE</p><h2>Enregistrer les heures réelles</h2><p>Renseignez la fin du trajet et les instants où le chauffeur et le véhicule ont été libérés.</p></div>
+          <form [formGroup]="finishForm" (ngSubmit)="terminer()">
+            <label>Fin réelle<input type="datetime-local" step="1" formControlName="fin_reelle" required></label>
+            <label>Libération du chauffeur<input type="datetime-local" step="1" formControlName="chauffeur_libere_a" required></label>
+            <label>Libération du véhicule<input type="datetime-local" step="1" formControlName="vehicule_libere_a" required></label>
+            <button type="submit" class="primary-button" [disabled]="saving()"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ saving() ? 'Enregistrement…' : 'Terminer la course' }}</button>
+          </form>
+        </section>
+      } @else {
+        <p class="completed-note"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Cette course est terminée.</p>
+      }
+    </article>
+  }
+</main>

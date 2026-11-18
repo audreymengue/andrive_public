@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { Location } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   CreateRoleDto,
@@ -36,6 +37,7 @@ export class ListRolePage implements OnInit {
   // États de chargement et recherche
   protected readonly isLoading = signal(false);
   protected readonly isSaving = signal(false);
+  protected readonly saveError = signal('');
   protected readonly searchTerm = signal('');
   protected readonly filteredRoles = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -93,6 +95,7 @@ export class ListRolePage implements OnInit {
   // --- GESTION DU FORMULAIRE DE RÔLE ---
 
   protected openAddModal(): void {
+    this.saveError.set('');
     this.isEditMode.set(false);
     this.editingRole.set({
       id: 0,
@@ -104,12 +107,14 @@ export class ListRolePage implements OnInit {
   }
 
   protected openEditModal(role: Role): void {
+    this.saveError.set('');
     this.isEditMode.set(true);
     this.editingRole.set({ ...role });
     this.isModalOpen.set(true);
   }
 
   protected closeAddModal(): void {
+    if (!this.isSaving()) this.saveError.set('');
     this.isModalOpen.set(false);
   }
 
@@ -122,7 +127,7 @@ export class ListRolePage implements OnInit {
 
   protected saveRole(): void {
     const current = this.editingRole();
-    const nom = current.nom || '';
+    const nom = current.nom?.trim() || '';
     const description = current.description || '';
     const statut = current.statut || '';
 
@@ -143,7 +148,10 @@ export class ListRolePage implements OnInit {
           this.closeAddModal();
           this.loadRoles();
         },
-        error: () => this.isSaving.set(false),
+        error: (error: unknown) => {
+          this.saveError.set(this.roleError(error));
+          this.isSaving.set(false);
+        },
       });
     } else {
       const createDto: CreateRoleDto = {
@@ -158,9 +166,23 @@ export class ListRolePage implements OnInit {
           this.closeAddModal();
           this.loadRoles();
         },
-        error: () => this.isSaving.set(false),
+        error: (error: unknown) => {
+          this.saveError.set(this.roleError(error));
+          this.isSaving.set(false);
+        },
       });
     }
+  }
+
+  private roleError(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) return 'Impossible d’enregistrer le rôle.';
+    const body = error.error as { message?: string; errors?: Record<string, string[]> } | null;
+    const validation = body?.errors ? Object.values(body.errors).flat()[0] : null;
+    if (validation) return validation;
+    if (error.status === 401) return 'Votre session a expiré. Reconnectez-vous.';
+    if (error.status === 403) return 'Votre compte ne peut pas créer ou modifier les rôles.';
+    if (error.status === 409) return body?.message || 'Ce rôle existe déjà ou une modification concurrente est détectée.';
+    return body?.message || 'Impossible d’enregistrer le rôle.';
   }
 
   protected deleteRole(id: number): void {

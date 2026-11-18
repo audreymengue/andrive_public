@@ -36,13 +36,9 @@ export class VehiculesPage {
       nonNullable: true,
       validators: [Validators.required, Validators.maxLength(30)],
     }),
-    marque: new FormControl('', {
+    places_utiles: new FormControl(1, {
       nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(100)],
-    }),
-    modele: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(100)],
+      validators: [Validators.required, Validators.min(1), Validators.max(100)],
     }),
   });
 
@@ -86,7 +82,7 @@ export class VehiculesPage {
   }
 
   protected openCreate(): void {
-    this.createForm.reset({ immatriculation: '', marque: '', modele: '' });
+    this.createForm.reset({ immatriculation: '', places_utiles: 1 });
     this.createForm.enable();
     this.errorMessage.set('');
     this.editorOpen.set(true);
@@ -105,15 +101,14 @@ export class VehiculesPage {
       return;
     }
 
-    const { immatriculation, marque, modele } = this.createForm.getRawValue();
+    const { immatriculation, places_utiles } = this.createForm.getRawValue();
 
     this.saving.set(true);
     this.createForm.disable();
     this.errorMessage.set('');
     this.api.create({
       immatriculation: immatriculation.trim().toUpperCase(),
-      marque: marque.trim(),
-      modele: modele.trim(),
+      places_utiles,
     }).subscribe({
       next: () => {
         this.saving.set(false);
@@ -130,15 +125,14 @@ export class VehiculesPage {
     });
   }
 
-  protected fieldError(field: 'immatriculation' | 'marque' | 'modele'): string {
+  protected fieldError(field: 'immatriculation' | 'places_utiles'): string {
     const control = this.createForm.controls[field];
     if (!control.touched) return '';
     if (control.hasError('required')) return 'Ce champ est obligatoire.';
     if (control.hasError('maxlength')) {
-      return field === 'immatriculation'
-        ? 'L’immatriculation ne peut pas dépasser 30 caractères.'
-        : 'Ce champ ne peut pas dépasser 100 caractères.';
+      return 'L’immatriculation ne peut pas dépasser 30 caractères.';
     }
+    if (control.hasError('min') || control.hasError('max')) return 'Le nombre de places doit être compris entre 1 et 100.';
     return '';
   }
 

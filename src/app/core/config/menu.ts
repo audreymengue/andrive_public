@@ -28,6 +28,7 @@ export const APP_MENU: MenuItem[] = [
     title: 'Tableau de bord',
     route: '/dashboard',
     icon: 'bi bi-house',
+    roles: ['agent', 'demandeur', 'dag', 'super_admin'],
   },
   {
     id: 'demandes',
@@ -56,8 +57,8 @@ export const APP_MENU: MenuItem[] = [
     roles: ['dag', 'super_admin'],
     children: [
       { id: 'traitement-demandes', title: 'Traitement des demandes', route: '/dashboard/gestion/demandes', icon: 'bi bi-inboxes' },
-      { id: 'registre-chauffeurs', title: 'Registre des chauffeurs', route: '/dashboard/gestion/chauffeurs', icon: 'bi bi-people', roles: ['super_admin'] },
-      { id: 'parc-automobile', title: 'Parc automobile', route: '/dashboard/gestion/parc-automobile', icon: 'bi bi-car-front', roles: ['super_admin'] },
+      { id: 'registre-chauffeurs', title: 'Registre des chauffeurs', route: '/dashboard/gestion/chauffeurs', icon: 'bi bi-people' },
+      { id: 'parc-automobile', title: 'Parc automobile', route: '/dashboard/gestion/parc-automobile', icon: 'bi bi-car-front' },
       { id: 'alertes', title: 'Alertes', route: '/dashboard/gestion/alertes', icon: 'bi bi-bell' },
     ],
   },
@@ -65,7 +66,7 @@ export const APP_MENU: MenuItem[] = [
     id: 'missions',
     title: 'Missions',
     icon: 'bi bi-map',
-    roles: ['pool_chauffeur', 'super_admin'],
+    roles: ['chauffeur', 'pool_chauffeur', 'super_admin'],
     children: [
       { id: 'missions-planifiees', title: 'Missions planifiées', route: '/dashboard/missions/planifiees', icon: 'bi bi-calendar-check' },
       { id: 'historique-missions', title: 'Historique des missions', route: '/dashboard/missions/historique', icon: 'bi bi-clock-history' },

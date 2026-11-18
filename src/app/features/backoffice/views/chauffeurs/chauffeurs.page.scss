@@ -9,6 +9,7 @@ h1 { margin-bottom: .2rem; color: #17232d; font-size: clamp(1.5rem, 3vw, 2rem); 
 .page-header p { margin-bottom: 0; color: #617181; }
 .primary-button, .secondary-button, .close-button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 2.5rem; padding: .5rem .85rem; border: 1px solid transparent; border-radius: .6rem; font: inherit; font-weight: 650; cursor: pointer; }
 .primary-button { background: #2456c5; color: #fff; white-space: nowrap; }
+.row-action { min-height: 2.2rem; padding: .4rem .65rem; font-size: .82rem; }
 .primary-button:hover { background: #1d46a4; }
 .primary-button:disabled, .secondary-button:disabled { cursor: not-allowed; opacity: .6; }
 .secondary-button { border-color: #cbd5e1; background: #fff; color: #263547; }

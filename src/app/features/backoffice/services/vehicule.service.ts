@@ -9,8 +9,10 @@ export type StatutVehicule = 'ACTIF' | 'INACTIF';
 export interface Vehicule {
   id: number;
   immatriculation: string;
-  marque: string;
-  modele: string;
+  places_utiles: number | null;
+  /** Présents sur l’endpoint des ressources de course historique. */
+  marque?: string;
+  modele?: string;
   statut: StatutVehicule;
   lock_version: number;
 }
@@ -34,7 +36,7 @@ export interface VehiculeResponse {
 @Injectable({ providedIn: 'root' })
 export class VehiculeService {
   private readonly http = inject(HttpClient);
-  private readonly base = `${environment.apiUrl}/vehicules`;
+  private readonly base = `${environment.apiUrl}/parametrage/vehicules`;
 
   list(options: {
     search?: string;
@@ -48,7 +50,7 @@ export class VehiculeService {
     return this.http.get<ListeVehiculesResponse>(this.base, { params });
   }
 
-  create(payload: { immatriculation: string; marque: string; modele: string }): Observable<VehiculeResponse> {
+  create(payload: { immatriculation: string; places_utiles: number }): Observable<VehiculeResponse> {
     return this.http.post<VehiculeResponse>(this.base, payload, {
       headers: new HttpHeaders({ 'Idempotency-Key': globalThis.crypto.randomUUID() }),
     });

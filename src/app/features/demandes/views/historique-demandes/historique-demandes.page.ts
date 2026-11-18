@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule, Location, DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -42,6 +42,7 @@ export interface DemandeSortie {
 export class HistoriqueDemandesPage implements OnInit {
   private readonly apiService = inject(ApiService);
   private readonly coreService = inject(CoreService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
 
@@ -52,6 +53,7 @@ export class HistoriqueDemandesPage implements OnInit {
   protected readonly demandes = signal<DemandeSortie[]>([]);
   protected readonly loading = signal<boolean>(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly title = this.route.snapshot.data['title'] ?? 'Suivi de mes demandes';
 
   protected readonly page = signal<number>(1);
   protected readonly perPage = 10;

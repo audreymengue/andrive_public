@@ -22,6 +22,7 @@ interface Course {
   id: number; statut_execution?: string; lock_version?: number; version_preparation?: number;
   demande_ids?: number[]; chauffeur_id?: number | null; vehicule_id?: number | null;
   plan?: { occupation_debut_prevue?: string | null; occupation_fin_prevue?: string | null; chargement_confirme?: boolean; arrets?: Arret[] } | null;
+  demarree_a?: string | null; terminee_a?: string | null; chauffeur_libere_a?: string | null; vehicule_libere_a?: string | null;
   created_at?: string | null;
 }
 interface Ressources { chauffeurs: Array<{ id: number; nom: string; prenom: string }>; vehicules: Array<{ id: number; immatriculation: string; marque: string; modele: string }>; }
@@ -34,6 +35,7 @@ export class CourseDetailPage implements OnInit {
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly validationInfo = signal('');
+  protected readonly confirming = signal(false);
   protected readonly course = signal<Course | null>(null);
   protected readonly demandes = signal<Demande[]>([]);
   protected readonly ressources = signal<Ressources>({ chauffeurs: [], vehicules: [] });
@@ -73,8 +75,43 @@ export class CourseDetailPage implements OnInit {
     const id = this.course()?.id;
     if (id) void this.router.navigate(['/dashboard/gestion/courses/nouvelle'], { queryParams: { courseId: id } });
   }
-  protected valider(): void {
-    this.validationInfo.set('La validation définitive sera activée lorsque la route correspondante sera disponible dans le backend. Ce brouillon reste inchangé.');
+  protected confirmer(): void {
+    const course = this.course();
+    if (!course || course.statut_execution !== null || this.confirming()) return;
+    this.confirming.set(true);
+    this.error.set('');
+    this.validationInfo.set('');
+    this.api.post<ApiItem<Course>>(`/courses/${course.id}`, {
+      version_attendue: course.lock_version,
+      motif: 'Confirmation de la course',
+    }, { headers: { 'Idempotency-Key': this.newIdempotencyKey() } }).subscribe({
+      next: ({ data }) => {
+        this.course.set(data);
+        this.demandes.update((items) => items.map((demande) => ({ ...demande, statut: 'VALIDEE' })));
+        this.confirming.set(false);
+        this.validationInfo.set('Course confirmée. Les demandes associées sont validées et le chauffeur peut consulter sa mission.');
+      },
+      error: (error: unknown) => {
+        this.error.set(this.errorText(error));
+        this.confirming.set(false);
+      },
+    });
+  }
+  protected statutExecutionLabel(): string {
+    switch (this.course()?.statut_execution) {
+      case 'A_VENIR': return 'À venir';
+      case 'EN_COURS': return 'En cours';
+      case 'TERMINEE': return 'Terminée';
+      default: return 'Brouillon';
+    }
+  }
+  private newIdempotencyKey(): string {
+    return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = Math.floor(Math.random() * 16);
+          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+        });
   }
   private errorText(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) return 'Impossible de charger les détails de la course.';

@@ -12,12 +12,20 @@ h1 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.5rem); letter-spacing: -.04em; }
 .course-sheet, .state-card { margin-top: 1rem; padding: 1.25rem; border: 1px solid #e0e8f1; border-radius: 1rem; background: #fff; box-shadow: 0 8px 24px rgba(25,55,90,.06); }
 .notice { display: flex; align-items: flex-start; gap: .7rem; padding: .8rem .9rem; border: 1px solid #f1d8a9; border-radius: .7rem; background: #fff9eb; color: #75571e; font-size: .88rem; }
 .notice i { color: #c0841a; font-size: 1.1rem; }
+.notice--confirmed { margin-top: .8rem; border-color: #c8e5d5; background: #f0faf4; color: #28634a; }
+.notice--confirmed i { color: #26845d; }
 .draft-actions { display: flex; justify-content: flex-end; gap: .65rem; margin-top: .75rem; }
 .draft-actions button { display: inline-flex; align-items: center; gap: .4rem; min-height: 2.5rem; padding: .55rem .8rem; border-radius: .6rem; font: inherit; font-weight: 700; cursor: pointer; }
 .secondary-action { border: 1px solid #d5e0ed; background: #fff; color: #38516d; }
 .edit-action { border: 1px solid #1764cf; background: #1764cf; color: #fff; }
 .validate-action { border: 1px solid #14836f; background: #14836f; color: #fff; }
 .validation-info { display: flex; align-items: flex-start; gap: .5rem; margin: .75rem 0 0; padding: .7rem .8rem; border: 1px solid #cde8e0; border-radius: .65rem; background: #f0faf7; color: #286657; font-size: .85rem; }
+.confirm-form { display: grid; justify-items: end; gap: .55rem; margin-top: .75rem; padding: .9rem; border: 1px solid #e2eaf2; border-radius: .75rem; background: #f8fafd; }
+.confirm-form label { justify-self: stretch; color: #38516d; font-size: .84rem; font-weight: 700; }
+.confirm-form label span { color: #ba3f3f; }
+.confirm-form textarea { width: 100%; padding: .65rem .75rem; resize: vertical; border: 1px solid #d5e0ed; border-radius: .55rem; color: #18324f; font: inherit; }
+.confirm-form button:disabled { cursor: not-allowed; opacity: .55; }
+.execution-time { margin: .7rem 0 0; color: #657991; font-size: .86rem; }
 .sheet-section { padding: 1.15rem 0; border-bottom: 1px solid #e7edf4; }
 .sheet-section:last-child { padding-bottom: .25rem; border-bottom: 0; }
 .panel-heading { margin-bottom: 1rem; }

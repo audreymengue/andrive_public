@@ -41,7 +41,7 @@
           <thead>
             <tr>
               <th scope="col">Immatriculation</th>
-              <th scope="col">Marque / modèle</th>
+              <th scope="col">Places utiles</th>
               <th scope="col">Statut</th>
             </tr>
           </thead>
@@ -49,7 +49,7 @@
             @for (vehicle of vehicles(); track vehicle.id) {
               <tr>
                 <td><strong>{{ vehicle.immatriculation }}</strong></td>
-                <td>{{ vehicle.marque }} {{ vehicle.modele }}</td>
+                <td>{{ vehicle.places_utiles ?? 'Non renseigné' }}</td>
                 <td>{{ vehicle.statut }}</td>
               </tr>
             }
@@ -92,15 +92,9 @@
         </div>
 
         <div class="field">
-          <label for="vehicle-brand">Marque</label>
-          <input id="vehicle-brand" class="form-input" type="text" formControlName="marque" maxlength="100" autocomplete="off" />
-          @if (fieldError('marque')) { <span class="field-error" role="alert">{{ fieldError('marque') }}</span> }
-        </div>
-
-        <div class="field">
-          <label for="vehicle-model">Modèle</label>
-          <input id="vehicle-model" class="form-input" type="text" formControlName="modele" maxlength="100" autocomplete="off" />
-          @if (fieldError('modele')) { <span class="field-error" role="alert">{{ fieldError('modele') }}</span> }
+          <label for="vehicle-seats">Nombre de places utiles</label>
+          <input id="vehicle-seats" class="form-input" type="number" formControlName="places_utiles" min="1" max="100" />
+          @if (fieldError('places_utiles')) { <span class="field-error" role="alert">{{ fieldError('places_utiles') }}</span> }
         </div>
 
         <div class="modal-actions">

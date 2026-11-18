@@ -146,7 +146,9 @@ export class UserService {
         statut: 'ACTIF',
         must_change_password: true,
         direction_id: payload.direction_id,
-        roles: payload.role === 'chauffeur' ? [MOCK_ROLES.find((role) => (role.nom ?? role.name) === 'chauffeur')!] : [],
+        roles: payload.role
+          ? MOCK_ROLES.filter((role) => (role.nom ?? role.name)?.toLocaleLowerCase() === payload.role?.toLocaleLowerCase())
+          : [],
       };
       MOCK_USERS = [created, ...MOCK_USERS];
       return of({ user: created, temporary_password: '' }).pipe(delay(250));

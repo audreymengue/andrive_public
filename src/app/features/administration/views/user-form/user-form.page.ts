@@ -38,7 +38,7 @@ export class UserFormPage {
 
   protected readonly allRoles = signal<Role[]>([]);
   protected readonly creationRoles = computed(() => this.allRoles().filter((role) =>
-    ['demandeur', 'chauffeur'].includes((role.nom ?? role.name ?? '').toLocaleLowerCase())
+    ['demandeur', 'chauffeur', 'dag'].includes((role.nom ?? role.name ?? '').toLocaleLowerCase())
       && role.statut !== 'INACTIF'));
   protected readonly rolesError = signal<string | null>(null);
 
@@ -184,9 +184,9 @@ export class UserFormPage {
 
     if (this.mode === 'create') {
       const role = this.creationRoles().find((item) => item.id === roles[0])?.nom?.toLocaleLowerCase();
-      if (role !== 'demandeur' && role !== 'chauffeur') {
+      if (role !== 'demandeur' && role !== 'chauffeur' && role !== 'dag') {
         this.saving.set(false);
-        this.error.set('Choisissez un rôle demandeur ou chauffeur pour créer ce compte.');
+        this.error.set('Choisissez un rôle demandeur, chauffeur ou DAG pour créer ce compte.');
         return;
       }
       this.api.create({ ...payload, role }).subscribe({

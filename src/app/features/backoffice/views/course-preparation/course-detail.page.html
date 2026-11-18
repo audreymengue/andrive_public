@@ -1,7 +1,7 @@
 <main class="course-page">
   <header class="page-header">
     <button type="button" class="back-link" (click)="retour()"><i class="bi bi-arrow-left" aria-hidden="true"></i> Retour aux demandes</button>
-    @if (course(); as item) { <p class="eyebrow">SUIVI DES COURSES</p><div class="title-row"><div><h1>Course CR-{{ item.id }}</h1><p class="subtitle">Détails de la préparation enregistrée</p></div><span class="status">{{ statut() }}</span></div> }
+    @if (course(); as item) { <p class="eyebrow">SUIVI DES COURSES</p><div class="title-row"><div><h1>Course CR-{{ item.id }}</h1><p class="subtitle">Détails de la préparation enregistrée</p></div><span class="status">{{ statutExecutionLabel() }}</span></div> }
   </header>
   @if (loading()) { <section class="state-card" role="status"><span class="spinner"></span> Chargement des détails de la course…</section> }
   @else if (error()) { <section class="state-card error" role="alert">{{ error() }}</section> }
@@ -9,8 +9,15 @@
     <article class="course-sheet">
       @if (item.statut_execution === null) {
         <div class="notice"><i class="bi bi-info-circle" aria-hidden="true"></i><span>Préparation en brouillon : la course n’est pas encore confirmée et les ressources ne sont pas réservées.</span></div>
-        <div class="draft-actions"><button type="button" class="secondary-action" (click)="modifier()"><i class="bi bi-pencil" aria-hidden="true"></i> Modifier ce brouillon</button><button type="button" class="validate-action" (click)="valider()"><i class="bi bi-check-circle" aria-hidden="true"></i> Valider définitivement</button></div>
+        <div class="draft-actions"><button type="button" class="secondary-action" (click)="modifier()"><i class="bi bi-pencil" aria-hidden="true"></i> Modifier ce brouillon</button></div>
+        <div class="confirm-form">
+          <button type="button" class="validate-action" (click)="confirmer()" [disabled]="confirming()"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ confirming() ? 'Confirmation…' : 'Confirmer la course' }}</button>
+        </div>
         @if (validationInfo()) { <p class="validation-info" role="status"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ validationInfo() }}</p> }
+      } @else {
+        <div class="notice notice--confirmed"><i class="bi bi-check-circle" aria-hidden="true"></i><span>Course {{ statutExecutionLabel() }}. Les demandes associées ont été confirmées.</span></div>
+        @if (item.demarree_a) { <p class="execution-time">Départ réel : <strong>{{ item.demarree_a | date:'dd/MM/yyyy à HH:mm' }}</strong></p> }
+        @if (item.terminee_a) { <p class="execution-time">Fin réelle : <strong>{{ item.terminee_a | date:'dd/MM/yyyy à HH:mm' }}</strong></p> }
       }
       <section class="sheet-section"><div class="panel-heading"><div><p class="eyebrow">AFFECTATION</p><h2>Ressources et horaires</h2></div><span class="version">Préparation v{{ item.version_preparation ?? 1 }}</span></div>
         <div class="facts"><div class="fact"><span>Chauffeur</span><strong><i class="bi bi-person-badge" aria-hidden="true"></i>{{ chauffeur() }}</strong></div><div class="fact"><span>Véhicule</span><strong><i class="bi bi-car-front" aria-hidden="true"></i>{{ vehicule() }}</strong></div>

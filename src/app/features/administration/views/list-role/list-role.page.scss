@@ -258,6 +258,16 @@
         padding: 1.25rem;
         overflow-y: auto;
 
+        .form-error {
+          margin-bottom: 1rem;
+          padding: .7rem .85rem;
+          border: 1px solid #f1caca;
+          border-radius: .5rem;
+          background: #fff5f5;
+          color: #963c3c;
+          font-size: .875rem;
+        }
+
         .form-group {
           margin-bottom: 1rem;
 
@@ -273,7 +283,7 @@
             }
           }
 
-          input, textarea {
+          input, textarea, select {
             width: 100%;
             padding: 0.5rem 0.75rem;
             border: 1px solid #cbd5e1;

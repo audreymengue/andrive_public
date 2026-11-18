@@ -1,8 +1,19 @@
-import { Routes } from '@angular/router';
+import { CanActivateFn, Router, Routes } from '@angular/router';
+import { inject } from '@angular/core';
 import { AuthGuard } from './core/guards/auth.guard';
 import { RoleGuard } from './core/guards/role.guard';
 import { PasswordChangeGuard } from './core/guards/password-change.guard';
+import { CoreService } from './core/services/core.service';
 import { BACKOFFICE_ROUTES } from './features/backoffice/routes';
+
+const redirectChauffeurToMissions: CanActivateFn = () => {
+    const coreService = inject(CoreService);
+    const router = inject(Router);
+
+    return coreService.hasRole('chauffeur') || coreService.hasRole('pool_chauffeur')
+        ? router.createUrlTree(['/dashboard/missions/planifiees'])
+        : true;
+};
 
 export const routes: Routes = [
     {
@@ -36,6 +47,7 @@ export const routes: Routes = [
                 path: '',
                 pathMatch: 'full',
                 loadComponent: () => import('./features/dashboard/views/dashboard.page').then(m => m.DashboardPage),
+                canActivate: [redirectChauffeurToMissions],
                 title: 'Tableau de bord'
             },
             {
@@ -53,9 +65,9 @@ export const routes: Routes = [
             },
             {
                 path: 'demandes/suivi',
-                loadComponent: () => import('./features/backoffice/views/section.page').then(m => m.SectionPage),
+                loadComponent: () => import('./features/demandes/views/historique-demandes/historique-demandes.page').then(m => m.HistoriqueDemandesPage),
                 canActivate: [RoleGuard],
-                data: { roles: ['agent', 'demandeur', 'super_admin'], title: 'Suivi des demandes', description: 'Consultez le statut de vos demandes de transport.' }
+                data: { roles: ['agent', 'demandeur', 'super_admin'], title: 'Suivi de mes demandes', description: 'Consultez le statut et les détails de vos demandes de transport.' }
             },
             {
                 path: 'demandes/:id',

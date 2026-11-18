@@ -75,7 +75,7 @@ export interface UserPayload {
   email: string;
   direction_id: number | null;
   service_id?: number | null;
-  role?: 'demandeur' | 'chauffeur';
+  role?: 'demandeur' | 'chauffeur' | 'dag';
 }
 
 /** Format de pagination natif de Laravel (API Resources). */

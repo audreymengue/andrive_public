@@ -106,12 +106,15 @@
         </header>
 
         <div class="modal-body">
+          @if (saveError()) {
+            <div class="form-error" role="alert">{{ saveError() }}</div>
+          }
           <div class="form-group">
             <label for="role-code">nom <span class="required">*</span></label>
             <input
               id="role-code"
               type="text"
-              placeholder="Ex: ROLE_ADMIN"
+              placeholder="Ex: dag"
               [ngModel]="editingRole().nom"
               (ngModelChange)="updateEditingField('nom', $event)"
               [disabled]="isEditMode()"
@@ -120,13 +123,14 @@
 
           <div class="form-group">
             <label for="role-libelle">Statut <span class="required">*</span></label>
-            <input
+            <select
               id="role-libelle"
-              type="text"
-              placeholder="Ex: ACTIF / INACTIF"
               [ngModel]="editingRole().statut"
               (ngModelChange)="updateEditingField('statut', $event)"
-            />
+            >
+              <option value="ACTIF">ACTIF</option>
+              <option value="INACTIF">INACTIF</option>
+            </select>
           </div>
 
           <div class="form-group">

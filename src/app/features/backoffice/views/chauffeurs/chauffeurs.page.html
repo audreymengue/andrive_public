@@ -11,6 +11,9 @@
   @if (errorMessage()) {
     <div class="notice notice--error" role="alert">{{ errorMessage() }}</div>
   }
+  @if (successMessage()) {
+    <div class="notice notice--success" role="status">{{ successMessage() }}</div>
+  }
 
   <div class="toolbar" [formGroup]="filtersForm">
     <label class="search-field">
@@ -37,6 +40,8 @@
             <tr>
               <th scope="col">Chauffeur</th>
               <th scope="col">E-mail</th>
+              <th scope="col">Profil course</th>
+              <th scope="col">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -44,6 +49,22 @@
               <tr>
                 <td><strong>{{ fullName(chauffeur) }}</strong></td>
                 <td>{{ chauffeur.email }}</td>
+                <td>
+                  @if (profilChauffeur(chauffeur.id); as profil) {
+                    <span class="status-pill" [class.status-pill--off]="profil.statut !== 'ACTIF'">{{ profil.statut === 'ACTIF' ? 'Actif' : 'Inactif' }}</span>
+                  } @else {
+                    <span class="status-pill status-pill--off">Non enregistré</span>
+                  }
+                </td>
+                <td>
+                  @if (profilChauffeur(chauffeur.id)?.statut !== 'ACTIF') {
+                    <button type="button" class="primary-button row-action" (click)="creerOuActiverProfil(chauffeur)" [disabled]="profileActionUserId() !== null || loading()">
+                      @if (profileActionUserId() === chauffeur.id) { Enregistrement… } @else if (profilChauffeur(chauffeur.id)) { Activer le profil } @else { Créer le profil actif }
+                    </button>
+                  } @else {
+                    <span class="muted">Prêt pour une course</span>
+                  }
+                </td>
               </tr>
             }
           </tbody>

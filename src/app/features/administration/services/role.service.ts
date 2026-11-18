@@ -49,7 +49,9 @@ export class RoleService {
   }
 
   createRole(payload: CreateRoleDto): Observable<Role> {
-    return this.http.post<ApiResponse<Role>>(this.rolesUrl, payload)
+    return this.http.post<ApiResponse<Role>>(this.rolesUrl, payload, {
+      headers: { 'Idempotency-Key': this.newIdempotencyKey() },
+    })
       .pipe(map((response) => response.data));
   }
 
@@ -92,6 +94,15 @@ export class RoleService {
   assignPermissions(roleId: number, permissionIds: number[]): Observable<Role> {
     return this.assignPermissionsToRole(roleId, permissionIds)
       .pipe(map((response) => response.data));
+  }
+
+  private newIdempotencyKey(): string {
+    return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+          const random = Math.floor(Math.random() * 16);
+          return (character === 'x' ? random : (random & 0x3) | 0x8).toString(16);
+        });
   }
 
 }
