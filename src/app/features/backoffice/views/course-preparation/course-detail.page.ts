@@ -7,16 +7,8 @@ import { catchError } from 'rxjs/operators';
 import { ApiService } from '@/core/services/api.service';
 
 interface ApiItem<T> { data: T; }
-interface Personne { nom?: string; prenom?: string; fonction?: string | null; }
-interface Demande {
-  id: number; reference?: string; statut?: string; motif?: string; commentaire?: string | null;
-  date_depart?: string | null; heure_depart?: string | null; heure_retour?: string | null;
-  demandeur?: Personne | null; direction?: { nom?: string } | null; service?: { nom?: string } | null;
-  type_sortie?: { libelle?: string } | null; adresse_depart?: { adresse?: string } | null;
-  adresse_retour?: { adresse?: string } | null;
-  destinations?: Array<{ ordre?: number; entite_geographique?: { adresse?: string } | null }>;
-  employes?: Personne[]; objets?: Array<{ designation?: string; quantite?: number | null; description?: string | null }>;
-}
+interface ApiPage<T> { data: T[]; }
+interface Demande { id: number; }
 interface Arret { ordre?: number; lieu?: string; heure_prevue?: string; demande_id?: number; }
 interface Course {
   id: number; statut_execution?: string; lock_version?: number; version_preparation?: number;
@@ -25,7 +17,9 @@ interface Course {
   demarree_a?: string | null; terminee_a?: string | null; chauffeur_libere_a?: string | null; vehicule_libere_a?: string | null;
   created_at?: string | null;
 }
-interface Ressources { chauffeurs: Array<{ id: number; nom: string; prenom: string }>; vehicules: Array<{ id: number; immatriculation: string; marque: string; modele: string }>; }
+interface Chauffeur { id: number; utilisateur?: { nom?: string; prenom?: string } | null; }
+interface Vehicule { id: number; immatriculation: string; }
+interface Ressources { chauffeurs: Chauffeur[]; vehicules: Vehicule[]; }
 
 @Component({ selector: 'app-course-detail-page', standalone: true, imports: [CommonModule], templateUrl: './course-detail.page.html', styleUrl: './course-detail.page.scss' })
 export class CourseDetailPage implements OnInit {
@@ -48,10 +42,11 @@ export class CourseDetailPage implements OnInit {
         this.course.set(course);
         const ids = course.demande_ids ?? [];
         forkJoin({
-          ressources: this.api.get<ApiItem<Ressources>>('/traitement/courses/ressources').pipe(catchError(() => of({ data: { chauffeurs: [], vehicules: [] } }))),
-          demandes: ids.length ? forkJoin(ids.map((demandeId) => this.api.get<ApiItem<Demande>>(`/traitement/demandes/${demandeId}`))) : of([]),
+          chauffeurs: this.api.get<ApiPage<Chauffeur>>('/parametrage/chauffeurs', { params: { page: '1', per_page: '100' } }).pipe(catchError(() => of({ data: [] }))),
+          vehicules: this.api.get<ApiPage<Vehicule>>('/parametrage/vehicules', { params: { page: '1', per_page: '100' } }).pipe(catchError(() => of({ data: [] }))),
+          demandes: of(ids.map((demandeId) => ({ id: demandeId }))),
         }).subscribe({
-          next: ({ ressources, demandes }) => { this.ressources.set(ressources.data); this.demandes.set(demandes.map((item) => item.data)); this.loading.set(false); },
+          next: ({ chauffeurs, vehicules, demandes }) => { this.ressources.set({ chauffeurs: chauffeurs.data, vehicules: vehicules.data }); this.demandes.set(demandes); this.loading.set(false); },
           error: (error: unknown) => { this.error.set(this.errorText(error)); this.loading.set(false); },
         });
       },
@@ -61,12 +56,12 @@ export class CourseDetailPage implements OnInit {
   protected chauffeur(): string {
     const id = this.course()?.chauffeur_id;
     const person = this.ressources().chauffeurs.find((item) => item.id === id);
-    return person ? `${person.prenom} ${person.nom}` : id ? `Chauffeur #${id}` : 'Non affecté';
+    return person ? `${person.utilisateur?.prenom ?? ''} ${person.utilisateur?.nom ?? ''}`.trim() || `Chauffeur #${id}` : id ? `Chauffeur #${id}` : 'Non affecté';
   }
   protected vehicule(): string {
     const id = this.course()?.vehicule_id;
     const item = this.ressources().vehicules.find((vehicle) => vehicle.id === id);
-    return item ? `${item.immatriculation} · ${item.marque} ${item.modele}` : id ? `Véhicule #${id}` : 'Non affecté';
+    return item ? item.immatriculation : id ? `Véhicule #${id}` : 'Non affecté';
   }
   protected statut(): string { return (this.course()?.statut_execution || 'brouillon_preparation').replaceAll('_', ' '); }
   protected retour(): void { void this.router.navigate(['/dashboard/gestion/demandes']); }

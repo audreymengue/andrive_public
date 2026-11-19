@@ -18,18 +18,12 @@
         @for (item of demandes(); track item.id) {
           <article class="request-summary">
             <div class="card-heading"><h3>{{ item.reference }}</h3><span class="status">{{ item.statut }}</span></div>
-            <p class="context">{{ item.direction?.nom || 'Direction non précisée' }}<span>·</span>{{ item.service?.nom || 'Service non précisé' }}<span>·</span>{{ item.type_sortie?.libelle || 'Type non précisé' }}</p>
+            <p class="context">{{ item.direction?.nom || 'Direction non précisée' }}<span>·</span>{{ item.service?.nom || 'Service non précisé' }}</p>
             <div class="detail-grid">
-              <div><span>Demandeur</span><strong>{{ item.demandeur?.prenom }} {{ item.demandeur?.nom }}</strong></div>
-              <div><span>Motif</span><strong>{{ item.motif || '—' }}</strong></div>
               <div><span>Date et départ</span><strong>{{ item.date_depart ? (item.date_depart | date:'dd/MM/yyyy') : '—' }} · {{ item.heure_depart || '—' }}</strong></div>
-              <div><span>Retour prévu</span><strong>{{ item.heure_retour || '—' }}</strong></div>
+              <div><span>Personnes</span><strong>{{ item.personnes_count ?? 0 }}</strong></div>
+              <div><span>Objets</span><strong>{{ item.objets_count ?? 0 }}</strong></div>
             </div>
-            @if (item.commentaire) { <p class="commentary">{{ item.commentaire }}</p> }
-            <h3>Personnes et objets</h3>
-            @if (item.employes.length) { <ul class="detail-list">@for (personne of item.employes; track $index) { <li>{{ personne.prenom }} {{ personne.nom }}@if (personne.fonction) { <span> · {{ personne.fonction }}</span> }</li> }</ul> }
-            @else { <p class="muted">Aucun employé indiqué.</p> }
-            @if (item.objets.length) { <ul class="detail-list">@for (objet of item.objets; track $index) { <li>{{ objet.designation }} · quantité {{ objet.quantite ?? 1 }}</li> }</ul> }
           </article>
         }
       </section>
@@ -37,8 +31,8 @@
       <form class="preparation-card" [formGroup]="form" (ngSubmit)="enregistrer()">
         <div class="card-heading"><div><p class="eyebrow">AFFECTATION</p><h2>Ressources et itinéraire</h2></div></div>
         <div class="resource-grid">
-          <label class="field"><span>Chauffeur *</span><select formControlName="chauffeur_id"><option [ngValue]="null">Sélectionner un chauffeur</option>@for (chauffeur of chauffeurs(); track chauffeur.id) { <option [ngValue]="chauffeur.id">{{ chauffeur.prenom }} {{ chauffeur.nom }}</option> }</select></label>
-          <label class="field"><span>Véhicule *</span><select formControlName="vehicule_id"><option [ngValue]="null">Sélectionner un véhicule</option>@for (vehicule of vehicules(); track vehicule.id) { <option [ngValue]="vehicule.id">{{ vehicule.immatriculation }} · {{ vehicule.marque }} {{ vehicule.modele }}</option> }</select></label>
+          <label class="field"><span>Chauffeur *</span><select formControlName="chauffeur_id"><option [ngValue]="null">Sélectionner un chauffeur</option>@for (chauffeur of chauffeurs(); track chauffeur.id) { <option [ngValue]="chauffeur.id">{{ chauffeur.utilisateur?.prenom || 'Chauffeur' }} {{ chauffeur.utilisateur?.nom || ('#' + chauffeur.id) }}</option> }</select></label>
+          <label class="field"><span>Véhicule *</span><select formControlName="vehicule_id"><option [ngValue]="null">Sélectionner un véhicule</option>@for (vehicule of vehicules(); track vehicule.id) { <option [ngValue]="vehicule.id">{{ vehicule.immatriculation }}</option> }</select></label>
           @if (!chauffeurs().length) { <p class="muted resource-note">Aucun chauffeur actif disponible.</p> }
           @if (!vehicules().length) { <p class="muted resource-note">Aucun véhicule actif disponible.</p> }
         </div>
@@ -49,7 +43,7 @@
         <div class="stops-heading"><h3>Itinéraire manuel</h3><button type="button" class="add-stop" (click)="ajouterArret()"><i class="bi bi-plus-lg" aria-hidden="true"></i> Ajouter un arrêt</button></div>
         <div class="stops" formArrayName="arrets">
           @for (stop of arrets.controls; track $index; let index = $index) {
-            <div class="stop-row" [formGroupName]="index"><span class="stop-index">{{ index + 1 }}</span><label class="field"><span>Lieu *</span><input type="text" formControlName="lieu" placeholder="Adresse de l’arrêt" /></label><label class="field"><span>Heure prévue *</span><input type="datetime-local" formControlName="heure_prevue" /></label><button type="button" class="remove-stop" (click)="retirerArret(index)" [disabled]="arrets.length <= 1" aria-label="Supprimer cet arrêt"><i class="bi bi-trash" aria-hidden="true"></i></button></div>
+            <div class="stop-row" [formGroupName]="index"><span class="stop-index">{{ index + 1 }}</span><label class="field"><span>Demande associée *</span><select formControlName="demande_id">@for (demande of demandes(); track demande.id) { <option [ngValue]="demande.id">{{ demande.reference }}</option> }</select></label><label class="field"><span>Lieu *</span><input type="text" formControlName="lieu" placeholder="Adresse de l’arrêt" /></label><label class="field"><span>Heure prévue *</span><input type="datetime-local" formControlName="heure_prevue" /></label><button type="button" class="remove-stop" (click)="retirerArret(index)" [disabled]="arrets.length <= 1" aria-label="Supprimer cet arrêt"><i class="bi bi-trash" aria-hidden="true"></i></button></div>
           }
         </div>
 
