@@ -3,24 +3,19 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable, of, switchMap, throwError } from 'rxjs';
 import { ApiService } from '@/core/services/api.service';
 
 interface ApiItem<T> { message: string; data: T; }
+interface ApiPage<T> { message: string; data: T[]; meta?: { current_page: number; last_page: number; total: number; per_page: number }; }
 interface Demande {
-  id: number; reference: string; statut: string; motif: string; commentaire?: string | null;
+  id: number; reference: string; statut: string;
   date_depart: string | null; heure_depart: string | null; heure_retour: string | null;
-  demandeur?: { nom: string; prenom: string } | null;
   direction?: { nom: string } | null; service?: { nom: string } | null;
-  type_sortie?: { libelle: string } | null;
-  adresse_depart?: { adresse: string } | null; adresse_retour?: { adresse: string } | null;
-  destinations: Array<{ ordre: number; entite_geographique?: { adresse: string } | null }>;
-  employes: Array<{ nom: string; prenom: string; fonction?: string | null }>;
-  objets: Array<{ designation: string; quantite?: number | null; description?: string | null }>;
+  personnes_count?: number; objets_count?: number;
 }
-interface Chauffeur { id: number; nom: string; prenom: string; }
-interface Vehicule { id: number; immatriculation: string; marque: string; modele: string; statut: string; }
-interface Ressources { chauffeurs: Chauffeur[]; vehicules: Vehicule[]; }
+interface Chauffeur { id: number; utilisateur?: { nom?: string; prenom?: string } | null; statut: string; }
+interface Vehicule { id: number; immatriculation: string; statut: string; }
 interface Course {
   id: number; lock_version: number; demande_ids: number[]; statut_execution: string | null;
   chauffeur_id?: number | null; vehicule_id?: number | null;
@@ -72,23 +67,7 @@ export class CoursePreparationPage implements OnInit {
       this.loading.set(false);
       return;
     }
-    forkJoin({
-      demandes: forkJoin(this.demandeIds.map((id) => this.api.get<ApiItem<Demande>>(`/traitement/demandes/${id}`))),
-      ressources: this.api.get<ApiItem<Ressources>>('/traitement/courses/ressources'),
-    }).subscribe({
-      next: ({ demandes, ressources }) => {
-        const items = demandes.map((response) => response.data);
-        this.demandes.set(items);
-        this.chauffeurs.set(ressources.data.chauffeurs ?? []);
-        this.vehicules.set(ressources.data.vehicules ?? []);
-        this.setDefaults(items);
-        this.loading.set(false);
-      },
-      error: (error: unknown) => {
-        this.error.set(this.errorText(error, 'Impossible de charger la demande ou les ressources disponibles.'));
-        this.loading.set(false);
-      },
-    });
+    this.chargerDemandesEtRessources(this.demandeIds);
   }
 
   protected get arrets(): FormArray<FormGroup> { return this.form.controls.arrets; }
@@ -123,20 +102,25 @@ export class CoursePreparationPage implements OnInit {
       chauffeur_id: value.chauffeur_id,
       vehicule_id: value.vehicule_id,
       plan: {
-        occupation_debut_prevue: new Date(value.debut!).toISOString(),
-        occupation_fin_prevue: new Date(value.fin!).toISOString(),
+        occupation_debut_prevue: this.toApiDateTime(value.debut!),
+        occupation_fin_prevue: this.toApiDateTime(value.fin!),
         chargement_confirme: value.chargement_confirme,
         arrets: (value.arrets ?? []).map((stop, index) => ({
           ordre: index + 1,
           demande_id: stop['demande_id'],
           lieu: stop['lieu'],
-          heure_prevue: new Date(stop['heure_prevue']).toISOString(),
+          heure_prevue: this.toApiDateTime(stop['heure_prevue']),
         })),
       },
     };
-    const request = this.courseId
+    const request: Observable<ApiItem<Course>> = this.courseId
       ? this.api.put<ApiItem<Course>>(`/courses/${this.courseId}`, { ...payload, version_attendue: this.lockVersion }, { headers: { 'Idempotency-Key': this.newIdempotencyKey() } })
-      : this.api.post<ApiItem<Course>>('/courses', payload, { headers: { 'Idempotency-Key': this.newIdempotencyKey() } });
+      : this.api.post<ApiItem<Course>>('/courses', {}, { headers: { 'Idempotency-Key': this.newIdempotencyKey() } }).pipe(
+          switchMap(({ data: course }) => this.api.put<ApiItem<Course>>(`/courses/${course.id}`, {
+            ...payload,
+            version_attendue: course.lock_version,
+          }, { headers: { 'Idempotency-Key': this.newIdempotencyKey() } })),
+        );
     request.subscribe({
       next: (response) => {
         this.saving.set(false);
@@ -178,20 +162,40 @@ export class CoursePreparationPage implements OnInit {
 
   private chargerDemandesEtRessources(ids: number[], course?: Course): void {
     forkJoin({
-      demandes: forkJoin(ids.map((id) => this.api.get<ApiItem<Demande>>(`/traitement/demandes/${id}`))),
-      ressources: this.api.get<ApiItem<Ressources>>('/traitement/courses/ressources'),
+      demandes: this.chargerDemandes(ids),
+      chauffeurs: this.api.get<ApiPage<Chauffeur>>('/parametrage/chauffeurs', { params: { page: '1', per_page: '100', statut: 'ACTIF' } }),
+      vehicules: this.api.get<ApiPage<Vehicule>>('/parametrage/vehicules', { params: { page: '1', per_page: '100', statut: 'ACTIF' } }),
     }).subscribe({
-      next: ({ demandes, ressources }) => {
-        const items = demandes.map((response) => response.data);
-        this.demandes.set(items);
-        this.chauffeurs.set(ressources.data.chauffeurs ?? []);
-        this.vehicules.set(ressources.data.vehicules ?? []);
+      next: ({ demandes, chauffeurs, vehicules }) => {
+        this.demandes.set(demandes);
+        this.chauffeurs.set(chauffeurs.data ?? []);
+        this.vehicules.set(vehicules.data ?? []);
         if (course) this.setCourseValues(course);
-        else this.setDefaults(items);
+        else this.setDefaults(demandes);
         this.loading.set(false);
       },
       error: (error: unknown) => { this.error.set(this.errorText(error, 'Impossible de charger les demandes ou les ressources disponibles.')); this.loading.set(false); },
     });
+  }
+
+  private chargerDemandes(ids: number[]): Observable<Demande[]> {
+    const wanted = new Set(ids);
+    const found = new Map<number, Demande>();
+    const loadPage = (pageNumber: number): Observable<Demande[]> => this.api.get<ApiPage<Demande>>('/traitement/demandes', {
+      params: { page: String(pageNumber), per_page: '100' },
+    }).pipe(switchMap((response) => {
+      for (const demande of response.data ?? []) {
+        if (wanted.has(demande.id)) found.set(demande.id, demande);
+      }
+      const lastPage = response.meta?.last_page ?? pageNumber;
+      if (found.size === wanted.size || pageNumber >= lastPage) {
+        const missing = ids.filter((id) => !found.has(id));
+        if (missing.length) return throwError(() => new Error(`La ou les demandes ${missing.map((id) => `#${id}`).join(', ')} ne sont plus en attente de traitement.`));
+        return of(ids.map((id) => found.get(id)!));
+      }
+      return loadPage(pageNumber + 1);
+    }));
+    return loadPage(1);
   }
 
   private setCourseValues(course: Course): void {
@@ -213,7 +217,7 @@ export class CoursePreparationPage implements OnInit {
     const schedules = demandes.map((demande) => {
       const start = this.toLocalDateTime(`${demande.date_depart ?? ''}T${(demande.heure_depart ?? '08:00').slice(0, 5)}`)
         || this.toLocalDateTime(new Date().toISOString());
-      let end = this.toLocalDateTime(`${demande.date_depart ?? ''}T${(demande.heure_retour ?? '13:00').slice(0, 5)}`);
+      let end = this.toLocalDateTime(`${demande.date_depart ?? ''}T13:00`);
       if (!end || new Date(end) <= new Date(start)) {
         const defaultEnd = new Date(start);
         defaultEnd.setHours(defaultEnd.getHours() + 1);
@@ -225,22 +229,16 @@ export class CoursePreparationPage implements OnInit {
     const end = schedules.map((schedule) => schedule.end).sort().at(-1) ?? start;
     this.form.patchValue({ debut: start, fin: end });
     const stops: Array<{ lieu: string; heure: string; demandeId: number }> = [];
-    for (const { demande, start: demandeStart, end: demandeEnd } of schedules) {
-      if (demande.adresse_depart?.adresse) stops.push({ lieu: demande.adresse_depart.adresse, heure: demandeStart, demandeId: demande.id });
-      for (const destination of demande.destinations ?? []) {
-        const lieu = destination.entite_geographique?.adresse;
-        if (lieu) stops.push({ lieu, heure: demandeStart, demandeId: demande.id });
-      }
-      if (demande.adresse_retour?.adresse) stops.push({ lieu: demande.adresse_retour.adresse, heure: demandeEnd, demandeId: demande.id });
+    for (const { demande, start: demandeStart } of schedules) {
+      stops.push({ lieu: '', heure: demandeStart, demandeId: demande.id });
     }
-    if (!stops.length) stops.push({ lieu: '', heure: start, demandeId: demandes[0]?.id ?? 0 });
     for (const stop of stops) this.arrets.push(this.stopGroup(stop.lieu, stop.heure, stop.demandeId));
   }
 
   private stopGroup(lieu: string, heure: string, demandeId = this.demandes()[0]?.id ?? 0): FormGroup {
     return new FormGroup({
       demande_id: new FormControl(demandeId, { nonNullable: true, validators: Validators.required }),
-      lieu: new FormControl(lieu, { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),
+      lieu: new FormControl(lieu, { nonNullable: true, validators: [Validators.required, Validators.maxLength(255)] }),
       heure_prevue: new FormControl(heure, { nonNullable: true, validators: Validators.required }),
     });
   }
@@ -253,6 +251,10 @@ export class CoursePreparationPage implements OnInit {
     return new Date(date.getTime() - offset).toISOString().slice(0, 16);
   }
 
+  private toApiDateTime(value: string): string {
+    return new Date(value).toISOString().replace(/\.\d{3}Z$/, '+00:00');
+  }
+
   private newIdempotencyKey(): string {
     return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
@@ -263,7 +265,7 @@ export class CoursePreparationPage implements OnInit {
   }
 
   private errorText(error: unknown, fallback: string): string {
-    if (!(error instanceof HttpErrorResponse)) return fallback;
+    if (!(error instanceof HttpErrorResponse)) return error instanceof Error ? error.message : fallback;
     if (error.status === 401) return 'Votre session a expiré. Reconnectez-vous.';
     if (error.status === 403) return 'Accès refusé : votre rôle ne permet pas de consulter ou créer une course.';
     if (error.status === 0) return 'Le serveur API est injoignable.';

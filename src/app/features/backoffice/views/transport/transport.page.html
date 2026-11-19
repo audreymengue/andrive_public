@@ -1,0 +1,47 @@
+<main class="reports-page">
+  @if (success()) { <div class="notice success" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i>{{ success() }}<button type="button" aria-label="Fermer" (click)="success.set('')">×</button></div> }
+  @if (error() && !modal() && !selected()) { <div class="notice error" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>{{ error() }}<button type="button" (click)="load()">Réessayer</button></div> }
+
+  <section class="report-panel">
+    <header class="panel-heading"><div><h1>Gestion des signalements</h1><p>Consultez et déclarez les incidents liés aux missions.</p></div><span class="context-pill">Transport</span></header>
+    <section class="stats" aria-label="Statistiques des signalements">
+      <article class="stat-card"><i class="bi bi-exclamation-triangle stat-symbol alert-symbol" aria-hidden="true"></i><strong>{{ allItems().length | number:'2.0-0' }}</strong><span>Signalements</span></article>
+      <article class="stat-card"><i class="bi bi-car-front stat-symbol" aria-hidden="true"></i><strong>{{ vehicleCount | number:'2.0-0' }}</strong><span>Véhicules</span></article>
+      <article class="stat-card"><i class="bi bi-person stat-symbol" aria-hidden="true"></i><strong>{{ driverCount | number:'2.0-0' }}</strong><span>Chauffeurs</span></article>
+    </section>
+    <div class="list-heading"><h2>Liste des signalements</h2><div class="list-actions"><button class="icon-button" type="button" aria-label="Actualiser" (click)="load()" [disabled]="loading()"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i></button><button class="primary-button" type="button" (click)="openCreate()"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nouveau signalement</button></div></div>
+    <div class="filters">
+      <label class="search"><i class="bi bi-search" aria-hidden="true"></i><input aria-label="Rechercher" placeholder="Rechercher un signalement…" [ngModel]="search()" (ngModelChange)="search.set($event); setFilter()"></label>
+      <select aria-label="Filtrer par ressource" [ngModel]="resourceFilter()" (ngModelChange)="resourceFilter.set($event); setFilter()"><option value="">Toutes les ressources</option><option value="VEHICULE">Véhicules</option><option value="CHAUFFEUR">Chauffeurs</option></select>
+      <input type="number" min="1" aria-label="Filtrer par course" placeholder="ID course" [ngModel]="courseFilter()" (ngModelChange)="courseFilter.set($event); setFilter()">
+      <input type="number" min="1" aria-label="Filtrer par ressource" placeholder="ID ressource" [ngModel]="resourceIdFilter()" (ngModelChange)="resourceIdFilter.set($event); setFilter()">
+    </div>
+    @if (loading()) { <div class="state" role="status"><span class="spinner"></span> Chargement des signalements…</div> }
+    @else if (pageItems.length) {
+      <div class="report-list" aria-label="Liste des signalements">
+        @for (item of pageItems; track item.id) { <article class="report-item" tabindex="0" role="button" (click)="detail(item)" (keydown.enter)="detail(item)" (keydown.space)="$event.preventDefault(); detail(item)">
+          <div class="report-item-heading"><h3>{{ typeLabel(item.type) }} <span class="report-id">#{{ item.id }}</span></h3><span class="badge" [class]="'badge tone-' + item.type.toLowerCase()">{{ item.type }}</span></div>
+          <p class="report-meta">{{ item.type_ressource === 'VEHICULE' ? 'Véhicule' : 'Chauffeur' }} #{{ item.ressource_id }}@if (item.course_id) { <span> · Course #{{ item.course_id }}</span> }</p>
+          <p class="report-description">{{ item.details }}</p>
+          <div class="report-item-footer"><time>{{ date(item.signale_a) }}</time><button class="detail-button" type="button" (click)="$event.stopPropagation(); detail(item)"><i class="bi bi-eye" aria-hidden="true"></i> Voir les détails</button></div>
+        </article> }
+      </div>
+      <footer class="pagination"><span>{{ total() }} résultat(s) · Page {{ page() }} sur {{ pages }}</span><div><button type="button" (click)="previous()" [disabled]="page() <= 1">Précédente</button><button type="button" (click)="next()" [disabled]="page() >= pages">Suivante</button></div></footer>
+    } @else { <div class="empty"><span><i class="bi bi-inbox" aria-hidden="true"></i></span><h3>{{ total() ? 'Aucun résultat' : 'Aucun signalement' }}</h3><p>{{ total() ? 'Modifiez les filtres ou la recherche pour afficher des résultats.' : 'Les signalements déclarés apparaîtront ici.' }}</p></div> }
+    <p class="data-note">Les signalements affichés proviennent des données reçues de l’API.</p>
+  </section>
+</main>
+
+@if (modal()) { <div class="overlay" (click)="closeCreate()"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="create-title" (click)="$event.stopPropagation()"><header><div><p class="eyebrow">NOUVEL INCIDENT</p><h2 id="create-title">Nouveau signalement</h2></div><button class="icon-button" type="button" aria-label="Fermer" (click)="closeCreate()">×</button></header>
+  @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
+  <form (ngSubmit)="submit()"><label>Type de signalement<select name="type" [(ngModel)]="form.type" required>@for (type of types; track type) { <option [value]="type">{{ typeLabel(type) }}</option> }</select>@if (fieldError('type')) { <small>{{ fieldError('type') }}</small> }</label>
+  <div class="form-grid"><label>Type de ressource<select name="type_ressource" [(ngModel)]="form.type_ressource" required><option value="VEHICULE">Véhicule</option><option value="CHAUFFEUR">Chauffeur</option></select>@if (fieldError('type_ressource')) { <small>{{ fieldError('type_ressource') }}</small> }</label>
+  <label>Identifiant de la ressource<input name="ressource_id" type="number" min="1" [(ngModel)]="form.ressource_id" required>@if (fieldError('ressource_id')) { <small>{{ fieldError('ressource_id') }}</small> }</label></div>
+  <label>Course associée <span class="optional">Facultatif</span><input name="course_id" type="number" min="1" [(ngModel)]="form.course_id">@if (fieldError('course_id')) { <small>{{ fieldError('course_id') }}</small> }</label>
+  <label>Description détaillée<textarea name="details" rows="5" maxlength="1000" [(ngModel)]="form.details" required placeholder="Décrivez le problème rencontré…"></textarea><span class="counter">{{ form.details.length }}/1000</span>@if (fieldError('details')) { <small>{{ fieldError('details') }}</small> }</label>
+  <footer><button class="secondary-button" type="button" (click)="closeCreate()">Annuler</button><button class="primary-button" type="submit" [disabled]="saving()"><i class="bi bi-check2" aria-hidden="true"></i>{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button></footer></form></section></div> }
+
+@if (selected(); as item) { <div class="overlay" (click)="closeDetails()"><section class="dialog detail-dialog" role="dialog" aria-modal="true" aria-labelledby="detail-title" (click)="$event.stopPropagation()"><header><div><p class="eyebrow">CONSULTATION</p><h2 id="detail-title">Signalement #{{ item.id }}</h2></div><button class="icon-button" type="button" aria-label="Fermer" (click)="closeDetails()">×</button></header>
+  @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> } @if (detailsLoading()) { <div class="state"><span class="spinner"></span> Chargement des détails…</div> }
+  <div class="detail-type"><span class="badge" [class]="'badge tone-' + item.type.toLowerCase()">{{ typeLabel(item.type) }}</span><span>Signalé le {{ date(item.signale_a) }}</span></div><p class="detail-label">Description</p><p class="detail-text">{{ item.details || 'Aucun détail fourni.' }}</p>
+  <dl class="detail-grid">@for (entry of detailsFields(item); track entry[0]) { <div><dt>{{ fieldLabel(entry[0]) }}</dt><dd>{{ entry[1] ?? '—' }}</dd></div> }</dl></section></div> }
