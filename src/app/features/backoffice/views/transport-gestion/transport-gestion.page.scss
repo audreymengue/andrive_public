@@ -1,0 +1,46 @@
+:host { display: block; color: #1d2c3f; }
+.transport-page { width: min(100%, 1380px); margin: 0 auto; padding: .5rem 0 2rem; }
+.page-header, .panel-heading, .list-heading, .modal-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.page-header { margin-bottom: 1.2rem; }
+.eyebrow { margin: 0 0 .35rem; color: #7283a0; font-size: .72rem; font-weight: 750; letter-spacing: .12rem; }
+h1 { margin: 0; color: #1c3450; font-size: clamp(1.8rem, 3vw, 2.5rem); letter-spacing: -.04em; }
+.subtitle, .panel-heading p, .list-heading p { margin: .35rem 0 0; color: #64748b; }
+.secondary-button, .primary-button, .return-button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.5rem; padding: .55rem .85rem; border: 1px solid #d8e1ec; border-radius: .7rem; background: #fff; color: #1e3d60; font: inherit; font-weight: 650; cursor: pointer; }
+.primary-button { border-color: #1e62d0; background: #1e62d0; color: #fff; }
+.return-button { min-height: 2.2rem; border-color: #f1d1a4; background: #fff8e9; color: #895800; font-size: .82rem; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+.panel { margin-bottom: 1rem; padding: 1.2rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: #fff; box-shadow: 0 8px 24px rgb(22 45 75 / 5%); }
+.panel-heading { justify-content: flex-start; margin-bottom: 1rem; }
+.icon { display: grid; width: 2.6rem; height: 2.6rem; place-items: center; border-radius: .75rem; background: #eaf2ff; color: #2459b7; font-size: 1.1rem; }
+h2 { margin: 0; color: #1c3450; font-size: 1.15rem; }
+.availability-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
+.availability-form label, .modal label { display: grid; gap: .35rem; color: #42536a; font-size: .84rem; font-weight: 700; }
+.availability-form small { color: #8793a3; font-weight: 400; }
+.availability-form input, .availability-form select, .availability-form textarea, .modal textarea { width: 100%; min-height: 2.65rem; padding: .6rem .7rem; border: 1px solid #d6e0eb; border-radius: .65rem; background: #fff; color: #24364d; font: inherit; font-weight: 400; }
+.availability-form textarea, .modal textarea { resize: vertical; }
+.form-wide, .form-actions { grid-column: 1 / -1; }
+.form-actions { display: flex; justify-content: flex-end; }
+.list-heading { margin-bottom: .85rem; }
+.list-heading p { font-size: .85rem; }
+.tabs { display: flex; gap: .3rem; padding: .25rem; border-radius: .7rem; background: #f1f5f9; }
+.tabs button { padding: .45rem .7rem; border: 0; border-radius: .5rem; background: transparent; color: #53657b; font: inherit; cursor: pointer; }
+.tabs button.active { background: #fff; color: #1d4ed8; box-shadow: 0 1px 4px rgb(15 35 65 / 10%); }
+.table-wrap { overflow-x: auto; border: 1px solid #e8edf3; border-radius: .75rem; }
+table { width: 100%; min-width: 850px; border-collapse: collapse; }
+th, td { padding: .75rem; border-bottom: 1px solid #edf1f6; text-align: left; vertical-align: top; }
+th { background: #eef1f5; color: #526174; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
+td { color: #334155; font-size: .88rem; }
+tbody tr:last-child td { border-bottom: 0; }
+td:first-child { display: grid; gap: .25rem; }
+.resource-type { color: #77869a; font-size: .73rem; }
+.empty-state { padding: 1.5rem; color: #64748b; text-align: center; }
+.feedback { margin: 0 0 1rem; padding: .75rem 1rem; border-radius: .7rem; }
+.feedback--error { background: #fff1f2; color: #991b1b; }
+.feedback--success { background: #eaf8f0; color: #18794e; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgb(15 23 42 / 55%); }
+.modal { width: min(100%, 500px); padding: 1.25rem; border-radius: 1rem; background: #fff; box-shadow: 0 20px 60px rgb(15 23 42 / 25%); }
+.modal h2 { margin-bottom: .55rem; }
+.modal > p { color: #64748b; }
+.modal label { margin: 1rem 0 .4rem; }
+.modal-actions { justify-content: flex-end; margin-top: 1rem; }
+@media (max-width: 680px) { .page-header, .list-heading { align-items: stretch; flex-direction: column; } .availability-form { grid-template-columns: 1fr; } .form-wide, .form-actions { grid-column: auto; } .form-actions button { width: 100%; } }

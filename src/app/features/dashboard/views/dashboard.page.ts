@@ -9,6 +9,7 @@ import { AuthService } from '@/core/services/auth.service';
   standalone: true,
   imports: [ReactiveFormsModule],
   templateUrl: '../dashboard.page.html',
+  styleUrl: '../dashboard.page.scss',
 })
 export class DashboardPage {
   protected readonly coreService = inject(CoreService);

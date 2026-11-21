@@ -12,6 +12,7 @@
   @else if (course(); as item) {
     @if (error()) { <p class="feedback error-feedback" role="alert">{{ error() }}</p> }
     @if (success()) { <p class="feedback success-feedback" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ success() }}</p> }
+    @for (event of item.events ?? []; track event.id) { @if (event.action === 'demande_annulee') { <p class="feedback cancellation-feedback" role="status"><i class="bi bi-info-circle" aria-hidden="true"></i> Le DAG a annulé la demande {{ event.demande_ids.join(', ') }}{{ event.created_at ? ' le ' + (event.created_at | date:'dd/MM/yyyy à HH:mm') : '' }}. Le parcours affiché tient compte de cette annulation.</p> } }
     <article class="mission-sheet">
       <section class="sheet-section">
         <div class="section-heading"><div><p class="eyebrow">AFFECTATION CONFIRMÉE</p><h2>Horaires et ressources</h2></div><span class="version">Préparation v{{ item.version_preparation ?? 1 }}</span></div>
@@ -44,14 +45,16 @@
       } @else if (item.statut_execution === 'EN_COURS') {
         <section class="action-panel action-panel--form"><div><p class="eyebrow">FIN DE COURSE</p><h2>Enregistrer les heures réelles</h2><p>Renseignez la fin du trajet et les instants où le chauffeur et le véhicule ont été libérés.</p></div>
           <form [formGroup]="finishForm" (ngSubmit)="terminer()">
-            <label>Fin réelle<input type="datetime-local" step="1" formControlName="fin_reelle" required></label>
-            <label>Libération du chauffeur<input type="datetime-local" step="1" formControlName="chauffeur_libere_a" required></label>
-            <label>Libération du véhicule<input type="datetime-local" step="1" formControlName="vehicule_libere_a" required></label>
+            <label>Fin réelle<input type="datetime-local" step="1" formControlName="fin_reelle" [min]="heureLocaleDepart()" [max]="heureLocaleActuelle()" required></label>
+            <label>Libération du chauffeur<input type="datetime-local" step="1" formControlName="chauffeur_libere_a" [min]="finishForm.controls.fin_reelle.value" [max]="heureLocaleActuelle()" required></label>
+            <label>Libération du véhicule<input type="datetime-local" step="1" formControlName="vehicule_libere_a" [min]="finishForm.controls.fin_reelle.value" [max]="heureLocaleActuelle()" required></label>
             <button type="submit" class="primary-button" [disabled]="saving()"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ saving() ? 'Enregistrement…' : 'Terminer la course' }}</button>
           </form>
         </section>
-      } @else {
+      } @else if (item.statut_execution === 'TERMINEE') {
         <p class="completed-note"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Cette course est terminée.</p>
+      } @else {
+        <p class="completed-note"><i class="bi bi-x-circle-fill" aria-hidden="true"></i> Cette course a été annulée et ne doit pas être exécutée.</p>
       }
     </article>
   }

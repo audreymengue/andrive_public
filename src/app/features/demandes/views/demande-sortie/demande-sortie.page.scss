@@ -9,10 +9,17 @@ $fond: #f8fafc;
 $erreur: #c62828;
 
 :host {
+  position: relative;
+  isolation: isolate;
   display: block;
-  min-height: 100%;
+  box-sizing: border-box;
+  width: calc(100vw - 260px);
+  min-height: 100vh;
+  margin: -2rem 0;
+  margin-left: calc(130px - 50vw + 50%);
   padding: 2rem 1.5rem;
-  background: $fond;
+  overflow: hidden;
+  background: #0b1e38;
   color: $texte;
   font-family: "Segoe UI", Arial, sans-serif;
 }
@@ -27,6 +34,39 @@ $erreur: #c62828;
   margin: 0 auto;
 }
 
+.page > :not(.page__fond-images) {
+  position: relative;
+  z-index: 1;
+}
+
+.page__fond-images {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background:
+      linear-gradient(100deg, rgb(7 35 84 / 34%), rgb(13 63 132 / 18%) 52%, rgb(5 30 70 / 32%)),
+      linear-gradient(0deg, rgb(8 29 63 / 24%), transparent 60%);
+  }
+}
+
+.fond-image {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  object-fit: cover;
+  object-position: center;
+  filter: blur(3px) saturate(.9) contrast(.98);
+  opacity: 1;
+}
+
 .page__header {
   display: flex;
   align-items: center;
@@ -35,23 +75,27 @@ $erreur: #c62828;
   margin-bottom: 1.75rem;
 
   h1 {
-    margin: 0 0 0.65rem;
-    color: $titre;
-    font-size: clamp(1.7rem, 3vw, 2.2rem);
-    font-weight: 750;
-    line-height: 1.25;
+    width: fit-content;
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.9rem, 3.5vw, 2.65rem);
+    font-weight: 800;
+    letter-spacing: -0.055em;
+    line-height: 1.12;
+    text-shadow: 0 2px 18px rgb(0 0 0 / 25%);
   }
 
   p {
     margin: 0;
-    color: $secondaire;
+    color: rgb(239 246 255 / 86%);
     font-size: 0.98rem;
   }
 }
 
 .page__titre p {
-  margin: 8px 0 0;
-  color: #64748b;
+  margin: 0.55rem 0 0;
+  color: rgb(239 246 255 / 86%);
+  font-size: 0.98rem;
 }
 
 .page__actions {
@@ -113,14 +157,20 @@ $erreur: #c62828;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .etape {
   padding: 1.75rem;
-  border: 0;
+  border: 1px solid rgb(255 255 255 / 72%);
   border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgb(23 38 56 / 6%);
+  background: rgb(255 255 255 / 72%);
+  -webkit-backdrop-filter: blur(10px) saturate(125%);
+  backdrop-filter: blur(10px) saturate(125%);
+  color: #17324f;
+  box-shadow: 0 12px 32px rgb(5 20 46 / 14%);
   transition: box-shadow 0.2s ease;
 
   &:focus-within {
@@ -139,7 +189,7 @@ $erreur: #c62828;
 
 .description {
   margin: -0.65rem 0 1.2rem;
-  color: $secondaire;
+  color: #435a73;
   font-size: 0.92rem;
   line-height: 1.6;
 }
@@ -293,7 +343,7 @@ $erreur: #c62828;
 .direction-picker__state {
   margin: 0;
   padding: 0.75rem;
-  color: $secondaire;
+  color: #435a73;
   font-size: 0.9rem;
 }
 
@@ -313,7 +363,7 @@ $erreur: #c62828;
 
 .services__etat {
   margin: 0.5rem 0;
-  color: $secondaire;
+  color: #435a73;
   font-size: 0.9rem;
 }
 

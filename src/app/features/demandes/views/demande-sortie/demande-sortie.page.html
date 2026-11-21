@@ -1,8 +1,11 @@
 <section class="page">
+  <div class="page__fond-images" aria-hidden="true">
+    <img class="fond-image" src="/images/demande-fond-numerique.jpg" alt="" />
+  </div>
   <header class="page__header">
     <div class="page__titre">
       <h1>Demande de sortie</h1>
-      <p>Créer et gérer vos demandes de sortie</p>
+      <p>Organisez votre déplacement en quelques étapes.</p>
     </div>
     <div class="page__actions">
       <button type="button" class="btn-historique" (click)="ouvrirHistorique()">
@@ -320,9 +323,6 @@
 
       </div>
 
-      <h3 class="sous-titre">Destinations</h3>
-      <p class="description">Indiquez les destinations dans l'ordre du trajet. Utilisez les flèches pour réorganiser les étapes. Une nouvelle adresse sera enregistrée automatiquement avec la demande.</p>
-
       <div class="destinations-layout">
         <div class="destinations-layout__liste">
           <div formArrayName="destinations" class="destinations">
@@ -375,8 +375,6 @@
     <!-- Objets transportés -->
     <section class="etape">
       <h2 class="card__titre">Objets transportés <span class="compteur" *ngIf="objets.length">{{ objets.length }}</span></h2>
-      <p class="description">Facultatif. Déclarez le matériel ou les colis qui seront transportés.</p>
-
       <p class="vide" *ngIf="objets.length === 0">Aucun objet ajouté.</p>
 
       <div formArrayName="objets">

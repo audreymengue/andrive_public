@@ -3,6 +3,16 @@ import { RoleGuard } from '../../core/guards/role.guard';
 
 export const BACKOFFICE_ROUTES: Routes = [
   {
+    path: 'gestion/demandes/historique',
+    loadComponent: () => import('./views/traitement-historique/traitement-historique.page').then((module) => module.TraitementHistoriquePage),
+    canActivate: [RoleGuard],
+    data: {
+      roles: ['dag', 'super_admin'],
+      title: 'Historique des demandes traitées',
+      description: 'Consultez les demandes validées, refusées et annulées.',
+    },
+  },
+  {
     path: 'gestion/demandes',
     loadComponent: () => import('./views/traitement-demandes/traitement-demandes.page').then((module) => module.TraitementDemandesPage),
     canActivate: [RoleGuard],
@@ -60,7 +70,7 @@ export const BACKOFFICE_ROUTES: Routes = [
   },
   {
     path: 'gestion/alertes',
-    loadComponent: () => import('./views/section.page').then((module) => module.SectionPage),
+    loadComponent: () => import('./views/alertes/alertes.page').then((module) => module.AlertesPage),
     canActivate: [RoleGuard],
     data: { roles: ['dag', 'super_admin'], title: 'Alertes', description: 'Suivez les alertes liées aux chauffeurs et aux véhicules.' },
   },

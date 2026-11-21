@@ -17,7 +17,7 @@
     <section class="course-list" [attr.aria-label]="title">
       @for (course of courses(); track course.id) {
         <article class="course-card">
-          <div class="course-icon"><i class="bi bi-car-front-fill" aria-hidden="true"></i></div>
+      <div class="course-icon"><i class="bi bi-car-front-fill" aria-hidden="true"></i></div>
           <div class="course-content">
             <div class="title-row"><h3>Course CR-{{ course.id }}</h3><span class="status" [class.status--running]="course.statut_execution === 'EN_COURS'">{{ statutLabel(course.statut_execution) }}</span></div>
             <div class="summary">
@@ -26,6 +26,7 @@
               @if (course.statut_execution === 'EN_COURS' && course.demarree_a) { <span><i class="bi bi-play-circle" aria-hidden="true"></i>Démarrée à {{ course.demarree_a | date:'HH:mm' }}</span> }
               @if (course.statut_execution === 'TERMINEE' && course.terminee_a) { <span><i class="bi bi-check-circle" aria-hidden="true"></i>Terminée à {{ course.terminee_a | date:'HH:mm' }}</span> }
             </div>
+            @if (aUneDemandeAnnulee(course)) { <p class="course-cancellation-note"><i class="bi bi-info-circle" aria-hidden="true"></i> Une demande liée à cette course a été annulée par le DAG. Consultez le détail pour voir le parcours actualisé.</p> }
             @if (course.plan?.arrets?.length) { <p class="route-preview">{{ course.plan?.arrets?.[0]?.lieu }}@if ((course.plan?.arrets?.length ?? 0) > 1) { <span> → {{ course.plan?.arrets?.[(course.plan?.arrets?.length ?? 1) - 1]?.lieu }}</span> }</p> }
           </div>
           <button type="button" class="primary-button" (click)="ouvrir(course)"><i class="bi bi-eye" aria-hidden="true"></i> Voir la course</button>
@@ -40,6 +41,6 @@
       </nav>
     }
   } @else {
-    <section class="empty-state"><span class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></span><h2>{{ history ? 'Aucune course terminée' : 'Aucune course planifiée' }}</h2><p>{{ history ? 'Les courses terminées apparaîtront ici.' : 'Les courses confirmées qui vous sont affectées apparaîtront ici.' }}</p></section>
+    <section class="empty-state"><span class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></span><h2>{{ history ? 'Aucune course terminée ou annulée' : 'Aucune course planifiée' }}</h2><p>{{ history ? 'Les courses terminées ou annulées apparaîtront ici.' : 'Les courses confirmées qui vous sont affectées apparaîtront ici.' }}</p></section>
   }
 </main>

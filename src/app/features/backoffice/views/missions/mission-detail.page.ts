@@ -14,6 +14,7 @@ interface Course {
   vehicule_id?: number | null;
   version_preparation?: number;
   demande_ids?: number[];
+  events?: Array<{ id: number; action: string; demande_ids: number[]; created_at: string | null; actor: string | null }>;
   plan?: {
     occupation_debut_prevue?: string | null;
     occupation_fin_prevue?: string | null;
@@ -96,8 +97,16 @@ export class MissionDetailPage implements OnInit {
     const driverReleasedAt = new Date(value.chauffeur_libere_a).getTime();
     const vehicleReleasedAt = new Date(value.vehicule_libere_a).getTime();
     const startedAt = course.demarree_a ? new Date(course.demarree_a).getTime() : 0;
+    if (![startedAt, finishedAt, driverReleasedAt, vehicleReleasedAt].every(Number.isFinite) || startedAt <= 0) {
+      this.error.set('Les dates et heures de départ et de fin doivent être valides. Actualisez la course si nécessaire.');
+      return;
+    }
     if (finishedAt < startedAt || driverReleasedAt < finishedAt || vehicleReleasedAt < finishedAt) {
       this.error.set('Les heures doivent respecter cet ordre : départ, fin, puis libération du chauffeur et du véhicule.');
+      return;
+    }
+    if ([finishedAt, driverReleasedAt, vehicleReleasedAt].some((timestamp) => timestamp > Date.now())) {
+      this.error.set('La fin et les heures de libération ne peuvent pas être dans le futur.');
       return;
     }
     this.commande('terminer', {
@@ -113,12 +122,22 @@ export class MissionDetailPage implements OnInit {
       case 'A_VENIR': return 'À venir';
       case 'EN_COURS': return 'En cours';
       case 'TERMINEE': return 'Terminée';
+      case 'ANNULEE': return 'Annulée';
       default: return 'Non confirmée';
     }
   }
 
   protected retour(): void {
     void this.router.navigate([this.course()?.statut_execution === 'TERMINEE' ? '/dashboard/missions/historique' : '/dashboard/missions/planifiees']);
+  }
+
+  protected heureLocaleActuelle(): string {
+    return this.localDateTime();
+  }
+
+  protected heureLocaleDepart(): string | null {
+    const startedAt = this.course()?.demarree_a;
+    return startedAt ? this.localDateTime(new Date(startedAt).getTime()) : null;
   }
 
   private commande(action: 'depart' | 'terminer', body: Record<string, unknown>, successMessage: string): void {

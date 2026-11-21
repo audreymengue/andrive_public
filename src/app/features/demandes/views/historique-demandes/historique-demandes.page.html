@@ -1,4 +1,7 @@
 <section class="page-historique">
+  <div class="suivi-fond" aria-hidden="true">
+    <img src="/images/demande-fond-numerique.jpg" alt="" />
+  </div>
   <!-- En-tête avec le bouton de retour -->
 <header class="historique-header">
   <div class="header-titles">
@@ -16,6 +19,8 @@
     Nouvelle demande
   </button>
 </header>
+
+  @if (annulationSucces()) { <p class="cancel-success" role="status">{{ annulationSucces() }}</p> }
 
   <!-- Barre de recherche unique -->
   <div class="filters-card" [formGroup]="filterForm">
@@ -80,6 +85,11 @@
                     <button type="button" class="btn-action-detail" (click)="voirDetail(d)" title="Consulter les détails">
                       <i class="bi bi-eye"></i> Détail
                     </button>
+                    @if (suiviMode && peutAnnuler(d)) {
+                      <button type="button" class="btn-action-cancel" (click)="demanderAnnulation(d)" title="Annuler cette demande">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> Annuler
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>
@@ -116,4 +126,20 @@
   <button type="button" class="btn-scroll-top" (click)="retourEnHaut()" title="Retour en haut de page">
     <i class="bi bi-arrow-up"></i>
   </button>
+
+  @if (annulationCible(); as cible) {
+    <div class="cancel-modal-backdrop" (click)="fermerAnnulation()">
+      <section class="cancel-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-title" (click)="$event.stopPropagation()">
+        <h2 id="cancel-title">Annuler la demande {{ cible.reference }} ?</h2>
+        <p>Cette demande passera au statut « Annulée ». Indiquez le motif pour confirmer.</p>
+        <label for="cancel-reason">Motif de l’annulation</label>
+        <textarea id="cancel-reason" rows="4" maxlength="1000" [value]="motifAnnulation()" (input)="motifAnnulation.set($any($event.target).value)" required></textarea>
+        @if (annulationErreur()) { <p class="cancel-error" role="alert">{{ annulationErreur() }}</p> }
+        <div class="cancel-modal-actions">
+          <button type="button" class="cancel-secondary" (click)="fermerAnnulation()" [disabled]="annulationEnCours()">Retour</button>
+          <button type="button" class="cancel-confirm" (click)="confirmerAnnulation()" [disabled]="annulationEnCours() || !motifAnnulation().trim()">{{ annulationEnCours() ? 'Annulation…' : 'Confirmer l’annulation' }}</button>
+        </div>
+      </section>
+    </div>
+  }
 </section>

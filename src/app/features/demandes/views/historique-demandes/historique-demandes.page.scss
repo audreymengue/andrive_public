@@ -1,9 +1,49 @@
 .page-historique {
-  padding: 2rem;
-  background-color: #f8fafc;
-  min-height: 100vh;
-  font-family: inherit;
   position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  width: calc(100vw - 260px);
+  min-height: 100vh;
+  margin: -2rem 0;
+  margin-left: calc(130px - 50vw + 50%);
+  padding: 2rem 1.5rem;
+  overflow: hidden;
+  background: #0b1e38;
+  font-family: inherit;
+
+  > .historique-header,
+  > .cancel-success,
+  > .filters-card,
+  > .state--error,
+  > .table-card {
+    position: relative;
+    z-index: 1;
+  }
+
+  .suivi-fond {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+
+    img {
+      position: absolute;
+      inset: -6px;
+      width: calc(100% + 12px);
+      height: calc(100% + 12px);
+      object-fit: cover;
+      object-position: center;
+      filter: blur(3px) saturate(.9) contrast(.98);
+    }
+
+    &::after {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: linear-gradient(100deg, rgb(7 35 84 / 34%), rgb(13 63 132 / 18%) 52%, rgb(5 30 70 / 32%));
+    }
+  }
 
   .historique-header {
     display: flex;
@@ -82,12 +122,13 @@
       h1 {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #0f172a;
+        color: #fff;
+        text-shadow: 0 2px 14px rgb(0 0 0 / 25%);
         margin: 0;
       }
 
       .muted {
-        color: #64748b;
+        color: rgb(239 246 255 / 88%);
         font-size: 0.875rem;
         margin: 0.15rem 0 0 0;
       }
@@ -105,7 +146,9 @@
 
   // Barre de recherche corrigée (sans superposition icône/texte)
   .filters-card {
-    background: #ffffff;
+    background: rgb(255 255 255 / 76%);
+    -webkit-backdrop-filter: blur(10px) saturate(125%);
+    backdrop-filter: blur(10px) saturate(125%);
     padding: 1rem 1.25rem;
     border-radius: 18px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -157,7 +200,9 @@
   }
 
   .table-card {
-    background: #ffffff;
+    background: rgb(255 255 255 / 82%);
+    -webkit-backdrop-filter: blur(10px) saturate(125%);
+    backdrop-filter: blur(10px) saturate(125%);
     border-radius: 18px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -274,6 +319,22 @@
       cursor: pointer;
       &:hover { background: #eff6ff; }
     }
+
+    .btn-action-cancel {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .3rem .65rem;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      background: #fff;
+      color: #b91c1c;
+      font: inherit;
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      &:hover { background: #fff1f2; }
+    }
   }
 
   .table-footer {
@@ -346,5 +407,52 @@
     &:hover {
       background-color: #1d4ed8;
     }
+  }
+
+  .cancel-success {
+    margin: 0 0 1rem;
+    padding: .8rem 1rem;
+    border: 1px solid #bbf7d0;
+    border-radius: .75rem;
+    background: #ecfdf3;
+    color: #166534;
+  }
+
+  .cancel-modal-backdrop {
+    position: fixed;
+    z-index: 1200;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgb(15 23 42 / 55%);
+  }
+
+  .cancel-modal {
+    width: min(100%, 30rem);
+    padding: 1.4rem;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 24px 64px rgb(15 23 42 / 24%);
+    text-align: left;
+
+    h2 { margin: 0 0 .55rem; color: #1e293b; font-size: 1.2rem; }
+    p { color: #64748b; line-height: 1.5; }
+    label { display: block; margin: 1rem 0 .35rem; color: #334155; font-weight: 650; }
+    textarea { width: 100%; resize: vertical; padding: .7rem .8rem; border: 1px solid #cbd5e1; border-radius: .65rem; font: inherit; }
+  }
+
+  .cancel-error { margin: .5rem 0 0 !important; color: #b91c1c !important; font-size: .85rem; }
+
+  .cancel-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .6rem;
+    margin-top: 1.1rem;
+
+    button { min-height: 2.6rem; padding: .5rem .8rem; border-radius: .65rem; font: inherit; font-weight: 650; cursor: pointer; }
+    .cancel-secondary { border: 1px solid #cbd5e1; background: #fff; color: #334155; }
+    .cancel-confirm { border: 1px solid #b91c1c; background: #b91c1c; color: #fff; }
+    button:disabled { cursor: not-allowed; opacity: .55; }
   }
 }

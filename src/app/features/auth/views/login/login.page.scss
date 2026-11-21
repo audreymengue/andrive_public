@@ -34,15 +34,6 @@
   pointer-events: none;
 }
 
-.login-back {
-  position: absolute;
-  top: clamp(2rem, 7vh, 5rem);
-  left: clamp(1.5rem, 8vw, 5rem);
-  color: #172638;
-  font-size: 2rem;
-  line-height: 1;
-}
-
 .login-content {
   width: min(100%, 600px);
   padding-top: clamp(2rem, 9vh, 7rem);

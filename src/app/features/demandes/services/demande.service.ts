@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -68,13 +68,7 @@ export class DemandeService {
     return this.http.get<{
       data: { id: number; direction_id?: number; nom: string; code?: string }[];
     }>(
-      `${environment.apiUrl}/parametrage/services`,
-      {
-        params: new HttpParams()
-          .set('direction_id', directionId)
-          .set('statut', 'ACTIF')
-          .set('per_page', 100),
-      }
+      `${environment.apiUrl}/directions/${directionId}/services`
     );
   }
 

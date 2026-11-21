@@ -1,0 +1,59 @@
+<main class="history-page dag-page">
+  <header class="history-header">
+    <div>
+      <p class="eyebrow">GESTION DES DEMANDES</p>
+      <h1>Historique de traitement</h1>
+      <p class="subtitle">Demandes validées, refusées, annulées ou terminées.</p>
+    </div>
+    <button type="button" class="button button--secondary" (click)="retourDemandes()">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> Retour aux demandes
+    </button>
+  </header>
+
+  @if (cancelSuccess()) { <p class="cancel-success" role="status">{{ cancelSuccess() }}</p> }
+
+  <section class="history-card" aria-label="Historique des demandes traitées">
+    <div class="filters">
+      <label class="search-field"><i class="bi bi-search" aria-hidden="true"></i><span class="sr-only">Rechercher</span><input type="search" [value]="search()" (input)="changerRecherche($any($event.target).value)" placeholder="Référence, direction ou service" /></label>
+      <label class="status-filter"><span>Statut</span><select [value]="statut()" (change)="changerStatut($any($event.target).value)"><option value="">Tous les statuts</option><option value="VALIDEE">Validée</option><option value="REFUSEE">Refusée</option><option value="ANNULEE">Annulée</option><option value="TERMINEE">Terminée</option></select></label>
+    </div>
+
+    @if (error()) { <div class="state state--error" role="alert">{{ error() }} <button type="button" class="button button--secondary" (click)="charger()">Réessayer</button></div> }
+    @else {
+      <div class="table-wrap" [attr.aria-busy]="loading()">
+        <table>
+          <thead><tr><th>Référence</th><th>Direction</th><th>Service</th><th>Départ prévu</th><th>Statut</th><th>Actions</th></tr></thead>
+          <tbody>
+            @if (loading()) { <tr><td colspan="6" class="empty-state">Chargement de l’historique…</td></tr> }
+            @else {
+              @for (demande of demandes(); track demande.id) {
+                <tr>
+                  <td><strong class="reference">{{ demande.reference }}</strong></td>
+                  <td>{{ demande.direction?.nom || '—' }}</td>
+                  <td>{{ demande.service?.nom || '—' }}</td>
+                  <td>{{ demande.date_depart ? (demande.date_depart | date:'dd/MM/yyyy') : '—' }} · {{ demande.heure_depart || '—' }}</td>
+                  <td><span [class]="statutClass(demande.statut)">{{ statutLabel(demande.statut) }}</span></td>
+                  <td class="row-actions"><button type="button" class="detail-button" (click)="voirDetail(demande)"><i class="bi bi-eye" aria-hidden="true"></i> Détail</button>@if (demande.statut === 'VALIDEE') { <button type="button" class="cancel-button" (click)="demanderAnnulation(demande)"><i class="bi bi-x-circle" aria-hidden="true"></i> Annuler</button> }</td>
+                </tr>
+              } @empty { <tr><td colspan="6" class="empty-state">Aucune demande dans cet historique.</td></tr> }
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="pagination"><span>{{ total() }} demande(s) · Page {{ page() }} sur {{ lastPage() }}</span><div><button class="button button--secondary" type="button" (click)="precedent()" [disabled]="page() <= 1 || loading()">Précédent</button><button class="button button--secondary" type="button" (click)="suivant()" [disabled]="page() >= lastPage() || loading()">Suivant</button></div></footer>
+    }
+  </section>
+
+  @if (cancelTarget(); as target) {
+    <div class="modal-backdrop" (click)="fermerAnnulation()">
+      <section class="cancel-modal" role="dialog" aria-modal="true" aria-labelledby="dag-cancel-title" (click)="$event.stopPropagation()">
+        <h2 id="dag-cancel-title">Annuler {{ target.reference }} ?</h2>
+        <p>Le demandeur sera informé. Si cette demande est rattachée à une course, son chauffeur verra l’annulation et l’itinéraire sera actualisé.</p>
+        <label for="dag-cancel-reason">Motif</label>
+        <textarea id="dag-cancel-reason" rows="4" maxlength="1000" [value]="cancelReason()" (input)="cancelReason.set($any($event.target).value)" required></textarea>
+        @if (cancelError()) { <p class="cancel-error" role="alert">{{ cancelError() }}</p> }
+        <div class="modal-actions"><button type="button" class="button button--secondary" (click)="fermerAnnulation()" [disabled]="cancelSaving()">Retour</button><button type="button" class="cancel-confirm" (click)="confirmerAnnulation()" [disabled]="cancelSaving() || !cancelReason().trim()">{{ cancelSaving() ? 'Annulation…' : 'Confirmer l’annulation' }}</button></div>
+      </section>
+    </div>
+  }
+</main>

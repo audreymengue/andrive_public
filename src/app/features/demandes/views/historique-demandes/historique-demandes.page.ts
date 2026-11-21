@@ -54,6 +54,12 @@ export class HistoriqueDemandesPage implements OnInit {
   protected readonly loading = signal<boolean>(false);
   protected readonly error = signal<string | null>(null);
   protected readonly title = this.route.snapshot.data['title'] ?? 'Suivi de mes demandes';
+  protected readonly suiviMode = this.route.snapshot.url.at(-1)?.path === 'suivi';
+  protected readonly annulationCible = signal<DemandeSortie | null>(null);
+  protected readonly motifAnnulation = signal('');
+  protected readonly annulationErreur = signal('');
+  protected readonly annulationSucces = signal('');
+  protected readonly annulationEnCours = signal(false);
 
   protected readonly page = signal<number>(1);
   protected readonly perPage = 10;
@@ -150,6 +156,45 @@ export class HistoriqueDemandesPage implements OnInit {
 
   protected voirDetail(demande: DemandeSortie): void {
     this.router.navigate(['/dashboard/demandes', demande.id]);
+  }
+
+  protected peutAnnuler(demande: DemandeSortie): boolean {
+    return ['BROUILLON', 'EN_ATTENTE', 'REVALIDATION_REQUISE', 'VALIDEE'].includes(demande.statut?.toUpperCase());
+  }
+
+  protected demanderAnnulation(demande: DemandeSortie): void {
+    this.annulationCible.set(demande);
+    this.motifAnnulation.set('');
+    this.annulationErreur.set('');
+  }
+
+  protected fermerAnnulation(): void {
+    if (this.annulationEnCours()) return;
+    this.annulationCible.set(null);
+    this.annulationErreur.set('');
+  }
+
+  protected confirmerAnnulation(): void {
+    const demande = this.annulationCible();
+    const motif = this.motifAnnulation().trim();
+    if (!demande || !motif || this.annulationEnCours()) {
+      this.annulationErreur.set('Veuillez indiquer le motif de l’annulation.');
+      return;
+    }
+    this.annulationEnCours.set(true);
+    this.annulationErreur.set('');
+    this.apiService.post<any>(`/demandes/${demande.id}/annulation`, { motif }).subscribe({
+      next: () => {
+        this.demandes.update((items) => items.map((item) => item.id === demande.id ? { ...item, statut: 'ANNULEE' } : item));
+        this.annulationSucces.set(`La demande ${demande.reference} a été annulée.`);
+        this.annulationCible.set(null);
+        this.annulationEnCours.set(false);
+      },
+      error: (failure: any) => {
+        this.annulationErreur.set(failure?.error?.message || 'Impossible d’annuler cette demande.');
+        this.annulationEnCours.set(false);
+      },
+    });
   }
 
   protected changerPage(newPage: number): void {

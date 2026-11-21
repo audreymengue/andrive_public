@@ -92,11 +92,7 @@ export class FirstConnexionPage {
           this.coreService.setCurrentUser({ ...user, mustChangePassword: false });
         }
 
-        this.router.navigate(
-          user?.roles?.some((role) => role.nom === 'demandeur')
-            ? ['/dashboard/demandes/transport']
-            : ['/dashboard']
-        );
+        this.router.navigate(['/dashboard']);
       })
       .catch(() => {
         this.isLoading.set(false);

@@ -42,25 +42,6 @@ interface DemandeDetail extends TreatmentDemande {
 
 type DemandePriority = 'NORMALE' | 'PRIORITAIRE' | 'URGENTE';
 
-interface CoursePreparationVersion {
-  version: number;
-  actor_id: number;
-  demande_ids: number[];
-  created_at: string | null;
-}
-
-interface CoursePreparation {
-  id: number;
-  statut_execution: string | null;
-  lock_version: number;
-  version_preparation: number;
-  demande_ids: number[];
-  preparations: CoursePreparationVersion[];
-  created_by_id: number;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
 @Component({
   selector: 'app-traitement-demandes-page',
   standalone: true,
@@ -73,27 +54,17 @@ export class TraitementDemandesPage implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly demandes = signal<TreatmentDemande[]>([]);
-  private readonly demandeCache = signal(new Map<number, TreatmentDemande>());
-  protected readonly courses = signal<CoursePreparation[]>([]);
   protected readonly page = signal(1);
   protected readonly lastPage = signal(1);
   protected readonly totalDemandes = signal(0);
   protected readonly searchTerm = signal('');
   protected readonly activeTab = signal<'all' | 'urgent' | 'priority' | 'selected'>('all');
-  protected readonly selectedCourseId = signal<number | null>(null);
   protected readonly selectedDemandeDetail = signal<DemandeDetail | null>(null);
   protected readonly loadingDemandeDetail = signal(false);
   protected readonly demandeDetailError = signal('');
   protected readonly selectedDemandeIds = signal<Set<number>>(new Set());
   protected readonly priorityOverrides = signal(new Map<number, DemandePriority>());
   protected readonly priorityLocalNotice = signal(false);
-  protected readonly editableCourses = computed(() => this.courses().filter((course) => course.statut_execution === null));
-  protected readonly selectedDemandes = computed(() =>
-    [...this.selectedDemandeIds()].map((id) => ({
-      id,
-      demande: this.demandeCache().get(id) ?? null,
-    })),
-  );
   protected readonly urgentCount = computed(() => this.demandes().filter((demande) => this.isUrgent(demande)).length);
   protected readonly priorityCount = computed(() => this.demandes().filter((demande) => this.isPriority(demande)).length);
   protected readonly visibleDemandes = computed(() => {
@@ -116,9 +87,6 @@ export class TraitementDemandesPage implements OnInit {
         .some((value) => value?.toLocaleLowerCase().includes(term));
     });
   });
-  protected readonly selectedCourse = computed(() =>
-    this.editableCourses().find((course) => course.id === this.selectedCourseId()) ?? null,
-  );
   protected readonly hasAllVisibleSelected = computed(() => {
     const visibles = this.visibleDemandes();
     return visibles.length > 0 && visibles.every((demande) => this.selectedDemandeIds().has(demande.id));
@@ -126,21 +94,8 @@ export class TraitementDemandesPage implements OnInit {
   protected readonly hasSomeVisibleSelected = computed(() =>
     this.visibleDemandes().some((demande) => this.selectedDemandeIds().has(demande.id)),
   );
-  protected readonly hasSelectionChanges = computed(() => {
-    const course = this.selectedCourse();
-    if (!course) {
-      return false;
-    }
-    const currentIds = new Set(course.demande_ids);
-    const selectedIds = this.selectedDemandeIds();
-    return currentIds.size !== selectedIds.size || [...currentIds].some((id) => !selectedIds.has(id));
-  });
   protected readonly loadingDemandes = signal(false);
-  protected readonly loadingCourses = signal(false);
-  protected readonly saving = signal(false);
   protected readonly pendingError = signal('');
-  protected readonly courseError = signal('');
-  protected readonly successMessage = signal('');
 
   ngOnInit(): void {
     this.reload();
@@ -148,6 +103,10 @@ export class TraitementDemandesPage implements OnInit {
 
   protected consulter(demande: TreatmentDemande): void {
     void this.router.navigate(['/dashboard/demandes', demande.id], { queryParams: { source: 'traitement' } });
+  }
+
+  protected ouvrirHistorique(): void {
+    void this.router.navigate(['/dashboard/gestion/demandes/historique']);
   }
 
   protected showMiniFiche(demande: TreatmentDemande): void {
@@ -192,7 +151,6 @@ export class TraitementDemandesPage implements OnInit {
 
   protected reload(): void {
     this.loadDemandes();
-    this.loadCourses();
   }
 
   protected changeSearch(value: string): void {
@@ -225,17 +183,7 @@ export class TraitementDemandesPage implements OnInit {
     this.priorityOverrides.update((current) => new Map(current).set(demande.id, value));
     const updatedDemande = { ...demande, priorite: value };
     this.demandes.update((items) => items.map((item) => item.id === demande.id ? updatedDemande : item));
-    this.demandeCache.update((cache) => new Map(cache).set(demande.id, updatedDemande));
     this.priorityLocalNotice.set(true);
-  }
-
-  protected selectCourse(value: string): void {
-    const id = value ? Number(value) : null;
-    this.selectedCourseId.set(id);
-    const course = this.editableCourses().find((item) => item.id === id);
-    this.selectedDemandeIds.set(new Set(course?.demande_ids ?? []));
-    this.successMessage.set('');
-    this.courseError.set('');
   }
 
   protected isSelected(demandeId: number): boolean {
@@ -250,7 +198,10 @@ export class TraitementDemandesPage implements OnInit {
       next.delete(demandeId);
     }
     this.selectedDemandeIds.set(next);
-    this.successMessage.set('');
+  }
+
+  protected clearSelection(): void {
+    this.selectedDemandeIds.set(new Set());
   }
 
   protected toggleVisibleDemandes(checked: boolean): void {
@@ -263,72 +214,6 @@ export class TraitementDemandesPage implements OnInit {
       }
     }
     this.selectedDemandeIds.set(next);
-    this.successMessage.set('');
-  }
-
-  protected removeSelectedDemande(demandeId: number): void {
-    this.toggleDemande(demandeId, false);
-  }
-
-  protected clearSelection(): void {
-    this.selectedDemandeIds.set(new Set());
-    this.successMessage.set('');
-  }
-
-  protected createPreparation(): void {
-    this.courseError.set('');
-    this.successMessage.set('');
-    this.saving.set(true);
-    this.api.post<ApiItem<CoursePreparation>>('/courses', {}, {
-      headers: { 'Idempotency-Key': this.newIdempotencyKey() },
-    }).subscribe({
-      next: (response) => {
-        this.courses.update((items) => [response.data, ...items.filter((item) => item.id !== response.data.id)]);
-        this.selectedCourseId.set(response.data.id);
-        this.selectedDemandeIds.set(new Set(response.data.demande_ids));
-        this.successMessage.set('Préparation créée. Sélectionnez les demandes à y inclure, puis enregistrez.');
-        this.saving.set(false);
-      },
-      error: (error: unknown) => {
-        this.courseError.set(this.errorMessage(error, 'Impossible de créer la préparation de course.', 'create_course'));
-        this.saving.set(false);
-      },
-    });
-  }
-
-  protected savePreparation(): void {
-    const course = this.selectedCourse();
-    if (!course || this.saving()) {
-      return;
-    }
-
-    this.courseError.set('');
-    this.successMessage.set('');
-    this.saving.set(true);
-    const demandeIds = [...this.selectedDemandeIds()].sort((a, b) => a - b);
-    this.api.put<ApiItem<CoursePreparation>>('/courses/' + course.id, {
-      version_attendue: course.lock_version,
-      demande_ids: demandeIds,
-    }, {
-      headers: { 'Idempotency-Key': this.newIdempotencyKey() },
-    }).subscribe({
-      next: (response) => {
-        this.courses.update((items) => items.map((item) => item.id === response.data.id ? response.data : item));
-        this.successMessage.set('La sélection de demandes a été enregistrée dans la préparation.');
-        this.saving.set(false);
-      },
-      error: (error: unknown) => {
-        const status = (error as { status?: number })?.status;
-        if (status === 409) {
-          this.loadCourses();
-          this.loadDemandes();
-        }
-        this.courseError.set(status === 409
-          ? 'La préparation ou une demande a changé depuis son chargement. Les données ont été actualisées ; vérifiez la sélection puis réessayez.'
-          : this.errorMessage(error, 'Impossible d’enregistrer la préparation.', 'update_course'));
-        this.saving.set(false);
-      },
-    });
   }
 
   protected previousPage(): void {
@@ -348,20 +233,12 @@ export class TraitementDemandesPage implements OnInit {
   protected loadDemandes(): void {
     this.loadingDemandes.set(true);
     this.pendingError.set('');
-    this.successMessage.set('');
     const params = new HttpParams().set('page', this.page()).set('per_page', 20);
 
     this.api.get<ApiList<TreatmentDemande>>('/traitement/demandes', { params }).subscribe({
       next: (response) => {
         const demandes = response.data ?? [];
         this.demandes.set(demandes);
-        this.demandeCache.update((cache) => {
-          const updated = new Map(cache);
-          for (const demande of demandes) {
-            updated.set(demande.id, demande);
-          }
-          return updated;
-        });
         this.page.set(response.meta?.current_page ?? this.page());
         this.lastPage.set(response.meta?.last_page ?? 1);
         this.totalDemandes.set(response.meta?.total ?? response.data?.length ?? 0);
@@ -371,43 +248,6 @@ export class TraitementDemandesPage implements OnInit {
         this.pendingError.set(this.errorMessage(error, 'Impossible de charger les demandes en attente.', 'read_demande_traitement'));
         this.loadingDemandes.set(false);
       },
-    });
-  }
-
-  private loadCourses(): void {
-    this.loadingCourses.set(true);
-    this.courseError.set('');
-    this.api.get<ApiList<CoursePreparation>>('/courses', {
-      params: { page: '1', per_page: '100' },
-    }).subscribe({
-      next: (response) => {
-        this.courses.set(response.data ?? []);
-        const selectedId = this.selectedCourseId();
-        if (selectedId !== null) {
-          const updated = response.data?.find((item) => item.id === selectedId && item.statut_execution === null);
-          if (updated) {
-            this.selectedDemandeIds.set(new Set(updated.demande_ids));
-          } else {
-            this.selectedCourseId.set(null);
-            this.selectedDemandeIds.set(new Set());
-          }
-        }
-        this.loadingCourses.set(false);
-      },
-      error: (error: unknown) => {
-        this.courseError.set(this.errorMessage(error, 'Impossible de charger les préparations de course.', 'read_course'));
-        this.loadingCourses.set(false);
-      },
-    });
-  }
-
-  private newIdempotencyKey(): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID();
-    }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
-      const random = Math.floor(Math.random() * 16);
-      return (character === 'x' ? random : (random & 0x3) | 0x8).toString(16);
     });
   }
 

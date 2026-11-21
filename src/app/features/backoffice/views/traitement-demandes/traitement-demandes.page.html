@@ -1,18 +1,19 @@
-<section class="treatment-page">
+<section class="treatment-page dag-page">
   <header class="page-header">
-    <div class="page-header__eyebrow">ESPACE DE GESTION • LISTE ET PANNEAU</div>
+    <div class="page-header__eyebrow">GESTION DES DEMANDES</div>
     <div class="page-header__row">
       <div>
-        <h1>Traitement des demandes</h1>
+        <h1>Demandes à traiter</h1>
+      </div>
+      <div class="page-header__actions">
+        <button type="button" class="button button--secondary" (click)="ouvrirHistorique()"><i class="bi bi-archive" aria-hidden="true"></i> Historique traité</button>
       </div>
     </div>
+    <p class="page-header__subtitle">Sélectionnez une ou plusieurs demandes, puis préparez leur course dans un écran dédié.</p>
   </header>
 
-  @if (successMessage()) {
-    <div class="notice notice--success" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i>{{ successMessage() }}</div>
-  }
 
-  <div class="treatment-layout">
+  <div class="treatment-layout" [class.has-detail]="loadingDemandeDetail() || !!demandeDetailError() || !!selectedDemandeDetail()">
     <section class="request-panel" aria-label="Demandes à traiter">
       <div class="request-panel__tabs" aria-label="Filtrer les demandes">
         <button type="button" class="request-tab" [class.is-active]="activeTab() === 'all'" [attr.aria-pressed]="activeTab() === 'all'" (click)="changeTab('all')">
@@ -35,6 +36,19 @@
         <input type="search" [value]="searchTerm()" (input)="changeSearch($any($event.target).value)" placeholder="Rechercher une demande sur cette page" />
       </label>
 
+      @if (selectedDemandeIds().size > 0) {
+        <div class="selection-toolbar" aria-live="polite">
+          <div class="selection-toolbar__summary">
+            <span class="selection-toolbar__count">{{ selectedDemandeIds().size }}</span>
+            <span>{{ selectedDemandeIds().size === 1 ? 'demande sélectionnée' : 'demandes sélectionnées' }}</span>
+            <button type="button" class="selection-clear" (click)="clearSelection()">Effacer</button>
+          </div>
+          <button type="button" class="button button--primary selection-prepare" (click)="preparerCourseAvecSelection()" [disabled]="loadingDemandes()">
+            <i class="bi bi-car-front-fill" aria-hidden="true"></i> Préparer une course
+          </button>
+        </div>
+      }
+
       @if (priorityLocalNotice()) {
         <p class="priority-local-note" role="status">
           Les changements de priorité sont visibles dans cette page uniquement ; l’API actuelle ne permet pas encore de les enregistrer.
@@ -54,7 +68,7 @@
             <thead>
               <tr>
                 <th scope="col" class="checkbox-column">
-                  <input type="checkbox" aria-label="Sélectionner toutes les demandes affichées" [checked]="hasAllVisibleSelected()" [indeterminate]="hasSomeVisibleSelected() && !hasAllVisibleSelected()" [disabled]="saving() || loadingDemandes() || visibleDemandes().length === 0" (change)="toggleVisibleDemandes($any($event.target).checked)" />
+                  <input type="checkbox" aria-label="Sélectionner toutes les demandes affichées" [checked]="hasAllVisibleSelected()" [indeterminate]="hasSomeVisibleSelected() && !hasAllVisibleSelected()" [disabled]="loadingDemandes() || visibleDemandes().length === 0" (change)="toggleVisibleDemandes($any($event.target).checked)" />
                 </th>
                 <th scope="col">Demande</th>
                 <th scope="col">Direction</th>
@@ -72,7 +86,7 @@
                 @for (demande of visibleDemandes(); track demande.id) {
                   <tr [class.is-selected]="isSelected(demande.id)" [class.is-focused]="selectedDemandeDetail()?.id === demande.id" (click)="showMiniFiche(demande)">
                     <td class="checkbox-column">
-                      <input type="checkbox" [attr.aria-label]="'Inclure la demande ' + demande.reference" [checked]="isSelected(demande.id)" [disabled]="saving()" (click)="$event.stopPropagation()" (change)="toggleDemande(demande.id, $any($event.target).checked)" />
+                      <input type="checkbox" [attr.aria-label]="'Inclure la demande ' + demande.reference" [checked]="isSelected(demande.id)" [disabled]="loadingDemandes()" (click)="$event.stopPropagation()" (change)="toggleDemande(demande.id, $any($event.target).checked)" />
                     </td>
                     <td><strong class="request-ref">{{ demande.reference }}</strong></td>
                     <td>{{ demande.direction?.nom || '—' }}</td>
@@ -137,7 +151,7 @@
       <aside class="course-panel request-detail-panel" aria-label="Fiche de la demande">
         <div class="course-panel__header"><span class="course-panel__label">DEMANDE</span><h2>Fiche indisponible</h2></div>
         <div class="notice notice--error" role="alert">{{ demandeDetailError() }}</div>
-        <button type="button" class="secondary-action" (click)="closeMiniFiche()">Retour à la préparation</button>
+        <button type="button" class="secondary-action" (click)="closeMiniFiche()">Retour aux demandes</button>
       </aside>
     } @else if (selectedDemandeDetail(); as demande) {
       <aside class="course-panel request-detail-panel" aria-label="Mini-fiche de la demande">
@@ -164,94 +178,9 @@
           @if (demande.employes.length) { <ul class="mini-detail-list">@for (employe of demande.employes; track $index) { <li>{{ employe.prenom }} {{ employe.nom }}@if (employe.fonction) { <span> · {{ employe.fonction }}</span> }</li> }</ul> } @else { <p class="mini-detail-muted">Aucun employé précisé.</p> }
         </div>
         @if (demande.objets.length) { <div class="mini-detail-section"><h3>Objets ({{ demande.objets.length }})</h3><ul class="mini-detail-list">@for (objet of demande.objets; track $index) { <li>{{ objet.designation }}@if (objet.quantite) { <span> × {{ objet.quantite }}</span> }@if (objet.description) { <span> · {{ objet.description }}</span> }</li> }</ul></div> }
-        <button type="button" class="primary-action" (click)="ouvrirCourse()"><i class="bi bi-car-front-fill" aria-hidden="true"></i> Course</button>
+        <button type="button" class="primary-action" (click)="ouvrirCourse()"><i class="bi bi-car-front-fill" aria-hidden="true"></i> Préparer une course</button>
         <button type="button" class="secondary-action" (click)="consulter(demande)">Ouvrir la fiche complète</button>
       </aside>
-    } @else {
-    <aside class="course-panel" aria-label="Préparation de course">
-      <div class="course-panel__header">
-        <span class="course-panel__label">ORGANISATION</span>
-        <h2>Préparation de course</h2>
-      </div>
-
-      <label class="field course-field">
-        <span>Préparation active</span>
-        <select [value]="selectedCourseId() ?? ''" (change)="selectCourse($any($event.target).value)" [disabled]="loadingCourses() || saving() || hasSelectionChanges()">
-          <option value="">Choisir une préparation…</option>
-          @for (course of editableCourses(); track course.id) {
-            <option [value]="course.id">Préparation #{{ course.id }} · v{{ course.version_preparation }} · {{ course.demande_ids.length }} demande(s)</option>
-          }
-        </select>
-      </label>
-
-      @if (loadingCourses()) {
-        <p class="panel-state"><span class="spinner" aria-hidden="true"></span> Chargement des préparations…</p>
-      } @else if (!selectedCourse()) {
-        <div class="preparation-hint">
-          <i class="bi bi-lightbulb" aria-hidden="true"></i>
-          <span>{{ selectedDemandeIds().size ? selectedDemandeIds().size + ' demande(s) sélectionnée(s) pour une nouvelle course.' : editableCourses().length ? 'Sélectionnez une ou plusieurs demandes, ou choisissez une préparation existante.' : 'Sélectionnez une ou plusieurs demandes pour préparer une course.' }}</span>
-        </div>
-        @if (selectedDemandeIds().size > 0) {
-          <button type="button" class="button button--primary full-width" (click)="preparerCourseAvecSelection()">
-            <i class="bi bi-car-front-fill" aria-hidden="true"></i> Préparer une course avec {{ selectedDemandeIds().size }} demande(s)
-          </button>
-        }
-        @if (editableCourses().length === 0) {
-          <button type="button" class="button button--secondary full-width" (click)="createPreparation()" [disabled]="saving()">
-            <i class="bi bi-plus-lg" aria-hidden="true"></i> Créer une préparation vide
-          </button>
-        }
-      } @else {
-        <div class="course-summary">
-          <div class="course-summary__item">
-            <span class="course-summary__label">Demandes</span>
-            <strong>{{ selectedDemandeIds().size }}</strong>
-          </div>
-          <div class="course-summary__item">
-            <span class="course-summary__label">Version</span>
-            <strong>{{ selectedCourse()?.version_preparation }}</strong>
-          </div>
-        </div>
-
-        @if (hasSelectionChanges()) {
-          <p class="unsaved-note" role="status"><i class="bi bi-pencil-square" aria-hidden="true"></i> Modifications non enregistrées : enregistrez ou videz la sélection avant de changer de préparation.</p>
-        }
-
-        <div class="course-panel__list-header">Demandes dans la préparation</div>
-        <div class="selected-list">
-          @for (item of selectedDemandes(); track item.id; let index = $index) {
-            <div class="selected-item">
-              <span class="selected-item__index">{{ index + 1 }}</span>
-              <div class="selected-item__content">
-                @if (item.demande; as demande) {
-                  <strong>{{ demande.direction?.nom || 'Direction non précisée' }} · {{ demande.service?.nom || demande.reference }}</strong>
-                  <span>{{ demande.reference }} · {{ demande.date_depart ? (demande.date_depart | date:'dd/MM/yyyy') : 'Date non précisée' }} · {{ demande.heure_depart || 'Heure non précisée' }}</span>
-                } @else {
-                  <strong>Demande #{{ item.id }}</strong>
-                  <span>Détails non chargés · la demande est conservée dans la préparation</span>
-                }
-              </div>
-              <button type="button" class="selected-item__remove" (click)="removeSelectedDemande(item.id)" [disabled]="saving()" [attr.aria-label]="'Retirer la demande ' + (item.demande?.reference || item.id)" title="Retirer de la sélection">
-                <i class="bi bi-x" aria-hidden="true"></i>
-              </button>
-            </div>
-          } @empty {
-            <div class="selected-empty">Aucune demande dans cette préparation.</div>
-          }
-        </div>
-      }
-
-      @if (courseError()) {
-        <div class="notice notice--error" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><span>{{ courseError() }}</span></div>
-      }
-
-      @if (selectedCourse()) {
-        <button type="button" class="primary-action" (click)="savePreparation()" [disabled]="saving() || loadingCourses() || !hasSelectionChanges()">
-          @if (saving()) { <span class="spinner spinner--light" aria-hidden="true"></span> Enregistrement… } @else { <i class="bi bi-save2" aria-hidden="true"></i> Enregistrer la sélection }
-        </button>
-        <button type="button" class="secondary-action" (click)="clearSelection()" [disabled]="saving() || selectedDemandeIds().size === 0">Vider la sélection</button>
-      }
-    </aside>
     }
   </div>
 </section>

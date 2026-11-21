@@ -6,6 +6,7 @@ import { ApiService } from '@/core/services/api.service';
 
 interface Course {
   id: number;
+  events?: Array<{ id: number; action: string; demande_ids: number[]; created_at: string | null }>;
   statut_execution: string | null;
   lock_version: number;
   chauffeur_id?: number | null;
@@ -49,7 +50,7 @@ export class MissionsPage implements OnInit {
       next: (response) => {
         const courses = response.data ?? [];
         this.courses.set(courses.filter((course) => this.history
-          ? course.statut_execution === 'TERMINEE'
+          ? course.statut_execution === 'TERMINEE' || course.statut_execution === 'ANNULEE'
           : course.statut_execution === 'A_VENIR' || course.statut_execution === 'EN_COURS'));
         this.total.set(response.meta?.total ?? courses.length);
         this.page.set(response.meta?.current_page ?? page);
@@ -61,6 +62,7 @@ export class MissionsPage implements OnInit {
   }
 
   protected ouvrir(course: Course): void { void this.router.navigate(['/dashboard/missions', course.id]); }
+  protected aUneDemandeAnnulee(course: Course): boolean { return course.events?.some((event) => event.action === 'demande_annulee') ?? false; }
   protected precedente(): void { if (this.page() > 1) this.charger(this.page() - 1); }
   protected suivante(): void { if (this.page() < this.lastPage()) this.charger(this.page() + 1); }
   protected statutLabel(status: string | null): string {
@@ -68,6 +70,7 @@ export class MissionsPage implements OnInit {
       case 'A_VENIR': return 'À venir';
       case 'EN_COURS': return 'En cours';
       case 'TERMINEE': return 'Terminée';
+      case 'ANNULEE': return 'Annulée';
       default: return 'Indéterminé';
     }
   }

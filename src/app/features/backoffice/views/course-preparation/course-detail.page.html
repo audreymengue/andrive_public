@@ -1,4 +1,4 @@
-<main class="course-page">
+<main class="course-page dag-page">
   <header class="page-header">
     <button type="button" class="back-link" (click)="retour()"><i class="bi bi-arrow-left" aria-hidden="true"></i> Retour aux demandes</button>
     @if (course(); as item) { <p class="eyebrow">SUIVI DES COURSES</p><div class="title-row"><div><h1>Course CR-{{ item.id }}</h1><p class="subtitle">Détails de la préparation enregistrée</p></div><span class="status">{{ statutExecutionLabel() }}</span></div> }
