@@ -208,7 +208,7 @@
 
 @if (editor(); as state) {
   <div class="overlay" (click)="closeEditor()">
-    <section class="modal" role="dialog" aria-modal="true" [attr.aria-label]="editorTitle()" (click)="$event.stopPropagation()">
+    <section class="modal" [class.modal--driver-create]="selectedSection() === 'chauffeurs' && state.mode === 'create'" role="dialog" aria-modal="true" [attr.aria-label]="editorTitle()" (click)="$event.stopPropagation()">
       <header class="modal-header">
         <div>
           <span class="eyebrow">{{ currentTitle() }}</span>
@@ -239,6 +239,9 @@
               <label class="field">Nom<input [(ngModel)]="draft.nom" name="nom" required maxlength="255" /></label>
             </div>
             <label class="field">E-mail<input type="email" [(ngModel)]="draft.email" name="email" required maxlength="255" /></label>
+            <label class="field">Numéro de téléphone <span class="muted">(facultatif)</span>
+              <input type="tel" [(ngModel)]="draft.telephone" name="telephone" maxlength="32" autocomplete="tel" placeholder="Ex. +241 07 00 00 00" />
+            </label>
             <label class="field">Direction
               <select [(ngModel)]="draft.direction_id" name="direction_id" required>
                 <option [ngValue]="null" disabled>Choisir une direction</option>

@@ -11,8 +11,8 @@ export interface Vehicule {
   immatriculation: string;
   places_utiles: number | null;
   /** Présents sur l’endpoint des ressources de course historique. */
-  marque?: string;
-  modele?: string;
+  marque?: string | null;
+  modele?: string | null;
   statut: StatutVehicule;
   lock_version: number;
 }
@@ -50,7 +50,7 @@ export class VehiculeService {
     return this.http.get<ListeVehiculesResponse>(this.base, { params });
   }
 
-  create(payload: { immatriculation: string; places_utiles: number }): Observable<VehiculeResponse> {
+  create(payload: { immatriculation: string; places_utiles: number; marque?: string | null; modele?: string | null }): Observable<VehiculeResponse> {
     return this.http.post<VehiculeResponse>(this.base, payload, {
       headers: new HttpHeaders({ 'Idempotency-Key': globalThis.crypto.randomUUID() }),
     });

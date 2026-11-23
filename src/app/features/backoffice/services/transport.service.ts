@@ -6,7 +6,7 @@ export type RessourceTransport = 'CHAUFFEUR' | 'VEHICULE';
 export interface TransportItem { id: number; type: string; type_ressource: RessourceTransport; ressource_id: number; course_id?: number | null; details?: string; signale_a?: string; debut_a?: string; fin_estimee_a?: string | null; fin_effective_a?: string | null; motif?: string; lock_version?: number; }
 export interface CancellationAlert { id: number; demande_id: number; reference: string; motif: string | null; signalee_a: string | null; auteur: string | null; }
 export interface ChauffeurTransport { id: number; statut: string; lock_version: number; utilisateur?: { nom: string; prenom: string } | null; }
-export interface VehiculeTransport { id: number; immatriculation: string; statut: string; lock_version: number; }
+export interface VehiculeTransport { id: number; immatriculation: string; marque?: string | null; modele?: string | null; statut: string; lock_version: number; }
 export interface IndisponibiliteTransport { id: number; type_ressource: RessourceTransport; ressource_id: number; debut_a: string; fin_estimee_a: string | null; fin_effective_a: string | null; motif: string; lock_version: number; }
 interface ListResponse<T> { data: T[]; meta?: { current_page: number; last_page: number; total: number }; }
 interface ItemResponse<T> { data: T; message?: string; }

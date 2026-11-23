@@ -1,4 +1,4 @@
-<section class="page dag-page">
+<section class="page dag-page aninf-animated-page">
   <header class="page-header">
     <div class="page-header__icon" aria-hidden="true"><i class="bi bi-car-front"></i></div>
     <div class="page-header__title">
@@ -41,6 +41,9 @@
           <thead>
             <tr>
               <th scope="col">Immatriculation</th>
+              <th scope="col">Course actuelle</th>
+              <th scope="col">Marque</th>
+              <th scope="col">Modèle</th>
               <th scope="col">Places utiles</th>
               <th scope="col">Statut</th>
             </tr>
@@ -48,7 +51,10 @@
           <tbody>
             @for (vehicle of vehicles(); track vehicle.id) {
               <tr>
-                <td><strong>{{ vehicle.immatriculation }}</strong></td>
+                <td><button type="button" class="vehicle-link" (click)="ouvrirHistorique(vehicle)" [attr.aria-label]="'Voir l’historique des courses du véhicule ' + vehicle.immatriculation">{{ vehicle.immatriculation }}<i class="bi bi-arrow-up-right" aria-hidden="true"></i></button></td>
+                <td><span [class]="courseStatusClass(vehicle)">{{ courseStatusLabel(vehicle) }}</span></td>
+                <td>{{ vehicle.marque || 'Non renseignée' }}</td>
+                <td>{{ vehicle.modele || 'Non renseigné' }}</td>
                 <td>{{ vehicle.places_utiles ?? 'Non renseigné' }}</td>
                 <td>{{ vehicle.statut }}</td>
               </tr>
@@ -67,6 +73,35 @@
     </nav>
   }
 </section>
+
+@if (historyTarget(); as vehicle) {
+  <div class="overlay" (click)="fermerHistorique()">
+    <section class="modal history-modal" role="dialog" aria-modal="true" aria-labelledby="vehicle-history-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div><span class="eyebrow">PARC AUTOMOBILE</span><h2 id="vehicle-history-title">Courses du véhicule {{ vehicle.immatriculation }}</h2></div>
+        <button type="button" class="close-button" aria-label="Fermer l’historique" (click)="fermerHistorique()"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      </header>
+      <p class="modal-copy">État actuel et historique des courses auxquelles ce véhicule a été affecté.</p>
+      @if (historyLoading()) {
+        <div class="loading-state" role="status"><span class="spinner"></span> Chargement des courses…</div>
+      } @else if (historyError()) {
+        <div class="notice notice--error" role="alert">{{ historyError() }}</div>
+      } @else if (historyCourses().length === 0) {
+        <div class="empty-state history-empty"><i class="bi bi-car-front" aria-hidden="true"></i><p>Aucune course n’a été affectée à ce véhicule.</p></div>
+      } @else {
+        <div class="vehicle-course-list">
+          @for (course of historyCourses(); track course.id) {
+            <article class="vehicle-course-item">
+              <div class="vehicle-course-item__main"><strong>Course CR-{{ course.id }}</strong><span [class]="courseClass(course)">{{ courseLabel(course) }}</span></div>
+              <p>Début prévu : {{ course.plan?.occupation_debut_prevue || 'Non renseigné' }}</p>
+              <button type="button" class="detail-link" (click)="ouvrirCourse(course)">Consulter la course <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+}
 
 @if (editorOpen()) {
   <div class="overlay" (click)="closeCreate()">
@@ -89,6 +124,18 @@
           <label for="vehicle-registration">Immatriculation</label>
           <input id="vehicle-registration" class="form-input" type="text" formControlName="immatriculation" maxlength="30" autocomplete="off" />
           @if (fieldError('immatriculation')) { <span class="field-error" role="alert">{{ fieldError('immatriculation') }}</span> }
+        </div>
+
+        <div class="field">
+          <label for="vehicle-make">Marque <span class="muted">(facultatif)</span></label>
+          <input id="vehicle-make" class="form-input" type="text" formControlName="marque" maxlength="255" autocomplete="off" />
+          @if (fieldError('marque')) { <span class="field-error" role="alert">{{ fieldError('marque') }}</span> }
+        </div>
+
+        <div class="field">
+          <label for="vehicle-model">Modèle <span class="muted">(facultatif)</span></label>
+          <input id="vehicle-model" class="form-input" type="text" formControlName="modele" maxlength="255" autocomplete="off" />
+          @if (fieldError('modele')) { <span class="field-error" role="alert">{{ fieldError('modele') }}</span> }
         </div>
 
         <div class="field">

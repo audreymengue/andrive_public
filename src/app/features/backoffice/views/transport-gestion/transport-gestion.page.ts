@@ -43,13 +43,19 @@ export class TransportGestionPage implements OnInit {
   protected resourceOptions(): Array<{ id: number; label: string; version: number }> {
     return this.form.type === 'CHAUFFEUR'
       ? this.chauffeurs().map((x) => ({ id: x.id, version: x.lock_version, label: `${x.utilisateur?.prenom ?? ''} ${x.utilisateur?.nom ?? ''}`.trim() || `Chauffeur #${x.id}` }))
-      : this.vehicules().map((x) => ({ id: x.id, version: x.lock_version, label: x.immatriculation }));
+      : this.vehicules().map((x) => ({ id: x.id, version: x.lock_version, label: [x.immatriculation, x.marque, x.modele].filter(Boolean).join(' · ') }));
   }
 
   protected resourceLabel(item: IndisponibiliteTransport): string {
-    return item.type_ressource === 'CHAUFFEUR'
-      ? this.chauffeurs().find((x) => x.id === item.ressource_id)?.utilisateur ? `${this.chauffeurs().find((x) => x.id === item.ressource_id)?.utilisateur?.prenom ?? ''} ${this.chauffeurs().find((x) => x.id === item.ressource_id)?.utilisateur?.nom ?? ''}`.trim() : `Chauffeur #${item.ressource_id}`
-      : this.vehicules().find((x) => x.id === item.ressource_id)?.immatriculation ?? `Véhicule #${item.ressource_id}`;
+    if (item.type_ressource === 'CHAUFFEUR') {
+      const driver = this.chauffeurs().find((x) => x.id === item.ressource_id);
+      const name = `${driver?.utilisateur?.prenom ?? ''} ${driver?.utilisateur?.nom ?? ''}`.trim();
+      return name || `Chauffeur #${item.ressource_id}`;
+    }
+    const vehicle = this.vehicules().find((x) => x.id === item.ressource_id);
+    return vehicle
+      ? [vehicle.immatriculation, vehicle.marque, vehicle.modele].filter(Boolean).join(' · ')
+      : `Véhicule #${item.ressource_id}`;
   }
 
   protected creer(): void {

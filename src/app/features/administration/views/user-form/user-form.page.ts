@@ -2,14 +2,17 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { distinctUntilChanged } from 'rxjs';
 
-import { DIRECTIONS, Role, USERS_BASE_PATH, User, fullName } from '../../models/user.model';
+import { Role, USERS_BASE_PATH, User, fullName } from '../../models/user.model';
 import { FlashService } from '../../services/flash.service';
+import { DirectionParametre, ParametrageService, ServiceParametre } from '../../services/parametrage.service';
 import { RoleService } from '../../services/role.service';
 import { UserService } from '../../services/user.service';
 
 type Mode = 'create' | 'edit' | 'detail';
-type FieldName = 'nom' | 'prenom' | 'email' | 'direction_id' | 'motif' | 'roles';
+type FieldName = 'nom' | 'prenom' | 'email' | 'direction_id' | 'service_id' | 'motif' | 'roles';
 
 @Component({
   selector: 'app-user-form-page',
@@ -22,6 +25,7 @@ type FieldName = 'nom' | 'prenom' | 'email' | 'direction_id' | 'motif' | 'roles'
 export class UserFormPage {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly api = inject(UserService);
+  private readonly parametrageApi = inject(ParametrageService);
   private readonly rolesApi = inject(RoleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -34,7 +38,10 @@ export class UserFormPage {
   private readonly id = this.rawId ? Number(this.rawId) : null;
 
   protected readonly listPath = USERS_BASE_PATH;
-  protected readonly directions = DIRECTIONS;
+  protected readonly directions = signal<DirectionParametre[]>([]);
+  protected readonly services = signal<ServiceParametre[]>([]);
+  protected readonly referencesLoading = signal(true);
+  protected readonly referencesError = signal('');
 
   protected readonly allRoles = signal<Role[]>([]);
   protected readonly creationRoles = computed(() => this.allRoles().filter((role) =>
@@ -54,6 +61,7 @@ export class UserFormPage {
     prenom: ['', [Validators.required, Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
     direction_id: this.fb.control<number | null>(null, Validators.required),
+    service_id: this.fb.control<number | null>(null),
     roles: this.fb.control<number[]>([], this.mode === 'create' ? Validators.required : []),
     motif: ['', this.mode === 'edit' || this.mode === 'create' ? [Validators.required, Validators.maxLength(2000)] : []],
     admin_current_password: ['', this.mode === 'create' ? Validators.required : []],
@@ -68,6 +76,24 @@ export class UserFormPage {
 
   constructor() {
     this.applyModeRestrictions();
+
+    this.parametrageApi.listDirections().subscribe({
+      next: (response) => {
+        this.directions.set(response.data ?? []);
+        this.referencesLoading.set(false);
+      },
+      error: () => {
+        this.referencesError.set('Le référentiel des directions est indisponible.');
+        this.referencesLoading.set(false);
+      },
+    });
+
+    this.form.controls.direction_id.valueChanges
+      .pipe(distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe((directionId) => {
+        this.form.controls.service_id.setValue(null, { emitEvent: false });
+        this.loadServices(directionId);
+      });
 
     this.rolesApi.list().subscribe({
       next: (roles) => this.allRoles.set(Array.isArray(roles) ? roles : []),
@@ -100,8 +126,11 @@ export class UserFormPage {
           prenom: u.prenom,
           email: u.email,
           direction_id: u.direction_id,
+          service_id: u.service_id ?? null,
           roles: Array.isArray(u.roles) ? u.roles.map((r: any) => r.id) : [],
-        });
+        }, { emitEvent: false });
+
+        this.loadServices(u.direction_id ?? null, u.service_id ?? null);
 
         this.user.set(u);
         this.loading.set(false);
@@ -123,6 +152,7 @@ export class UserFormPage {
       c.prenom.disable();
       c.email.disable();
       c.direction_id.disable();
+      c.service_id.disable();
       c.roles.disable();
     }
   }
@@ -145,8 +175,13 @@ export class UserFormPage {
 
   protected directionLabel(id: number | null): string {
     if (id === null) return '—';
-    const found = this.directions.find((d) => d.id === id);
+    const found = this.directions().find((d) => Number(d.id) === Number(id));
     return found ? `${found.nom} (${found.code})` : `Direction #${id}`;
+  }
+
+  protected serviceLabel(id: number | null): string {
+    if (id === null) return '—';
+    return this.services().find((service) => Number(service.id) === Number(id))?.nom ?? `Service #${id}`;
   }
 
   protected onRolesSelectChange(select: HTMLSelectElement): void {
@@ -213,10 +248,7 @@ export class UserFormPage {
       }
 
       const currentUser = this.user();
-      const updatePayload = currentUser && currentUser.direction_id !== payload.direction_id
-        ? { ...payload, service_id: null }
-        : payload;
-      this.api.update(this.id, updatePayload, { version: currentUser?.lock_version ?? 0, motif: motif.trim() })
+      this.api.update(this.id, payload, { version: currentUser?.lock_version ?? 0, motif: motif.trim() })
         .subscribe({
           next: (updated) => {
             this.user.set(updated);
@@ -268,5 +300,19 @@ export class UserFormPage {
       return;
     }
     this.error.set(err.error?.message ?? "L'enregistrement a échoué. Vérifiez votre connexion et réessayez.");
+  }
+
+  private loadServices(directionId: number | null, selectedServiceId: number | null = null): void {
+    this.services.set([]);
+    if (!directionId) return;
+    this.parametrageApi.listServices({ directionId, status: 'ACTIF' }).subscribe({
+      next: (response) => {
+        this.services.set(response.data ?? []);
+        if (selectedServiceId !== null && !response.data.some((service) => Number(service.id) === Number(selectedServiceId))) {
+          this.form.controls.service_id.setValue(null, { emitEvent: false });
+        }
+      },
+      error: () => this.referencesError.set('Les services de cette direction sont indisponibles.'),
+    });
   }
 }

@@ -36,6 +36,8 @@ h2 { margin: 0; font-size: 1.22rem; }
 .fact > span { display: block; margin-bottom: .3rem; color: #71839a; font-size: .73rem; }
 .fact strong { display: flex; align-items: center; gap: .45rem; overflow-wrap: anywhere; font-size: .88rem; }
 .fact strong i { color: #2866bb; }
+.fact-secondary { display: flex; align-items: center; gap: .4rem; margin-top: .45rem; color: #52677f; font-size: .82rem; overflow-wrap: anywhere; }
+.fact-secondary i { color: #2866bb; }
 .stops { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
 .stops li { display: grid; grid-template-columns: 1.8rem minmax(0,1fr) auto; align-items: center; gap: .7rem; padding: .65rem .75rem; border: 1px solid #e4ebf3; border-radius: .7rem; }
 .stop-number { display: grid; width: 1.65rem; height: 1.65rem; place-items: center; border-radius: 50%; background: #eaf2ff; color: #225fb8; font-size: .82rem; font-weight: 800; }

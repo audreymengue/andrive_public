@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 
+import { ApiService } from '@/core/services/api.service';
 import {
   DirectionParametre,
   EntiteGeographiqueParametre,
@@ -40,6 +41,7 @@ interface SectionInfo {
 })
 export class ParametragePage {
   private readonly api = inject(ParametrageService);
+  private readonly profileApi = inject(ApiService);
   private readonly usersApi = inject(UserService);
 
   protected readonly sections: SectionInfo[] = [
@@ -76,6 +78,7 @@ export class ParametragePage {
     motif: '',
     prenom: '',
     email: '',
+    telephone: '',
     immatriculation: '',
     marque: '',
     modele: '',
@@ -321,7 +324,7 @@ export class ParametragePage {
   }
 
   protected codeOf(item: ReferenceRecord): string {
-    if (this.isVehicule(item)) return `${item.marque} ${item.modele}`;
+    if (this.isVehicule(item)) return [item.marque, item.modele].filter(Boolean).join(' ') || 'Marque et modèle non renseignés';
     if (this.isUser(item)) return item.email;
     return 'code' in item ? item.code : '—';
   }
@@ -408,7 +411,7 @@ export class ParametragePage {
   }
 
   private resetDraft(): void {
-    this.draft = { direction_id: null, nom: '', code: '', description: '', libelle: '', adresse: '', latitude: null, longitude: null, motif: '', prenom: '', email: '', immatriculation: '', marque: '', modele: '', statut: 'ACTIF', current_password: '' };
+    this.draft = { direction_id: null, nom: '', code: '', description: '', libelle: '', adresse: '', latitude: null, longitude: null, motif: '', prenom: '', email: '', telephone: '', immatriculation: '', marque: '', modele: '', statut: 'ACTIF', current_password: '' };
   }
 
   private loadRecords(): void {
@@ -514,19 +517,33 @@ export class ParametragePage {
       this.errorMessage.set('Nom, prénom, e-mail, direction et mot de passe administrateur sont obligatoires.');
       return;
     }
+    const telephone = this.draft.telephone.trim();
+    if (telephone && !/^\+?(?=[0-9 ().-]*[0-9])[0-9 ().-]+$/.test(telephone)) {
+      this.errorMessage.set('Saisissez un numéro de téléphone valide.');
+      return;
+    }
     this.saving.set(true);
     this.errorMessage.set('');
     this.usersApi.create({ nom: this.draft.nom.trim(), prenom: this.draft.prenom.trim(), email: this.draft.email.trim(), direction_id: this.draft.direction_id!, role: 'chauffeur' }).pipe(
-      switchMap(({ user }) => this.usersApi.revealTemporaryPassword(user.id, user.password_generation ?? 1, user.lock_version ?? 0, this.draft.current_password, 'Communication initiale du compte chauffeur').pipe(
-        map((secret) => ({ password: secret.temporary_password, revealError: '' })),
-        catchError((error: HttpErrorResponse) => of({ password: '', revealError: this.errorText(error) })),
+      switchMap(({ user }) => this.profileApi.post('/parametrage/chauffeurs', {
+        user_id: user.id,
+        ...(telephone ? { telephone } : {}),
+      }, { headers: { 'Idempotency-Key': this.newIdempotencyKey() } }).pipe(
+        map(() => ({ user, profileError: '' })),
+        catchError((error: HttpErrorResponse) => of({ user, profileError: this.errorText(error) })),
+      )),
+      switchMap(({ user, profileError }) => this.usersApi.revealTemporaryPassword(user.id, user.password_generation ?? 1, user.lock_version ?? 0, this.draft.current_password, 'Communication initiale du compte chauffeur').pipe(
+        map((secret) => ({ password: secret.temporary_password, revealError: '', profileError })),
+        catchError((error: HttpErrorResponse) => of({ password: '', revealError: this.errorText(error), profileError })),
       )),
     ).subscribe({
-      next: ({ password, revealError }) => {
+      next: ({ password, revealError, profileError }) => {
         this.saving.set(false);
         this.editor.set(null);
         this.successMessage.set(password ? 'Compte chauffeur créé. Mot de passe temporaire à communiquer au chauffeur :' : 'Compte chauffeur créé.');
-        this.errorMessage.set(revealError ? `Le compte est créé, mais le mot de passe temporaire n’a pas pu être révélé. ${revealError}` : '');
+        this.errorMessage.set(profileError
+          ? `Le compte est créé, mais le profil chauffeur${telephone ? ' et son numéro de téléphone' : ''} n’a pas pu être enregistré. ${profileError}`
+          : revealError ? `Le compte est créé, mais le mot de passe temporaire n’a pas pu être révélé. ${revealError}` : '');
         this.temporaryPassword.set(password);
         this.draft.current_password = '';
         this.loadRecords();
@@ -544,5 +561,14 @@ export class ParametragePage {
     if (error.status === 403) return 'Ton compte ne possède pas la permission nécessaire.';
     if (error.status === 422 && error.error?.errors) return (Object.values(error.error.errors) as string[][]).flat().join(' ');
     return error.error?.message || 'La demande a échoué. Réessaie.';
+  }
+
+  private newIdempotencyKey(): string {
+    return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+          const random = Math.floor(Math.random() * 16);
+          return (character === 'x' ? random : (random & 0x3) | 0x8).toString(16);
+        });
   }
 }

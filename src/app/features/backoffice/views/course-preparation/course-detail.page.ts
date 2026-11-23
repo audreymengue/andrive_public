@@ -17,8 +17,8 @@ interface Course {
   demarree_a?: string | null; terminee_a?: string | null; chauffeur_libere_a?: string | null; vehicule_libere_a?: string | null;
   created_at?: string | null;
 }
-interface Chauffeur { id: number; utilisateur?: { nom?: string; prenom?: string } | null; }
-interface Vehicule { id: number; immatriculation: string; }
+interface Chauffeur { id: number; user_id: number | null; telephone?: string | null; utilisateur?: { nom?: string; prenom?: string } | null; }
+interface Vehicule { id: number; immatriculation: string; marque?: string | null; modele?: string | null; }
 interface Ressources { chauffeurs: Chauffeur[]; vehicules: Vehicule[]; }
 
 @Component({ selector: 'app-course-detail-page', standalone: true, imports: [CommonModule], templateUrl: './course-detail.page.html', styleUrl: './course-detail.page.scss' })
@@ -55,13 +55,18 @@ export class CourseDetailPage implements OnInit {
   }
   protected chauffeur(): string {
     const id = this.course()?.chauffeur_id;
-    const person = this.ressources().chauffeurs.find((item) => item.id === id);
+    const person = this.ressources().chauffeurs.find((item) => item.user_id === id);
     return person ? `${person.utilisateur?.prenom ?? ''} ${person.utilisateur?.nom ?? ''}`.trim() || `Chauffeur #${id}` : id ? `Chauffeur #${id}` : 'Non affecté';
+  }
+  protected chauffeurTelephone(): string {
+    const id = this.course()?.chauffeur_id;
+    const profile = this.ressources().chauffeurs.find((item) => item.user_id === id);
+    return profile?.telephone?.trim() || 'Non renseigné';
   }
   protected vehicule(): string {
     const id = this.course()?.vehicule_id;
     const item = this.ressources().vehicules.find((vehicle) => vehicle.id === id);
-    return item ? item.immatriculation : id ? `Véhicule #${id}` : 'Non affecté';
+    return item ? [item.immatriculation, item.marque, item.modele].filter(Boolean).join(' · ') : id ? `Véhicule #${id}` : 'Non affecté';
   }
   protected statut(): string { return (this.course()?.statut_execution || 'brouillon_preparation').replaceAll('_', ' '); }
   protected retour(): void { void this.router.navigate(['/dashboard/gestion/demandes']); }

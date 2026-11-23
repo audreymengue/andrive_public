@@ -1,4 +1,4 @@
-<main class="missions-page">
+<main class="missions-page dag-page aninf-animated-page">
   <header class="page-header">
     <div>
       <p class="eyebrow">ESPACE CHAUFFEUR</p>
@@ -13,7 +13,6 @@
   } @else if (error()) {
     <section class="state-card error" role="alert"><p>{{ error() }}</p><button type="button" class="secondary-button" (click)="charger()">Réessayer</button></section>
   } @else if (courses().length) {
-    <div class="list-heading"><h2>{{ courses().length }} course(s)</h2><span>{{ total() }} résultat(s) · page {{ page() }} sur {{ lastPage() }}</span></div>
     <section class="course-list" [attr.aria-label]="title">
       @for (course of courses(); track course.id) {
         <article class="course-card">

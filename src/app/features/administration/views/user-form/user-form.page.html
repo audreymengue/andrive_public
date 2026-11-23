@@ -66,6 +66,8 @@
         }
       }
 
+      @if (referencesLoading()) { <p class="hint" role="status">Chargement du référentiel des directions…</p> }
+
       @if (rolesError(); as message) {
         <div class="notice notice--error" role="alert">
           <p>{{ message }}</p>
@@ -124,13 +126,28 @@
               [class.is-invalid]="errorOf('direction_id')"
             >
               <option [ngValue]="null">— Choisir une direction —</option>
-              @for (d of directions; track d.id) {
+              @for (d of directions(); track d.id) {
                 <option [ngValue]="d.id">{{ d.nom }} ({{ d.code }})</option>
               }
             </select>
           }
+          @if (referencesError()) { <p class="field-error" role="alert">{{ referencesError() }}</p> }
           @if (errorOf('direction_id'); as msg) {
             <p class="field-error" role="alert">{{ msg }}</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="service">Service <span class="muted">(facultatif)</span></label>
+          @if (mode === 'detail') {
+            <input id="service" type="text" [value]="serviceLabel(form.controls.service_id.value)" disabled />
+          } @else {
+            <select id="service" formControlName="service_id">
+              <option [ngValue]="null">— Aucun service —</option>
+              @for (service of services(); track service.id) {
+                <option [ngValue]="service.id">{{ service.nom }} ({{ service.code }})</option>
+              }
+            </select>
           }
         </div>
       </div>

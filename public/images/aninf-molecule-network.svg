@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <g fill="none" stroke="#72caff" stroke-opacity=".42" stroke-width="1.5">
+    <path d="M0 180 140 112 264 194 386 108 510 188 630 112 748 194 870 112 992 188 1114 108 1240 186 1360 112 1440 154"/>
+    <path d="M0 180 82 326 264 194 330 342 510 188 574 336 748 194 812 344 992 188 1050 340 1240 186 1304 332 1440 154"/>
+    <path d="M82 326 196 452 330 342 444 470 574 336 690 468 812 344 930 476 1050 340 1170 468 1304 332 1400 438 1440 404"/>
+    <path d="M0 526 82 326 196 452 304 586 444 470 550 600 690 468 798 600 930 476 1040 606 1170 468 1280 596 1400 438 1440 526"/>
+    <path d="M0 526 118 664 196 452 304 586 356 738 550 600 602 748 798 600 850 752 1040 606 1090 748 1280 596 1330 742 1440 664"/>
+    <path d="M0 822 118 664 246 828 356 738 482 850 602 748 724 852 850 752 968 850 1090 748 1214 846 1330 742 1440 822"/>
+    <path d="M82 326 304 586 550 600 798 600 1040 606 1280 596"/>
+    <path d="M264 194 330 342 444 470 550 600 602 748 724 852M510 188 574 336 690 468 798 600 850 752 968 850"/>
+    <path d="M992 188 1050 340 1170 468 1280 596 1330 742 1440 822M1240 186 1304 332 1400 438 1330 742"/>
+  </g>
+  <g fill="#a9edff" filter="url(#glow)" opacity=".86">
+    <circle cx="82" cy="326" r="4"/><circle cx="140" cy="112" r="3"/>
+    <circle cx="196" cy="452" r="5"/><circle cx="264" cy="194" r="4"/>
+    <circle cx="330" cy="342" r="4"/><circle cx="356" cy="738" r="4"/>
+    <circle cx="444" cy="470" r="5"/><circle cx="510" cy="188" r="4"/>
+    <circle cx="550" cy="600" r="4"/><circle cx="574" cy="336" r="4"/>
+    <circle cx="602" cy="748" r="5"/><circle cx="690" cy="468" r="4"/>
+    <circle cx="748" cy="194" r="4"/><circle cx="798" cy="600" r="5"/>
+    <circle cx="850" cy="752" r="4"/><circle cx="870" cy="112" r="3"/>
+    <circle cx="930" cy="476" r="4"/><circle cx="992" cy="188" r="4"/>
+    <circle cx="1040" cy="606" r="5"/><circle cx="1050" cy="340" r="4"/>
+    <circle cx="1090" cy="748" r="4"/><circle cx="1170" cy="468" r="5"/>
+    <circle cx="1240" cy="186" r="4"/><circle cx="1280" cy="596" r="4"/>
+    <circle cx="1304" cy="332" r="4"/><circle cx="1330" cy="742" r="5"/>
+    <circle cx="1400" cy="438" r="4"/>
+  </g>
+  <defs>
+    <linearGradient id="meteor-tail" x1="0" y1="0" x2="150" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7bdcff" stop-opacity="0"/>
+      <stop offset=".72" stop-color="#9cecff" stop-opacity=".48"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="1"/>
+    </linearGradient>
+    <filter id="meteor-glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g class="shooting-star" filter="url(#meteor-glow)">
+    <path d="M0 0 145 78" fill="none" stroke="url(#meteor-tail)" stroke-linecap="round" stroke-width="2.5"/>
+    <circle cx="145" cy="78" r="3.5" fill="#fff"/>
+    <animateTransform attributeName="transform" type="translate" from="-180 -100" to="1620 900" dur="9s" repeatCount="indefinite"/>
+  </g>
+  <g class="shooting-star" filter="url(#meteor-glow)">
+    <path d="M0 0 115 62" fill="none" stroke="url(#meteor-tail)" stroke-linecap="round" stroke-width="2"/>
+    <circle cx="115" cy="62" r="3" fill="#fff"/>
+    <animateTransform attributeName="transform" type="translate" from="180 -250" to="1980 750" dur="11s" begin="-4s" repeatCount="indefinite"/>
+  </g>
+  <g class="shooting-star" filter="url(#meteor-glow)">
+    <path d="M0 0 130 70" fill="none" stroke="url(#meteor-tail)" stroke-linecap="round" stroke-width="2"/>
+    <circle cx="130" cy="70" r="3" fill="#fff"/>
+    <animateTransform attributeName="transform" type="translate" from="-300 400" to="1500 1400" dur="12s" begin="-7s" repeatCount="indefinite"/>
+  </g>
+  <style>
+    @media (prefers-reduced-motion: reduce) {
+      .shooting-star { display: none; }
+    }
+  </style>
+  <defs>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+</svg>

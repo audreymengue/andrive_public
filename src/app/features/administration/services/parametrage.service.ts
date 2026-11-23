@@ -43,8 +43,8 @@ export interface EntiteGeographiqueParametre {
 export interface VehiculeParametre {
   id: number;
   immatriculation: string;
-  marque: string;
-  modele: string;
+  marque?: string | null;
+  modele?: string | null;
   statut: StatutReference;
   lock_version: number;
 }

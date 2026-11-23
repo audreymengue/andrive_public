@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, Observable, of, switchMap, throwError } from 'rxjs';
+import { forkJoin, map, Observable, of, switchMap, throwError } from 'rxjs';
 import { ApiService } from '@/core/services/api.service';
 
 interface ApiItem<T> { message: string; data: T; }
@@ -11,11 +11,15 @@ interface ApiPage<T> { message: string; data: T[]; meta?: { current_page: number
 interface Demande {
   id: number; reference: string; statut: string;
   date_depart: string | null; heure_depart: string | null; heure_retour: string | null;
+  adresse_depart?: { adresse?: string | null } | null;
+  adresse_retour?: { adresse?: string | null } | null;
+  destinations?: Array<{ ordre?: number; entite_geographique?: { adresse?: string | null } | null }>;
+  employes?: unknown[];
   direction?: { nom: string } | null; service?: { nom: string } | null;
   personnes_count?: number; objets_count?: number;
 }
-interface Chauffeur { id: number; utilisateur?: { nom?: string; prenom?: string } | null; statut: string; }
-interface Vehicule { id: number; immatriculation: string; statut: string; }
+interface Chauffeur { id: number; user_id: number | null; utilisateur?: { nom?: string; prenom?: string } | null; statut: string; }
+interface Vehicule { id: number; immatriculation: string; marque?: string | null; modele?: string | null; statut: string; }
 interface Course {
   id: number; lock_version: number; demande_ids: number[]; statut_execution: string | null;
   chauffeur_id?: number | null; vehicule_id?: number | null;
@@ -71,6 +75,10 @@ export class CoursePreparationPage implements OnInit {
   }
 
   protected get arrets(): FormArray<FormGroup> { return this.form.controls.arrets; }
+
+  protected vehiculeLabel(vehicule: Vehicule): string {
+    return [vehicule.immatriculation, vehicule.marque, vehicule.modele].filter(Boolean).join(' · ');
+  }
 
   protected ajouterArret(): void {
     if (this.demandes().length === 0) return;
@@ -191,7 +199,17 @@ export class CoursePreparationPage implements OnInit {
       if (found.size === wanted.size || pageNumber >= lastPage) {
         const missing = ids.filter((id) => !found.has(id));
         if (missing.length) return throwError(() => new Error(`La ou les demandes ${missing.map((id) => `#${id}`).join(', ')} ne sont plus en attente de traitement.`));
-        return of(ids.map((id) => found.get(id)!));
+        return forkJoin(ids.map((id) => this.api.get<ApiItem<Demande>>(`/traitement/demandes/${id}`))).pipe(
+          map((details) => ids.map((id, index) => {
+            const summary = found.get(id)!;
+            const demande = details[index].data;
+            return {
+              ...summary,
+              ...demande,
+              personnes_count: demande.personnes_count ?? demande.employes?.length ?? summary.personnes_count,
+            };
+          })),
+        );
       }
       return loadPage(pageNumber + 1);
     }));
@@ -207,8 +225,16 @@ export class CoursePreparationPage implements OnInit {
       fin: this.toLocalDateTime(plan?.occupation_fin_prevue ?? ''),
       chargement_confirme: plan?.chargement_confirme ?? false,
     });
-    for (const stop of plan?.arrets ?? []) {
-      this.arrets.push(this.stopGroup(stop.lieu, this.toLocalDateTime(stop.heure_prevue), stop.demande_id));
+    const defaultStops = this.buildDefaultStops(this.demandes());
+    const existingStops = plan?.arrets ?? [];
+    for (let index = 0; index < Math.max(existingStops.length, defaultStops.length); index++) {
+      const existing = existingStops[index];
+      const fallback = defaultStops[index];
+      this.arrets.push(this.stopGroup(
+        existing?.lieu?.trim() || fallback?.lieu || '',
+        this.toLocalDateTime(existing?.heure_prevue || fallback?.heure || ''),
+        existing?.demande_id ?? fallback?.demandeId ?? this.demandes()[0]?.id ?? 0,
+      ));
     }
     if (!this.arrets.length) this.setDefaults(this.demandes());
   }
@@ -228,11 +254,33 @@ export class CoursePreparationPage implements OnInit {
     const start = schedules.map((schedule) => schedule.start).sort()[0];
     const end = schedules.map((schedule) => schedule.end).sort().at(-1) ?? start;
     this.form.patchValue({ debut: start, fin: end });
-    const stops: Array<{ lieu: string; heure: string; demandeId: number }> = [];
-    for (const { demande, start: demandeStart } of schedules) {
-      stops.push({ lieu: '', heure: demandeStart, demandeId: demande.id });
-    }
+    const stops = this.buildDefaultStops(demandes, schedules);
     for (const stop of stops) this.arrets.push(this.stopGroup(stop.lieu, stop.heure, stop.demandeId));
+  }
+
+  private buildDefaultStops(
+    demandes: Demande[],
+    schedules = demandes.map((demande) => ({
+      demande,
+      start: this.toLocalDateTime(`${demande.date_depart ?? ''}T${(demande.heure_depart ?? '08:00').slice(0, 5)}`),
+    })),
+  ): Array<{ lieu: string; heure: string; demandeId: number }> {
+    const stops: Array<{ lieu: string; heure: string; demandeId: number }> = [];
+    for (const { demande, start } of schedules) {
+      const lieux = [
+        demande.adresse_depart?.adresse,
+        ...(demande.destinations ?? [])
+          .slice()
+          .sort((left, right) => (left.ordre ?? 0) - (right.ordre ?? 0))
+          .map((destination) => destination.entite_geographique?.adresse),
+        demande.adresse_retour?.adresse,
+      ].map((lieu) => lieu?.trim() ?? '').filter(Boolean);
+      const distinctLieux = lieux.filter((lieu, index) => index === 0 || lieu.toLocaleLowerCase() !== lieux[index - 1].toLocaleLowerCase());
+      for (const lieu of distinctLieux.length ? distinctLieux : ['']) {
+        stops.push({ lieu, heure: start, demandeId: demande.id });
+      }
+    }
+    return stops;
   }
 
   private stopGroup(lieu: string, heure: string, demandeId = this.demandes()[0]?.id ?? 0): FormGroup {

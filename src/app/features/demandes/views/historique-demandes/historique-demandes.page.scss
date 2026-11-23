@@ -34,7 +34,8 @@
       height: calc(100% + 12px);
       object-fit: cover;
       object-position: center;
-      filter: blur(3px) saturate(.9) contrast(.98);
+      object-fit: cover;
+      opacity: 0.78;
     }
 
     &::after {

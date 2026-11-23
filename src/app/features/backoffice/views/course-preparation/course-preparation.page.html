@@ -31,8 +31,8 @@
       <form class="preparation-card" [formGroup]="form" (ngSubmit)="enregistrer()">
         <div class="card-heading"><div><p class="eyebrow">AFFECTATION</p><h2>Ressources et itinéraire</h2></div></div>
         <div class="resource-grid">
-          <label class="field"><span>Chauffeur *</span><select formControlName="chauffeur_id"><option [ngValue]="null">Sélectionner un chauffeur</option>@for (chauffeur of chauffeurs(); track chauffeur.id) { <option [ngValue]="chauffeur.id">{{ chauffeur.utilisateur?.prenom || 'Chauffeur' }} {{ chauffeur.utilisateur?.nom || ('#' + chauffeur.id) }}</option> }</select></label>
-          <label class="field"><span>Véhicule *</span><select formControlName="vehicule_id"><option [ngValue]="null">Sélectionner un véhicule</option>@for (vehicule of vehicules(); track vehicule.id) { <option [ngValue]="vehicule.id">{{ vehicule.immatriculation }}</option> }</select></label>
+          <label class="field"><span>Chauffeur *</span><select formControlName="chauffeur_id"><option [ngValue]="null">Sélectionner un chauffeur</option>@for (chauffeur of chauffeurs(); track chauffeur.id) { <option [ngValue]="chauffeur.user_id">{{ chauffeur.utilisateur?.prenom || 'Chauffeur' }} {{ chauffeur.utilisateur?.nom || ('#' + chauffeur.user_id) }}</option> }</select></label>
+          <label class="field"><span>Véhicule *</span><select formControlName="vehicule_id"><option [ngValue]="null">Sélectionner un véhicule</option>@for (vehicule of vehicules(); track vehicule.id) { <option [ngValue]="vehicule.id">{{ vehiculeLabel(vehicule) }}</option> }</select></label>
           @if (!chauffeurs().length) { <p class="muted resource-note">Aucun chauffeur actif disponible.</p> }
           @if (!vehicules().length) { <p class="muted resource-note">Aucun véhicule actif disponible.</p> }
         </div>

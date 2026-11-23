@@ -20,7 +20,7 @@
         @if (item.terminee_a) { <p class="execution-time">Fin réelle : <strong>{{ item.terminee_a | date:'dd/MM/yyyy à HH:mm' }}</strong></p> }
       }
       <section class="sheet-section"><div class="panel-heading"><div><p class="eyebrow">AFFECTATION</p><h2>Ressources et horaires</h2></div><span class="version">Préparation v{{ item.version_preparation ?? 1 }}</span></div>
-        <div class="facts"><div class="fact"><span>Chauffeur</span><strong><i class="bi bi-person-badge" aria-hidden="true"></i>{{ chauffeur() }}</strong></div><div class="fact"><span>Véhicule</span><strong><i class="bi bi-car-front" aria-hidden="true"></i>{{ vehicule() }}</strong></div>
+        <div class="facts"><div class="fact"><span>Chauffeur</span><strong><i class="bi bi-person-badge" aria-hidden="true"></i>{{ chauffeur() }}</strong><small class="fact-secondary"><i class="bi bi-telephone" aria-hidden="true"></i>{{ chauffeurTelephone() }}</small></div><div class="fact"><span>Véhicule</span><strong><i class="bi bi-car-front" aria-hidden="true"></i>{{ vehicule() }}</strong></div>
           <div class="fact"><span>Début prévu</span><strong>{{ item.plan?.occupation_debut_prevue ? (item.plan?.occupation_debut_prevue | date:'dd/MM/yyyy à HH:mm') : '—' }}</strong></div><div class="fact"><span>Fin prévue</span><strong>{{ item.plan?.occupation_fin_prevue ? (item.plan?.occupation_fin_prevue | date:'dd/MM/yyyy à HH:mm') : '—' }}</strong></div>
           <div class="fact"><span>Chargement vérifié</span><strong>{{ item.plan?.chargement_confirme ? 'Oui' : 'Non' }}</strong></div><div class="fact"><span>Créée le</span><strong>{{ item.created_at ? (item.created_at | date:'dd/MM/yyyy à HH:mm') : '—' }}</strong></div></div>
       </section>

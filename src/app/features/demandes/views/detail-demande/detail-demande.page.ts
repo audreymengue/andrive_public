@@ -17,6 +17,11 @@ interface DemandeDetail {
   date_depart: string;
   heure_depart: string;
   heure_retour?: string | null;
+  chauffeur_nom?: string | null;
+  chauffeur_prenom?: string | null;
+  chauffeur_telephone?: string | null;
+  vehicule_marque?: string | null;
+  vehicule_modele?: string | null;
   demandeur?: { nom: string; prenom: string } | null;
   direction?: { nom: string } | null;
   service?: { id: number; nom: string; code?: string } | null;
@@ -122,6 +127,14 @@ export class DetailDemandePage implements OnInit {
 
   protected heure(value?: string | null): string {
     return value ? value.slice(0, 5) : '—';
+  }
+
+  protected chauffeurNom(demande: DemandeDetail): string {
+    return [demande.chauffeur_prenom, demande.chauffeur_nom].filter(Boolean).join(' ') || '—';
+  }
+
+  protected vehiculeNom(demande: DemandeDetail): string {
+    return [demande.vehicule_marque, demande.vehicule_modele].filter(Boolean).join(' ') || '—';
   }
 
   protected statutClass(statut: string): string {

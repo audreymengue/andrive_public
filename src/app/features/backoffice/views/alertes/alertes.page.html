@@ -1,4 +1,4 @@
-<main class="alerts-page dag-page">
+<main class="alerts-page dag-page aninf-animated-page">
   <header class="page-header"><div><p class="eyebrow">ESPACE DAG</p><h1>Alertes et signalements</h1><p class="subtitle">Retrouvez les annulations de demandes et les incidents déclarés par les chauffeurs.</p></div><button type="button" class="refresh-button" (click)="actualiser()"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Actualiser</button></header>
   <section class="alert-card" aria-labelledby="cancellations-title">
     <div class="card-heading"><div class="heading-icon heading-icon--amber"><i class="bi bi-x-circle" aria-hidden="true"></i></div><div><h2 id="cancellations-title">Annulations de demandes</h2><p>Demandes annulées par leur demandeur ou par un membre du DAG.</p></div><span class="count">{{ annulations().length }}</span></div>

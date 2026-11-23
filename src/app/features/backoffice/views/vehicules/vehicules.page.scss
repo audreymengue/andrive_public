@@ -27,6 +27,12 @@ td strong, td small { display: block; }
 td small { margin-top: .2rem; color: #718096; }
 .status-pill { display: inline-flex; padding: .25rem .6rem; border-radius: 99px; background: #e8f7ef; color: #18794e; font-size: .75rem; font-weight: 700; }
 .status-pill--off { background: #fff1f0; color: #b42318; }
+.status-pill--scheduled { background: #eaf2ff; color: #2456a6; }
+.status-pill--running { background: #fff4df; color: #9a5b00; }
+.status-pill--loading { background: #f1f5f9; color: #526174; }
+.vehicle-link { display: inline-flex; align-items: center; gap: .45rem; padding: 0; border: 0; background: transparent; color: #1d4ed8; font: inherit; font-weight: 750; text-align: left; cursor: pointer; }
+.vehicle-link:hover { color: #173c9c; text-decoration: underline; }
+.vehicle-link i { font-size: .75rem; opacity: .75; }
 .loading-state, .empty-state { display: grid; min-height: 10rem; place-content: center; justify-items: center; gap: .65rem; color: #617181; }
 .empty-state i { font-size: 1.8rem; color: #91a0b1; }
 .spinner { width: 1.3rem; height: 1.3rem; border: 2px solid #dbe5f2; border-top-color: #2456c5; border-radius: 50%; animation: spin .8s linear infinite; }
@@ -41,6 +47,15 @@ td small { margin-top: .2rem; color: #718096; }
 .modal-header h2 { margin: .35rem 0 0; color: #17232d; font-size: 1.55rem; font-weight: 700; }
 .close-button { min-width: 3rem; min-height: 3rem; padding: .25rem; border-color: #d7e0ea; background: #fff; color: #17232d; font-size: 1.1rem; }
 .modal-copy { margin: 1rem 0 1.25rem; color: #465568; line-height: 1.5; }
+.history-modal { width: min(100%, 46rem); }
+.history-empty { min-height: 8rem; }
+.vehicle-course-list { display: grid; gap: .7rem; max-height: 55vh; overflow-y: auto; }
+.vehicle-course-item { padding: .9rem 1rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: #fbfdff; }
+.vehicle-course-item__main { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.vehicle-course-item__main strong { color: #1f344c; }
+.vehicle-course-item p { margin: .55rem 0; color: #617181; font-size: .875rem; }
+.detail-link { display: inline-flex; align-items: center; gap: .4rem; padding: 0; border: 0; background: transparent; color: #2456c5; font: inherit; font-size: .875rem; font-weight: 700; cursor: pointer; }
+.detail-link:hover { text-decoration: underline; }
 .field { display: grid; gap: .55rem; margin: 1rem 0 1.5rem; color: #344256; font-size: .9rem; font-weight: 650; }
 .field label, .field-label { margin: 0; }
 .form-input { width: 100%; min-height: 3.4rem; padding: .75rem .9rem; border: 1px solid #cbd5e1; border-radius: .65rem; background: #fff; color: #17232d; font: inherit; font-weight: 400; }
@@ -58,5 +73,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   .toolbar { align-items: stretch; flex-wrap: wrap; }
   .search-field { flex: 1 1 100%; }
   .record-count { margin-left: auto; }
+  .vehicle-course-item__main { align-items: flex-start; flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }

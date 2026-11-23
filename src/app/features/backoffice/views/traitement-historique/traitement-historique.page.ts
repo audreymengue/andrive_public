@@ -2,6 +2,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { Observable, catchError, of, switchMap } from 'rxjs';
 import { ApiService } from '@/core/services/api.service';
 
 interface HistoryDemande {
@@ -12,7 +13,11 @@ interface HistoryDemande {
   service: { id: number; nom: string } | null;
   date_depart: string | null;
   heure_depart: string | null;
+  statut_course?: string | null;
 }
+
+interface HistoryCourse { id: number; statut_execution: string | null; demande_ids: number[]; }
+interface CourseStatusLookup { statuses: Map<number, string | null>; unavailable: boolean; }
 
 interface ApiList<T> {
   message: string;
@@ -94,11 +99,19 @@ export class TraitementHistoriquePage implements OnInit {
     if (this.statut()) params = params.set('statut', this.statut());
     this.api.get<ApiList<HistoryDemande>>('/traitement/demandes/historique', { params }).subscribe({
       next: (response) => {
-        this.demandes.set(response.data ?? []);
-        this.page.set(response.meta?.current_page ?? this.page());
-        this.lastPage.set(response.meta?.last_page ?? 1);
-        this.total.set(response.meta?.total ?? response.data?.length ?? 0);
-        this.loading.set(false);
+        const items = response.data ?? [];
+        const demandeIds = new Set(items.map((item) => item.id));
+        if (demandeIds.size === 0) {
+          this.appliquerHistorique(response, items);
+          return;
+        }
+
+        this.chargerStatutsCourses(demandeIds).subscribe(({ statuses, unavailable }) => {
+          this.appliquerHistorique(response, items.map((item) => ({
+            ...item,
+            statut_course: statuses.has(item.id) ? statuses.get(item.id) : unavailable ? 'INDISPONIBLE' : null,
+          })));
+        });
       },
       error: (failure: unknown) => {
         const http = failure instanceof HttpErrorResponse ? failure : null;
@@ -108,6 +121,34 @@ export class TraitementHistoriquePage implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  private chargerStatutsCourses(demandeIds: Set<number>, page = 1, statuses = new Map<number, string | null>()): Observable<CourseStatusLookup> {
+    const params = new HttpParams().set('page', page).set('per_page', 100);
+    return this.api.get<ApiList<HistoryCourse>>('/courses', { params }).pipe(
+      switchMap((response) => {
+        for (const course of response.data ?? []) {
+          for (const demandeId of course.demande_ids ?? []) {
+            if (demandeIds.has(demandeId) && !statuses.has(demandeId)) {
+              statuses.set(demandeId, course.statut_execution);
+            }
+          }
+        }
+        const lastPage = response.meta?.last_page ?? page;
+        const allFound = [...demandeIds].every((id) => statuses.has(id));
+        if (!allFound && page < lastPage) return this.chargerStatutsCourses(demandeIds, page + 1, statuses);
+        return of({ statuses, unavailable: false });
+      }),
+      catchError(() => of({ statuses, unavailable: true })),
+    );
+  }
+
+  private appliquerHistorique(response: ApiList<HistoryDemande>, items: HistoryDemande[]): void {
+    this.demandes.set(items);
+    this.page.set(response.meta?.current_page ?? this.page());
+    this.lastPage.set(response.meta?.last_page ?? 1);
+    this.total.set(response.meta?.total ?? response.data?.length ?? 0);
+    this.loading.set(false);
   }
 
   protected voirDetail(demande: HistoryDemande): void {
@@ -125,6 +166,29 @@ export class TraitementHistoriquePage implements OnInit {
   protected statutClass(value: string): string {
     if (value === 'VALIDEE' || value === 'TERMINEE') return 'status status--ok';
     if (value === 'REFUSEE' || value === 'ANNULEE') return 'status status--off';
+    return 'status';
+  }
+
+  protected statutCourseLabel(demande: HistoryDemande): string {
+    const labels: Record<string, string> = {
+      A_VENIR: 'Validée · à venir',
+      EN_COURS: 'En cours',
+      TERMINEE: 'Terminée',
+      ANNULEE: 'Annulée',
+      BROUILLON: 'Brouillon',
+      INDISPONIBLE: 'Statut indisponible',
+    };
+    if (demande.statut_course === null || demande.statut_course === undefined) {
+      return demande.statut === 'VALIDEE' ? 'Aucune course associée' : '—';
+    }
+    return labels[demande.statut_course] ?? demande.statut_course;
+  }
+
+  protected statutCourseClass(demande: HistoryDemande): string {
+    if (demande.statut_course === 'EN_COURS') return 'status status--running';
+    if (demande.statut_course === 'A_VENIR') return 'status status--scheduled';
+    if (demande.statut_course === 'ANNULEE' || demande.statut_course === 'INDISPONIBLE') return 'status status--off';
+    if (demande.statut_course === 'TERMINEE') return 'status status--ok';
     return 'status';
   }
 }

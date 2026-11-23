@@ -1,4 +1,4 @@
-<main class="reports-page">
+<main class="reports-page aninf-animated-page">
   @if (success()) { <div class="notice success" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i>{{ success() }}<button type="button" aria-label="Fermer" (click)="success.set('')">×</button></div> }
   @if (error() && !modal() && !selected()) { <div class="notice error" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>{{ error() }}<button type="button" (click)="load()">Réessayer</button></div> }
 
@@ -37,7 +37,7 @@
   <form (ngSubmit)="submit()"><label>Type de signalement<select name="type" [(ngModel)]="form.type" required>@for (type of types; track type) { <option [value]="type">{{ typeLabel(type) }}</option> }</select>@if (fieldError('type')) { <small>{{ fieldError('type') }}</small> }</label>
   <div class="form-grid"><label>Type de ressource<select name="type_ressource" [(ngModel)]="form.type_ressource" required><option value="VEHICULE">Véhicule</option><option value="CHAUFFEUR">Chauffeur</option></select>@if (fieldError('type_ressource')) { <small>{{ fieldError('type_ressource') }}</small> }</label>
   <label>Identifiant de la ressource<input name="ressource_id" type="number" min="1" [(ngModel)]="form.ressource_id" required>@if (fieldError('ressource_id')) { <small>{{ fieldError('ressource_id') }}</small> }</label></div>
-  <label>Course associée <span class="optional">Facultatif</span><input name="course_id" type="number" min="1" [(ngModel)]="form.course_id">@if (fieldError('course_id')) { <small>{{ fieldError('course_id') }}</small> }</label>
+  <label>Course associée @if (form.type_ressource === 'VEHICULE') { <span class="optional">Obligatoire pour un véhicule</span> } @else { <span class="optional">Facultatif</span> }<input name="course_id" type="number" min="1" [required]="form.type_ressource === 'VEHICULE'" [(ngModel)]="form.course_id">@if (fieldError('course_id')) { <small>{{ fieldError('course_id') }}</small> }</label>
   <label>Description détaillée<textarea name="details" rows="5" maxlength="1000" [(ngModel)]="form.details" required placeholder="Décrivez le problème rencontré…"></textarea><span class="counter">{{ form.details.length }}/1000</span>@if (fieldError('details')) { <small>{{ fieldError('details') }}</small> }</label>
   <footer><button class="secondary-button" type="button" (click)="closeCreate()">Annuler</button><button class="primary-button" type="submit" [disabled]="saving()"><i class="bi bi-check2" aria-hidden="true"></i>{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button></footer></form></section></div> }
 

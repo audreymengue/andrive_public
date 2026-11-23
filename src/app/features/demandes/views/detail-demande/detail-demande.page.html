@@ -47,6 +47,36 @@
       </header>
 
       <div class="detail-content">
+        @if (d.chauffeur_nom || d.chauffeur_prenom || d.chauffeur_telephone || d.vehicule_marque || d.vehicule_modele) {
+          <section class="detail-section assignment-section">
+            <header class="section-heading">
+              <span class="section-heading__icon"><i class="bi bi-car-front" aria-hidden="true"></i></span>
+              <div>
+                <h3>Affectation de la course</h3>
+                <p>Chauffeur et véhicule après validation de la course</p>
+              </div>
+            </header>
+            <div class="info-grid assignment-grid">
+              <div class="info-item">
+                <span class="field-label">Nom du chauffeur</span>
+                <strong>{{ chauffeurNom(d) }}</strong>
+              </div>
+              <div class="info-item">
+                <span class="field-label">Téléphone</span>
+                @if (d.chauffeur_telephone) {
+                  <a class="driver-phone" [href]="'tel:' + d.chauffeur_telephone">{{ d.chauffeur_telephone }}</a>
+                } @else {
+                  <strong>—</strong>
+                }
+              </div>
+              <div class="info-item">
+                <span class="field-label">Véhicule</span>
+                <strong>{{ vehiculeNom(d) }}</strong>
+              </div>
+            </div>
+          </section>
+        }
+
         <section class="detail-section">
           <header class="section-heading">
             <span class="section-heading__icon"><i class="bi bi-card-text" aria-hidden="true"></i></span>

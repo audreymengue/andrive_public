@@ -1,6 +1,59 @@
 <section class="page">
   <div class="page__fond-images" aria-hidden="true">
-    <img class="fond-image" src="/images/demande-fond-numerique.jpg" alt="" />
+    <svg class="molecule-network" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+      <g class="molecule-network__mesh">
+        <path d="M0 180 140 112 264 194 386 108 510 188 630 112 748 194 870 112 992 188 1114 108 1240 186 1360 112 1440 154" />
+        <path d="M0 180 82 326 264 194 330 342 510 188 574 336 748 194 812 344 992 188 1050 340 1240 186 1304 332 1440 154" />
+        <path d="M82 326 196 452 330 342 444 470 574 336 690 468 812 344 930 476 1050 340 1170 468 1304 332 1400 438 1440 404" />
+        <path d="M0 526 82 326 196 452 304 586 444 470 550 600 690 468 798 600 930 476 1040 606 1170 468 1280 596 1400 438 1440 526" />
+        <path d="M0 526 118 664 196 452 304 586 356 738 550 600 602 748 798 600 850 752 1040 606 1090 748 1280 596 1330 742 1440 664" />
+        <path d="M0 822 118 664 246 828 356 738 482 850 602 748 724 852 850 752 968 850 1090 748 1214 846 1330 742 1440 822" />
+        <path d="M82 326 304 586 550 600 798 600 1040 606 1280 596" />
+        <path d="M264 194 330 342 444 470 550 600 602 748 724 852M510 188 574 336 690 468 798 600 850 752 968 850" />
+        <path d="M992 188 1050 340 1170 468 1280 596 1330 742 1440 822M1240 186 1304 332 1400 438 1330 742" />
+      </g>
+      <g class="molecule-network__nodes">
+        <circle cx="82" cy="326" r="3" /><circle cx="140" cy="112" r="2.5" />
+        <circle cx="196" cy="452" r="4" /><circle cx="264" cy="194" r="3.5" />
+        <circle cx="330" cy="342" r="3" /><circle cx="356" cy="738" r="3.5" />
+        <circle cx="444" cy="470" r="4" /><circle cx="510" cy="188" r="3" />
+        <circle cx="550" cy="600" r="3.5" /><circle cx="574" cy="336" r="3" />
+        <circle cx="602" cy="748" r="4" /><circle cx="690" cy="468" r="3.5" />
+        <circle cx="748" cy="194" r="3" /><circle cx="798" cy="600" r="4" />
+        <circle cx="850" cy="752" r="3" /><circle cx="870" cy="112" r="2.5" />
+        <circle cx="930" cy="476" r="3.5" /><circle cx="992" cy="188" r="3" />
+        <circle cx="1040" cy="606" r="4" /><circle cx="1050" cy="340" r="3" />
+        <circle cx="1090" cy="748" r="3.5" /><circle cx="1170" cy="468" r="4" />
+        <circle cx="1240" cy="186" r="3" /><circle cx="1280" cy="596" r="3.5" />
+        <circle cx="1304" cy="332" r="3" /><circle cx="1330" cy="742" r="4" />
+        <circle cx="1400" cy="438" r="3.5" />
+      </g>
+      <g class="molecule molecule--one" transform="translate(180 278)">
+        <path d="M0 0 44-28 91-2 137-34" />
+        <circle cx="0" cy="0" r="7" /><circle cx="44" cy="-28" r="4" />
+        <circle cx="91" cy="-2" r="6" /><circle cx="137" cy="-34" r="4" />
+        <circle cx="91" cy="-2" r="2" />
+      </g>
+      <g class="molecule molecule--two" transform="translate(1120 270)">
+        <path d="M0 0 38 32 84 8 126 42" />
+        <circle cx="0" cy="0" r="5" /><circle cx="38" cy="32" r="7" />
+        <circle cx="84" cy="8" r="4" /><circle cx="126" cy="42" r="6" />
+      </g>
+      <g class="molecule molecule--three" transform="translate(460 770)">
+        <path d="M0 0 36-36 78-14 112-52" />
+        <circle cx="0" cy="0" r="6" /><circle cx="36" cy="-36" r="4" />
+        <circle cx="78" cy="-14" r="7" /><circle cx="112" cy="-52" r="4" />
+      </g>
+      <g class="molecule molecule--four" transform="translate(1280 690)">
+        <path d="M0 0 42 24 83-8 126 18" />
+        <circle cx="0" cy="0" r="4" /><circle cx="42" cy="24" r="6" />
+        <circle cx="83" cy="-8" r="4" /><circle cx="126" cy="18" r="7" />
+      </g>
+    </svg>
+    <span class="shooting-star shooting-star--one"></span>
+    <span class="shooting-star shooting-star--two"></span>
+    <span class="shooting-star shooting-star--three"></span>
+    <span class="shooting-star shooting-star--four"></span>
   </div>
   <header class="page__header">
     <div class="page__titre">
@@ -230,7 +283,10 @@
       @if (form.get('direction_id')?.value) {
         <div class="champ services" [class.champ--erreur]="invalide('service_id')">
           <span class="services__titre" id="services_label">
-            Services de {{ libelleDirectionBrut(form.get('direction_id')?.value) }}
+            <span class="services__titre-label"><i class="bi bi-diagram-3" aria-hidden="true"></i> Services de {{ libelleDirectionBrut(form.get('direction_id')?.value) }}</span>
+            @if (!chargementServices && services.length > 0) {
+              <span class="services__compte">{{ services.length }} service(s)</span>
+            }
           </span>
 
           @if (chargementServices) {
@@ -246,17 +302,24 @@
           @if (!chargementServices && services.length > 0) {
             <div class="services__grille" role="radiogroup" aria-labelledby="services_label" aria-required="true">
               @for (sv of services; track sv.id) {
-                <label class="service-carte"
-                       [class.service-carte--active]="sv.id === form.get('service_id')?.value">
-                  <input class="service-carte__radio"
+                <label class="service-choice-btn"
+                       [class.service-choice-btn--active]="sv.id === form.get('service_id')?.value">
+                  <span class="service-choice-btn__fold" aria-hidden="true"></span>
+                  <span class="service-choice-btn__points" aria-hidden="true">
+                    <i class="service-choice-btn__point"></i><i class="service-choice-btn__point"></i>
+                    <i class="service-choice-btn__point"></i><i class="service-choice-btn__point"></i>
+                    <i class="service-choice-btn__point"></i><i class="service-choice-btn__point"></i>
+                    <i class="service-choice-btn__point"></i><i class="service-choice-btn__point"></i>
+                    <i class="service-choice-btn__point"></i><i class="service-choice-btn__point"></i>
+                  </span>
+                  <input class="service-choice-btn__radio"
                          type="radio"
                          formControlName="service_id"
                          [value]="sv.id"
                          [attr.aria-label]="sv.libelle">
-                  @if (sv.sigle) {
-                    <strong class="service-carte__sigle">{{ sv.sigle }}</strong>
-                  }
-                  <span class="service-carte__nom">{{ sv.libelle }}</span>
+                  <span class="service-choice-btn__inner">
+                    <span class="service-choice-btn__name">{{ sv.libelle }}</span>
+                  </span>
                 </label>
               }
             </div>

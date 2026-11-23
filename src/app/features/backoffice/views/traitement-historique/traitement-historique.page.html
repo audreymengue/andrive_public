@@ -22,9 +22,9 @@
     @else {
       <div class="table-wrap" [attr.aria-busy]="loading()">
         <table>
-          <thead><tr><th>Référence</th><th>Direction</th><th>Service</th><th>Départ prévu</th><th>Statut</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Référence</th><th>Direction</th><th>Service</th><th>Départ prévu</th><th>Statut demande</th><th>État de la course</th><th>Actions</th></tr></thead>
           <tbody>
-            @if (loading()) { <tr><td colspan="6" class="empty-state">Chargement de l’historique…</td></tr> }
+            @if (loading()) { <tr><td colspan="7" class="empty-state">Chargement de l’historique…</td></tr> }
             @else {
               @for (demande of demandes(); track demande.id) {
                 <tr>
@@ -33,9 +33,10 @@
                   <td>{{ demande.service?.nom || '—' }}</td>
                   <td>{{ demande.date_depart ? (demande.date_depart | date:'dd/MM/yyyy') : '—' }} · {{ demande.heure_depart || '—' }}</td>
                   <td><span [class]="statutClass(demande.statut)">{{ statutLabel(demande.statut) }}</span></td>
+                  <td><span [class]="statutCourseClass(demande)">{{ statutCourseLabel(demande) }}</span></td>
                   <td class="row-actions"><button type="button" class="detail-button" (click)="voirDetail(demande)"><i class="bi bi-eye" aria-hidden="true"></i> Détail</button>@if (demande.statut === 'VALIDEE') { <button type="button" class="cancel-button" (click)="demanderAnnulation(demande)"><i class="bi bi-x-circle" aria-hidden="true"></i> Annuler</button> }</td>
                 </tr>
-              } @empty { <tr><td colspan="6" class="empty-state">Aucune demande dans cet historique.</td></tr> }
+              } @empty { <tr><td colspan="7" class="empty-state">Aucune demande dans cet historique.</td></tr> }
             }
           </tbody>
         </table>

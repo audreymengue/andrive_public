@@ -19,7 +19,10 @@ $erreur: #c62828;
   margin-left: calc(130px - 50vw + 50%);
   padding: 2rem 1.5rem;
   overflow: hidden;
-  background: #0b1e38;
+  background:
+    radial-gradient(ellipse at 75% 20%, rgb(0 153 255 / 30%), transparent 45%),
+    radial-gradient(ellipse at 14% 82%, rgb(17 94 190 / 30%), transparent 42%),
+    linear-gradient(135deg, #073b82 0%, #06428f 48%, #052b68 100%);
   color: $texte;
   font-family: "Segoe UI", Arial, sans-serif;
 }
@@ -37,34 +40,6 @@ $erreur: #c62828;
 .page > :not(.page__fond-images) {
   position: relative;
   z-index: 1;
-}
-
-.page__fond-images {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-
-  &::after {
-    position: absolute;
-    inset: 0;
-    content: "";
-    background:
-      linear-gradient(100deg, rgb(7 35 84 / 34%), rgb(13 63 132 / 18%) 52%, rgb(5 30 70 / 32%)),
-      linear-gradient(0deg, rgb(8 29 63 / 24%), transparent 60%);
-  }
-}
-
-.fond-image {
-  position: absolute;
-  inset: -6px;
-  width: calc(100% + 12px);
-  height: calc(100% + 12px);
-  object-fit: cover;
-  object-position: center;
-  filter: blur(3px) saturate(.9) contrast(.98);
-  opacity: 1;
 }
 
 .page__header {
@@ -580,6 +555,7 @@ $erreur: #c62828;
   *::after {
     transition: none !important;
   }
+
 }
 .message-succes {
   display: flex;

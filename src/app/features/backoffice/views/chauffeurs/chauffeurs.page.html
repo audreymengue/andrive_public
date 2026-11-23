@@ -1,4 +1,4 @@
-<section class="page dag-page">
+<section class="page dag-page aninf-animated-page">
   <header class="page-header">
     <div class="page-header__icon" aria-hidden="true"><i class="bi bi-people"></i></div>
     <div class="page-header__title">
@@ -39,7 +39,9 @@
           <thead>
             <tr>
               <th scope="col">Chauffeur</th>
+              <th scope="col">Course actuelle</th>
               <th scope="col">E-mail</th>
+              <th scope="col">Téléphone</th>
               <th scope="col">Profil course</th>
               <th scope="col">Action</th>
             </tr>
@@ -47,8 +49,10 @@
           <tbody>
             @for (chauffeur of chauffeurs(); track chauffeur.id) {
               <tr>
-                <td><strong>{{ fullName(chauffeur) }}</strong></td>
+                <td><button type="button" class="driver-link" (click)="ouvrirHistorique(chauffeur)" [attr.aria-label]="'Voir l’historique des courses de ' + fullName(chauffeur)">{{ fullName(chauffeur) }}<i class="bi bi-arrow-up-right" aria-hidden="true"></i></button></td>
+                <td><span [class]="courseStatusClass(chauffeur)">{{ courseStatusLabel(chauffeur) }}</span></td>
                 <td>{{ chauffeur.email }}</td>
+                <td>{{ profilChauffeur(chauffeur.id)?.telephone || 'Non renseigné' }}</td>
                 <td>
                   @if (profilChauffeur(chauffeur.id); as profil) {
                     <span class="status-pill" [class.status-pill--off]="profil.statut !== 'ACTIF'">{{ profil.statut === 'ACTIF' ? 'Actif' : 'Inactif' }}</span>
@@ -64,6 +68,7 @@
                   } @else {
                     <span class="muted">Prêt pour une course</span>
                   }
+                  @if (profilChauffeur(chauffeur.id)) { <button type="button" class="text-action" (click)="modifierTelephone(chauffeur)" [disabled]="profileActionUserId() !== null || loading()">Modifier le téléphone</button> }
                 </td>
               </tr>
             }
@@ -81,3 +86,51 @@
     </nav>
   }
 </section>
+
+@if (historyTarget(); as chauffeur) {
+  <div class="overlay" (click)="fermerHistorique()">
+    <section class="modal history-modal" role="dialog" aria-modal="true" aria-labelledby="driver-history-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div><span class="eyebrow">REGISTRE DES CHAUFFEURS</span><h2 id="driver-history-title">Courses de {{ fullName(chauffeur) }}</h2></div>
+        <button type="button" class="close-button" aria-label="Fermer l’historique" (click)="fermerHistorique()">×</button>
+      </header>
+      <p class="modal-copy">État actuel et historique des courses qui lui ont été affectées.</p>
+      @if (historyLoading()) {
+        <div class="loading-state" role="status"><span class="spinner"></span> Chargement des courses…</div>
+      } @else if (historyError()) {
+        <div class="notice notice--error" role="alert">{{ historyError() }}</div>
+      } @else if (historyCourses().length === 0) {
+        <div class="empty-state history-empty"><i class="bi bi-car-front" aria-hidden="true"></i><p>Aucune course n’a été affectée à ce chauffeur.</p></div>
+      } @else {
+        <div class="driver-course-list">
+          @for (course of historyCourses(); track course.id) {
+            <article class="driver-course-item">
+              <div class="driver-course-item__main"><strong>Course CR-{{ course.id }}</strong><span [class]="courseClass(course)">{{ courseLabel(course) }}</span></div>
+              <p>Début prévu : {{ course.plan?.occupation_debut_prevue || 'Non renseigné' }}</p>
+              <button type="button" class="detail-link" (click)="ouvrirCourse(course)">Consulter la course <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+}
+
+@if (profileCreateTarget(); as chauffeur) {
+  <div class="overlay" (click)="closeProfileCreate()">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="driver-profile-title" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div><span class="eyebrow">REGISTRE DES CHAUFFEURS</span><h2 id="driver-profile-title">{{ profileEditMode() ? 'Modifier le téléphone' : 'Créer le profil de course' }}</h2></div>
+        <button type="button" class="close-button" aria-label="Fermer" [disabled]="profileActionUserId() !== null" (click)="closeProfileCreate()">×</button>
+      </header>
+      <p class="modal-copy">{{ profileEditMode() ? 'Mettez à jour le numéro de téléphone du profil de ' : 'Le profil sera associé au compte de ' }}<strong>{{ fullName(chauffeur) }}</strong>.</p>
+      @if (profileCreateError()) { <div class="notice notice--error" role="alert">{{ profileCreateError() }}</div> }
+      <label class="field" for="driver-telephone">Téléphone du chauffeur <span class="muted">(facultatif)</span></label>
+      <input id="driver-telephone" class="account-select" type="tel" autocomplete="tel" maxlength="32" placeholder="Ex. +241 07 00 00 00" [value]="profileTelephone()" (input)="profileTelephone.set($any($event.target).value)" />
+      <div class="modal-actions">
+        <button type="button" class="secondary-button" [disabled]="profileActionUserId() !== null" (click)="closeProfileCreate()">Annuler</button>
+        <button type="button" class="primary-button" [disabled]="profileActionUserId() !== null" (click)="saveProfile()">{{ profileActionUserId() === chauffeur.id ? 'Enregistrement…' : profileEditMode() ? 'Enregistrer le téléphone' : 'Créer le profil' }}</button>
+      </div>
+    </section>
+  </div>
+}

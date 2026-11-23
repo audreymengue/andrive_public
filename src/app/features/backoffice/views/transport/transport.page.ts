@@ -96,7 +96,13 @@ export class TransportPage implements OnInit {
   protected submit(): void {
     this.fieldErrors.set({}); this.error.set(''); this.success.set('');
     const details = this.form.details.trim();
-    if (!this.form.ressource_id || this.form.ressource_id < 1 || !details || details.length > 1000 || (this.form.course_id !== null && this.form.course_id < 1)) {
+    if (this.form.type_ressource === 'VEHICULE' && !this.form.course_id) {
+      this.fieldErrors.set({ course_id: ['Une course actuellement affectée est obligatoire pour signaler un véhicule.'] });
+      this.error.set('Sélectionnez la course actuellement affectée au véhicule.');
+      return;
+    }
+    if (!this.form.ressource_id || this.form.ressource_id < 1 || !details || details.length > 1000
+      || (this.form.course_id !== null && this.form.course_id < 1)) {
       this.error.set('Vérifiez les champs obligatoires et les valeurs indiquées.'); return;
     }
     const payload = { type: this.form.type, type_ressource: this.form.type_ressource, ressource_id: this.form.ressource_id, ...(this.form.course_id ? { course_id: this.form.course_id } : {}), details };

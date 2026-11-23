@@ -87,7 +87,10 @@ router-outlet + * {
   margin-bottom: 0 !important;
   margin-left: calc(130px - 50vw + 50%) !important;
   padding: 2rem 1.5rem !important;
-  background: #0b1e38 !important;
+  background:
+    radial-gradient(ellipse at 75% 20%, rgb(0 153 255 / 30%), transparent 45%),
+    radial-gradient(ellipse at 14% 82%, rgb(17 94 190 / 30%), transparent 42%),
+    linear-gradient(135deg, #073b82 0%, #06428f 48%, #052b68 100%) !important;
   color: #18324f;
 }
 
@@ -101,13 +104,48 @@ router-outlet + * {
 }
 
 .dag-page::before {
-  background: url('/images/demande-fond-numerique.jpg') center / cover no-repeat;
-  filter: blur(3px) saturate(.9) contrast(.98);
+  background: url('/images/aninf-molecule-network.svg') center / cover no-repeat;
 }
 
 .dag-page::after {
   background: linear-gradient(100deg, rgb(7 35 84 / 34%), rgb(13 63 132 / 18%) 52%, rgb(5 30 70 / 32%)),
     linear-gradient(0deg, rgb(8 29 63 / 24%), transparent 60%);
+}
+
+.dag-page.aninf-animated-page::after {
+  background: linear-gradient(100deg, rgb(7 35 84 / 34%), rgb(13 63 132 / 18%) 52%, rgb(5 30 70 / 32%));
+}
+
+.aninf-animated-page:not(.dag-page):not(.page-historique) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 75% 20%, rgb(0 153 255 / 30%), transparent 45%),
+    radial-gradient(ellipse at 14% 82%, rgb(17 94 190 / 30%), transparent 42%),
+    linear-gradient(135deg, #073b82 0%, #06428f 48%, #052b68 100%);
+}
+
+.aninf-animated-page:not(.dag-page):not(.page-historique)::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/images/aninf-molecule-network.svg') center / cover no-repeat;
+  content: "";
+  pointer-events: none;
+}
+
+.aninf-animated-page:not(.dag-page):not(.page-historique)::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, rgb(5 36 87 / 18%), rgb(3 57 123 / 8%) 52%, rgb(5 30 70 / 18%));
+  content: "";
+  pointer-events: none;
+}
+
+.aninf-animated-page.page-historique .suivi-fond::after {
+  background: linear-gradient(100deg, rgb(7 35 84 / 34%), rgb(13 63 132 / 18%) 52%, rgb(5 30 70 / 32%));
 }
 
 .dag-page > header h1 {
@@ -129,8 +167,4 @@ router-outlet + * {
   -webkit-backdrop-filter: blur(10px) saturate(125%);
   backdrop-filter: blur(10px) saturate(125%);
   box-shadow: 0 12px 32px rgb(5 20 46 / 14%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dag-page::before { filter: none; }
 }

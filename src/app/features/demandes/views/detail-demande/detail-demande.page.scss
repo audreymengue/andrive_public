@@ -153,6 +153,22 @@ h1 {
   background: #fff;
 }
 
+.assignment-section {
+  border-color: #c9dcff;
+  background: linear-gradient(115deg, #f5f9ff, #fff 72%);
+}
+
+.assignment-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.driver-phone {
+  color: var(--detail-blue);
+  font-size: 0.94rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.driver-phone:hover { text-decoration: underline; }
+
 .section-heading {
   display: flex;
   align-items: center;
@@ -311,6 +327,7 @@ tbody tr:last-child td { border-bottom: 0; }
   .detail-header { gap: 0.8rem; }
   .detail-summary { align-items: flex-start; flex-direction: column; gap: 0.9rem; }
   .info-grid { grid-template-columns: 1fr; }
+  .assignment-grid { grid-template-columns: 1fr; }
   .info-item--wide { grid-column: auto; }
   .detail-section { padding: 1rem; }
   .detail-actions { justify-content: stretch; }
