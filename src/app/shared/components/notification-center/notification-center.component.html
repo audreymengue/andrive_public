@@ -1,0 +1,45 @@
+<div class="notification-center">
+  <button class="bell-button" type="button" (click)="toggle()" [attr.aria-expanded]="open()" aria-haspopup="dialog" aria-label="Ouvrir les notifications">
+    <i class="bi bi-bell" aria-hidden="true"></i>
+    @if (unreadCount() > 0) { <span class="bell-count">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span> }
+  </button>
+
+  @if (open()) {
+    <section class="notification-popover" role="dialog" aria-label="Notifications" [attr.aria-busy]="loading()">
+      <header class="popover-header">
+        <h2>Notifications</h2>
+        <button type="button" class="mark-all" (click)="markAllRead()" [disabled]="unreadCount() === 0 || markingAll()">
+          {{ markingAll() ? 'Mise à jour…' : 'Tout marquer comme lu' }}
+        </button>
+      </header>
+
+      <div class="filter-tabs" role="group" aria-label="Filtrer les notifications">
+        <button type="button" [class.is-active]="!unreadOnly()" (click)="setFilter(false)">Toutes</button>
+        <button type="button" [class.is-active]="unreadOnly()" (click)="setFilter(true)">Non lues@if (unreadCount() > 0) { <span>{{ unreadCount() }}</span> }</button>
+      </div>
+
+      @if (error()) {
+        <div class="popover-state error" role="alert">{{ error() }} <button type="button" (click)="refresh()">Réessayer</button></div>
+      } @else if (loading()) {
+        <div class="popover-state" role="status"><span class="spinner" aria-hidden="true"></span> Chargement…</div>
+      } @else if (rows().length === 0) {
+        <div class="popover-state">{{ unreadOnly() ? 'Aucune notification non lue.' : 'Aucune notification pour le moment.' }}</div>
+      } @else {
+        <div class="notification-list">
+          @for (item of rows(); track item.id || $index) {
+            <button class="notification-row" type="button" [class.is-unread]="!isRead(item)" (click)="openNotification(item)">
+              <span class="item-icon" aria-hidden="true"><i class="bi" [class.bi-car-front]="icon(item) === 'bi-car-front'" [class.bi-inbox]="icon(item) === 'bi-inbox'" [class.bi-clipboard-check]="icon(item) === 'bi-clipboard-check'" [class.bi-info-circle]="icon(item) === 'bi-info-circle'"></i></span>
+              <span class="item-copy">
+                <strong>{{ title(item) }}</strong>
+                <span class="item-message">{{ message(item) }}</span>
+                @if (date(item)) { <time [attr.datetime]="date(item)">{{ date(item) | date:'dd/MM/yyyy · HH:mm' }}</time> }
+              </span>
+              @if (!isRead(item)) { <span class="unread-dot" aria-label="Non lue"></span> }
+            </button>
+          }
+        </div>
+      }
+      <footer class="popover-footer"><button type="button" (click)="seeAll()">Voir toutes les notifications</button></footer>
+    </section>
+  }
+</div>

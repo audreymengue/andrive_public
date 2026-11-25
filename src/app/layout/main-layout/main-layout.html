@@ -16,6 +16,11 @@
   </aside>
 
   <div class="main-layout__body">
+    @if (afficherNotifications()) {
+      <header class="topbar">
+        <app-notification-center />
+      </header>
+    }
     <main class="content">
       <div class="container">
         <router-outlet />

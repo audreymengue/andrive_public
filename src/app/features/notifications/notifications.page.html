@@ -1,0 +1,51 @@
+<main class="notifications-page dag-page aninf-animated-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">CENTRE DE NOTIFICATIONS</p>
+      <h1>Notifications</h1>
+      <p class="subtitle">Retrouvez les informations importantes concernant votre activité.</p>
+    </div>
+    <button class="refresh-button" type="button" (click)="refresh()" [disabled]="loading()">
+      <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Actualiser
+    </button>
+  </header>
+
+  <section class="notifications-panel" aria-label="Liste des notifications" [attr.aria-busy]="loading()">
+    <div class="panel-toolbar">
+      <div class="filter-tabs" role="group" aria-label="Filtrer les notifications">
+        <button type="button" [class.is-active]="!unreadOnly()" (click)="setFilter(false)">Toutes <span>{{ total() }}</span></button>
+        <button type="button" [class.is-active]="unreadOnly()" (click)="setFilter(true)">Non lues <span>{{ unreadCount() }}</span></button>
+      </div>
+      <button class="mark-all-button" type="button" (click)="markAllRead()" [disabled]="unreadCount() === 0 || markingAll()">
+        <i class="bi bi-check2-all" aria-hidden="true"></i> {{ markingAll() ? 'Mise à jour…' : 'Tout marquer comme lu' }}
+      </button>
+    </div>
+
+    @if (error()) { <div class="error-state" role="alert"><span>{{ error() }}</span><button type="button" (click)="refresh()">Réessayer</button></div> }
+    @else if (loading()) { <div class="state" role="status"><span class="spinner" aria-hidden="true"></span> Chargement des notifications…</div> }
+    @else if (notifications().length === 0) {
+      <div class="empty-state"><span class="empty-icon"><i class="bi bi-bell-slash" aria-hidden="true"></i></span><h2>{{ unreadOnly() ? 'Tout est à jour' : 'Aucune notification' }}</h2><p>{{ unreadOnly() ? 'Vous avez lu toutes vos notifications.' : 'Les nouvelles informations apparaîtront ici.' }}</p></div>
+    } @else {
+      <div class="notification-list">
+        @for (item of notifications(); track item.id || $index) {
+          <article class="notification-item" [class.notification-item--unread]="!isRead(item)">
+            <button class="notification-main" type="button" (click)="openNotification(item)" [attr.aria-label]="'Ouvrir la page liée à : ' + title(item)">
+              <span class="notification-icon" aria-hidden="true"><i class="bi" [class.bi-bell]="!item.type" [class.bi-info-circle]="!!item.type"></i></span>
+              <span class="notification-copy">
+                <span class="notification-title-row"><strong>{{ title(item) }}</strong>@if (!isRead(item)) { <span class="unread-badge">Nouveau</span> }</span>
+                <span class="notification-message">{{ message(item) }}</span>
+                @if (date(item)) { <time [attr.datetime]="date(item)">{{ date(item) | date:'dd/MM/yyyy à HH:mm' }}</time> }
+              </span>
+              <span class="open-label">Consulter <i class="bi bi-arrow-up-right" aria-hidden="true"></i></span>
+            </button>
+            @if (!isRead(item)) { <button class="read-button" type="button" (click)="markRead(item)" [disabled]="markingIds().has(item.id)" [attr.aria-label]="'Marquer comme lue : ' + title(item)" title="Marquer comme lue"><i class="bi bi-check2" aria-hidden="true"></i></button> }
+          </article>
+        }
+      </div>
+      <footer class="pagination">
+        <span>{{ total() }} notification(s) · Page {{ page() }} sur {{ lastPage() }}</span>
+        <div><button type="button" (click)="changePage(-1)" [disabled]="page() <= 1">Précédent</button><button type="button" (click)="changePage(1)" [disabled]="page() >= lastPage()">Suivant</button></div>
+      </footer>
+    }
+  </section>
+</main>

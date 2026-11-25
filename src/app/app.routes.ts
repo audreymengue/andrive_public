@@ -44,6 +44,11 @@ export const routes: Routes = [
         canActivate: [AuthGuard, PasswordChangeGuard],
         children: [
             {
+                path: 'notifications',
+                loadComponent: () => import('./features/notifications/notifications.page').then(m => m.NotificationsPage),
+                title: 'Notifications'
+            },
+            {
                 path: '',
                 pathMatch: 'full',
                 loadComponent: () => import('./features/dashboard/views/dashboard.page').then(m => m.DashboardPage),
